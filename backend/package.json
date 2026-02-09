@@ -1,0 +1,16 @@
+{
+  "name": "ttb-label-validator-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "zip": "npm run build && cd dist && zip -r ../lambda.zip . && cd .. && zip -r lambda.zip node_modules",
+    "deploy": "npm run zip && aws lambda update-function-code --function-name ttb-ocr-proxy --zip-file fileb://lambda.zip --profile personal"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0"
+  }
+}

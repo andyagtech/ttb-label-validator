@@ -79,15 +79,20 @@ export async function runTesseractOcr(
 // ---------------------------------------------------------------------------
 
 /**
- * Call the /api/ocr endpoint with a base64 image.
- * Returns structured extracted fields.
+ * Call the OCR endpoint with a base64 image.
+ * Prefers the Lambda proxy (NEXT_PUBLIC_LAMBDA_URL/ocr) when configured,
+ * falls back to the Next.js /api/ocr route for local development.
  */
 export async function runServerOcr(
   imageBase64: string,
   mimeType: string = "image/png"
 ): Promise<ExtractedFields> {
+  const lambdaUrl = process.env.NEXT_PUBLIC_LAMBDA_URL;
+  const endpoint = lambdaUrl ? `${lambdaUrl}/ocr` : "/api/ocr";
+
   try {
-    const response = await fetch("/api/ocr", {
+    console.log(`[OCR] Calling ${lambdaUrl ? "Lambda" : "local"} endpoint: ${endpoint}`);
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageBase64, mimeType }),
