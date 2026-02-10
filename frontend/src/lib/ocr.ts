@@ -133,27 +133,47 @@ export function parseOcrText(rawText: string): ExtractedFields {
   const lines = rawText.split(/\n/).map((l) => l.trim()).filter(Boolean);
 
   // --- Alcohol content ---
-  // Match: "Alcohol 5% By Volume", "5% Alc. By Vol.", "5% ALC./VOL.", "Alcohol 5% by volume"
-  const abvMatch = text.match(
-    /(?:alcohol\s+)?(\d+\.?\d*)\s*%\s*(?:by\s+vol(?:ume)?|alc\.?\s*(?:by\s*vol|\/\s*vol)\.?)/i
-  );
-  if (abvMatch) {
-    fields.alcoholContent = abvMatch[0].trim();
-  } else {
-    // Fallback: "Alc __% by Vol" with looser spacing
-    const abvFallback = text.match(/(\d+\.?\d*)\s*%\s*alc/i);
-    if (abvFallback) {
-      fields.alcoholContent = abvFallback[0].trim();
+  // Patterns to try in order (most specific to most general):
+  const abvPatterns = [
+    // "Alcohol 5% by volume" / "Alcohol 5% by vol"
+    /alcohol\s*(?:\(alc\))?\s+(\d+\.?\d*)\s*%\s*by\s+vol(?:ume)?/i,
+    // "5% Alc. By Vol." / "5% ALC BY VOL"
+    /(\d+\.?\d*)\s*%\s*alc\.?\s*by\s*vol\.?/i,
+    // "5% ALC./VOL." / "5% ALC/VOL" / "5% ALC./VOL"
+    /(\d+\.?\d*)\s*%\s*alc\.?\s*\/\s*vol\.?/i,
+    // "ALC. 5% BY VOL." / "ALC 5% BY VOL"
+    /alc\.?\s*(\d+\.?\d*)\s*%\s*by\s*vol\.?/i,
+    // "ALC./VOL. 5%" / "ALC/VOL 5%"
+    /alc\.?\s*\/\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
+    // "5% Alcohol by volume"
+    /(\d+\.?\d*)\s*%\s*alcohol\s*(?:\(alc\))?\s*(?:by\s+vol(?:ume)?|\/\s*vol(?:ume)?)/i,
+    // Loose fallback: any "X% alc" or "alc X%"
+    /(\d+\.?\d*)\s*%\s*alc/i,
+    /alc\.?\s*(\d+\.?\d*)\s*%/i,
+  ];
+  for (const pat of abvPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      fields.alcoholContent = m[0].trim();
+      break;
     }
   }
 
   // --- Net contents ---
-  // Match: "750 mL", "12 FL OZ", "1.75 L", "1 PINT", "0.9 FL. OZ."
-  const netMatch = text.match(
-    /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|liters?|milliliters?|cl|pint|gallon|gal)/i
+  // Try compound format first: "1 PINT, 8.9 FL. OZ." / "1 PINT 8.9 FL OZ"
+  const compoundNet = text.match(
+    /(\d+\.?\d*)\s*(pints?|pt\.?|quarts?|qt\.?)\s*[,.]?\s*(\d+\.?\d*)\s*(fl\.?\s*oz\.?)/i
   );
-  if (netMatch) {
-    fields.netContents = netMatch[0].trim();
+  if (compoundNet) {
+    fields.netContents = compoundNet[0].trim();
+  } else {
+    // Single unit: "750 mL", "12 FL OZ", "1.75 L", "1 PINT"
+    const netMatch = text.match(
+      /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?)/i
+    );
+    if (netMatch) {
+      fields.netContents = netMatch[0].trim();
+    }
   }
 
   // --- Government warning ---

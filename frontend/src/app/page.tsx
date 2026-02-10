@@ -82,6 +82,7 @@ interface LabelSlot {
   meshEdges: MeshEdges | null;
   meshPointsPerEdge: number;
   checklist: ChecklistItem[];
+  extractedFields: ExtractedFields | null;
 }
 
 function createSlot(id: string, name: string, category: BeverageCategory = "wine"): LabelSlot {
@@ -106,6 +107,7 @@ function createSlot(id: string, name: string, category: BeverageCategory = "wine
     meshEdges: null,
     meshPointsPerEdge: 3,
     checklist: getChecklistTemplate(position, category),
+    extractedFields: null,
   };
 }
 
@@ -126,6 +128,7 @@ export default function Home() {
   const [isServerExtracting, setIsServerExtracting] = useState(false);
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const [categoryConfirmed, setCategoryConfirmed] = useState(false);
+  const [checklistTab, setChecklistTab] = useState<"checklist" | "data">("checklist");
 
   const activeSlot = slots.find((s) => s.id === activeSlotId)!;
   const hasAnyImage = slots.some((s) => s.imageSrc !== null);
@@ -505,6 +508,9 @@ export default function Home() {
         ([k, v]) => k !== "rawText" && v && String(v).trim().length > 0
       );
 
+      // Always store extracted fields on the slot for the Data tab
+      updateSlot(activeSlotId, { extractedFields: fields });
+
       if (foundFields.length === 0 && fields.rawText) {
         // OCR ran but heuristic parsing found nothing useful
         const snippet = fields.rawText.slice(0, 120).replace(/\s+/g, " ");
@@ -532,7 +538,7 @@ export default function Home() {
       );
       updatedChecklist = applyValidationResults(updatedChecklist, validationResults);
 
-      updateSlot(activeSlotId, { checklist: updatedChecklist });
+      updateSlot(activeSlotId, { checklist: updatedChecklist, extractedFields: fields });
 
       const passCount = validationResults.filter((r) => r.pass).length;
       const failCount = validationResults.filter((r) => !r.pass).length;
@@ -1023,11 +1029,120 @@ export default function Home() {
                   </div>
                 )}
 
-                <LabelChecklist
-                  items={activeSlot.checklist}
-                  onToggle={handleChecklistToggle}
-                  onValueChange={handleChecklistValueChange}
-                />
+                {/* Tab toggle: Checklist vs Data */}
+                <div className="flex border-b border-gray-200 mb-3">
+                  <button
+                    onClick={() => setChecklistTab("checklist")}
+                    className={`px-4 py-2 text-xs font-medium border-b-2 transition ${
+                      checklistTab === "checklist"
+                        ? "border-blue-600 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Checklist
+                  </button>
+                  <button
+                    onClick={() => setChecklistTab("data")}
+                    className={`px-4 py-2 text-xs font-medium border-b-2 transition ${
+                      checklistTab === "data"
+                        ? "border-blue-600 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Data
+                    {activeSlot.extractedFields && (
+                      <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-[9px] font-bold bg-blue-100 text-blue-600 rounded-full">
+                        {Object.entries(activeSlot.extractedFields).filter(([k, v]) => k !== "rawText" && v).length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {checklistTab === "checklist" ? (
+                  <LabelChecklist
+                    items={activeSlot.checklist}
+                    onToggle={handleChecklistToggle}
+                    onValueChange={handleChecklistValueChange}
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {activeSlot.extractedFields ? (
+                      <>
+                        <p className="text-xs text-gray-500">
+                          Extracted fields from OCR. Edit any value, then re-run validation with <strong>Quick Check</strong> or <strong>AI Extract</strong>.
+                        </p>
+                        <div className="space-y-2">
+                          {(Object.keys(activeSlot.extractedFields) as (keyof ExtractedFields)[])
+                            .filter((k) => k !== "rawText")
+                            .map((key) => (
+                              <div key={key} className="flex flex-col gap-1">
+                                <label className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">
+                                  {key.replace(/([A-Z])/g, " $1").trim()}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={activeSlot.extractedFields?.[key] ?? ""}
+                                  onChange={(e) => {
+                                    const updated = { ...activeSlot.extractedFields!, [key]: e.target.value || undefined };
+                                    updateSlot(activeSlotId, { extractedFields: updated });
+                                  }}
+                                  placeholder="Not detected"
+                                  className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 outline-none transition"
+                                />
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* Re-run validation with edited data */}
+                        <button
+                          onClick={() => {
+                            if (activeSlot.extractedFields) {
+                              applyOcrResults(activeSlot.extractedFields, "full");
+                            }
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-2 text-xs font-medium rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 transition"
+                        >
+                          <CheckCircle2 size={13} />
+                          Re-validate with edited data
+                        </button>
+
+                        {/* Raw text collapsible */}
+                        {activeSlot.extractedFields.rawText && (
+                          <details className="mt-2">
+                            <summary className="text-[11px] font-medium text-gray-500 cursor-pointer hover:text-gray-700">
+                              Raw OCR Text
+                            </summary>
+                            <pre className="mt-1 p-3 text-[10px] text-gray-600 bg-gray-50 border border-gray-200 rounded-lg overflow-auto max-h-48 whitespace-pre-wrap font-mono">
+                              {activeSlot.extractedFields.rawText}
+                            </pre>
+                          </details>
+                        )}
+
+                        {/* JSON export */}
+                        <details className="mt-1">
+                          <summary className="text-[11px] font-medium text-gray-500 cursor-pointer hover:text-gray-700">
+                            View as JSON
+                          </summary>
+                          <pre className="mt-1 p-3 text-[10px] text-gray-600 bg-gray-50 border border-gray-200 rounded-lg overflow-auto max-h-48 whitespace-pre-wrap font-mono">
+                            {JSON.stringify(
+                              Object.fromEntries(
+                                Object.entries(activeSlot.extractedFields).filter(([k]) => k !== "rawText")
+                              ),
+                              null,
+                              2
+                            )}
+                          </pre>
+                        </details>
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-gray-400">
+                        <ScanSearch size={32} className="mx-auto mb-2 opacity-50" />
+                        <p className="text-xs">No data extracted yet.</p>
+                        <p className="text-xs mt-1">Run <strong>Quick Check</strong> or <strong>AI Extract</strong> to populate fields.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
