@@ -135,24 +135,38 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
  * Acceptable: "Alcohol __% by volume" or "__% Alc. By Vol."
  * NOT acceptable: "__% ABV" — "ABV" is not an allowed abbreviation.
  */
-function validateAbvFormat(text: string | undefined): ValidationResult[] {
+function validateAbvFormat(
+  text: string | undefined,
+  category: BeverageCategory
+): ValidationResult[] {
   const results: ValidationResult[] = [];
   const id = "alcohol_content";
 
   if (!text) {
-    results.push({
-      ruleId: "abv_present",
-      checklistItemId: id,
-      severity: "error",
-      message: "Alcohol content statement not found.",
-      suggestion: 'Must state "Alcohol __% by volume" or "__% Alc. By Vol."',
-      pass: false,
-    });
+    // ABV is optional for malt beverages per 27 CFR 7.71
+    if (category === "beer") {
+      results.push({
+        ruleId: "abv_present",
+        checklistItemId: id,
+        severity: "info",
+        message: "Alcohol content not found — this is optional for malt beverages unless required by state law.",
+        pass: true,
+      });
+    } else {
+      results.push({
+        ruleId: "abv_present",
+        checklistItemId: id,
+        severity: "error",
+        message: "Alcohol content statement not found.",
+        suggestion: 'Must state "Alcohol __% by volume" or "__% Alc. By Vol."',
+        pass: false,
+      });
+    }
     return results;
   }
 
   // Check for forbidden "ABV" abbreviation
-  if (/\b\d+\.?\d*\s*%?\s*ABV\b/i.test(text) && !/alc\.?\s*by\s*vol/i.test(text)) {
+  if (/\b\d+\.?\d*\s*%?\s*ABV\b/i.test(text) && !/alc\.?\s*(?:by\s*vol|\/?\s*vol)/i.test(text)) {
     results.push({
       ruleId: "abv_no_abbreviation",
       checklistItemId: id,
@@ -164,12 +178,19 @@ function validateAbvFormat(text: string | undefined): ValidationResult[] {
     return results;
   }
 
-  // Check for acceptable formats
-  const validFormat1 = /alcohol\s+\d+\.?\d*\s*%\s*by\s+vol(ume)?/i.test(text);
-  const validFormat2 = /\d+\.?\d*\s*%\s*alc\.?\s*by\s*vol\.?/i.test(text);
-  const validFormat3 = /\d+\.?\d*\s*%\s*alcohol\s+by\s+vol(ume)?/i.test(text);
+  // Check for acceptable formats (including parenthetical abbreviations per 27 CFR 7.71)
+  // Standard forms:
+  //   "Alcohol __% by volume"  /  "__% Alc. By Vol."  /  "__% Alcohol by volume"
+  // Parenthetical forms (malt beverages):
+  //   "Alcohol (Alc) __% by Volume (Vol)"  /  "Alc __% by Vol"
+  //   "__% Alcohol (Alc)/Volume (Vol)"     /  "__% Alc/Vol"
+  const validFormat1 = /alcohol\s*(?:\(alc\))?\s+\d+\.?\d*\s*%\s*by\s+vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
+  const validFormat2 = /\d+\.?\d*\s*%\s*alc\.?\s*(?:\(alc\))?\s*by\s*vol\.?(?:\s*\(vol\))?/i.test(text);
+  const validFormat3 = /\d+\.?\d*\s*%\s*alcohol\s*(?:\(alc\))?\s+by\s+vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
+  const validFormat4 = /\d+\.?\d*\s*%\s*alc(?:ohol)?\s*(?:\(alc\))?\s*\/\s*vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
+  const validFormat5 = /alcohol\s*(?:\(alc\))?\s*by\s+vol(?:ume)?(?:\s*\(vol\))?\s+\d+\.?\d*\s*%/i.test(text);
 
-  if (validFormat1 || validFormat2 || validFormat3) {
+  if (validFormat1 || validFormat2 || validFormat3 || validFormat4 || validFormat5) {
     results.push({
       ruleId: "abv_format_valid",
       checklistItemId: id,
@@ -185,7 +206,7 @@ function validateAbvFormat(text: string | undefined): ValidationResult[] {
         checklistItemId: id,
         severity: "warning",
         message: "Alcohol percentage found but format may not match TTB requirements.",
-        suggestion: 'Acceptable formats: "Alcohol __% by volume" or "__% Alc. By Vol."',
+        suggestion: 'Acceptable formats: "Alcohol __% by volume", "__% Alc. By Vol.", or "__% Alc./Vol."',
         pass: false,
       });
     } else {
@@ -206,7 +227,10 @@ function validateAbvFormat(text: string | undefined): ValidationResult[] {
 // Net Contents Format
 // ---------------------------------------------------------------------------
 
-function validateNetContents(text: string | undefined): ValidationResult[] {
+function validateNetContents(
+  text: string | undefined,
+  category: BeverageCategory
+): ValidationResult[] {
   const results: ValidationResult[] = [];
   const id = "net_contents";
 
@@ -216,30 +240,69 @@ function validateNetContents(text: string | undefined): ValidationResult[] {
       checklistItemId: id,
       severity: "error",
       message: "Net contents statement not found.",
-      suggestion: "Must include volume (e.g., 750 mL, 12 FL OZ, 1.75 L).",
+      suggestion:
+        category === "beer"
+          ? "Must include volume in American measure (e.g., 12 FL OZ, 1 PINT, 1 QUART). Metric may also be shown."
+          : "Must include volume (e.g., 750 mL, 1 L, 12 FL OZ).",
       pass: false,
     });
     return results;
   }
 
-  const hasUnit = /\d+\.?\d*\s*(ml|l|fl\.?\s*oz\.?|liters?|milliliters?|cl|gallon)/i.test(text);
-  if (hasUnit) {
-    results.push({
-      ruleId: "net_contents_valid",
-      checklistItemId: id,
-      severity: "info",
-      message: "Net contents statement found with valid unit.",
-      pass: true,
-    });
+  // American units (required for malt beverages, accepted for all)
+  const hasAmericanUnit = /\d+\.?\d*\s*(fl\.?\s*oz\.?|fluid\s+ounces?|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?)/i.test(text);
+  // Metric units (required for wine/spirits, optional for beer)
+  const hasMetricUnit = /\d+\.?\d*\s*(ml|l|cl|liters?|milliliters?|centiliters?)/i.test(text);
+
+  if (category === "beer") {
+    // Malt beverages: American measure REQUIRED, metric optional
+    if (hasAmericanUnit) {
+      results.push({
+        ruleId: "net_contents_valid",
+        checklistItemId: id,
+        severity: "info",
+        message: "Net contents found in American measure" + (hasMetricUnit ? " (with metric equivalent)." : "."),
+        pass: true,
+      });
+    } else if (hasMetricUnit) {
+      results.push({
+        ruleId: "net_contents_metric_only",
+        checklistItemId: id,
+        severity: "warning",
+        message: "Net contents found in metric only — malt beverages must include American measure.",
+        suggestion: "Per 27 CFR 7.28, malt beverages must state net contents in American measure (FL OZ, PINT, QUART, GALLON). Metric may also appear.",
+        pass: false,
+      });
+    } else {
+      results.push({
+        ruleId: "net_contents_no_unit",
+        checklistItemId: id,
+        severity: "warning",
+        message: "Net contents found but unit may be missing or unclear.",
+        suggestion: "Must include American measure: FL OZ, PINT, QUART, or GALLON.",
+        pass: false,
+      });
+    }
   } else {
-    results.push({
-      ruleId: "net_contents_no_unit",
-      checklistItemId: id,
-      severity: "warning",
-      message: "Net contents found but unit may be missing or unclear.",
-      suggestion: "Use standard metric units: mL, L, or cL.",
-      pass: false,
-    });
+    // Wine & spirits: metric or American accepted
+    if (hasMetricUnit || hasAmericanUnit) {
+      results.push({
+        ruleId: "net_contents_valid",
+        checklistItemId: id,
+        severity: "info",
+        message: "Net contents statement found with valid unit.",
+        pass: true,
+      });
+    } else {
+      results.push({
+        ruleId: "net_contents_no_unit",
+        checklistItemId: id,
+        severity: "warning",
+        message: "Net contents found but unit may be missing or unclear.",
+        suggestion: "Must include standard metric units: mL, L, or cL.",
+        pass: false,
+      });
+    }
   }
 
   return results;
@@ -333,19 +396,23 @@ export function validateExtractedFields(
 
   // --- Format validations ---
   if (labelPosition === "front" || labelPosition === "other") {
-    results.push(...validateAbvFormat(fields.alcoholContent));
+    results.push(...validateAbvFormat(fields.alcoholContent, category));
   }
 
   if (labelPosition === "back" || labelPosition === "other") {
     results.push(...validateHealthWarning(fields.healthWarning));
+  }
+
+  // Name & address: required on back for all; also required on front for domestic malt beverages
+  if (labelPosition === "back" || labelPosition === "other" || labelPosition === "front") {
     results.push(validatePresence(fields.nameAddress, "name_address", "Name and address"));
   }
 
   // Net contents can appear on front or back
-  results.push(...validateNetContents(fields.netContents));
+  results.push(...validateNetContents(fields.netContents, category));
 
   // --- Category-specific fields ---
-  if (category === "wine") {
+  if (category === "wine" || category === "beer") {
     if (fields.sulfiteDeclaration) {
       results.push({
         ruleId: "sulfite_present",
