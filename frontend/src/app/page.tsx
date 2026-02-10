@@ -117,8 +117,10 @@ export default function Home() {
   const [isQuickChecking, setIsQuickChecking] = useState(false);
   const [isServerExtracting, setIsServerExtracting] = useState(false);
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
+  const [categoryConfirmed, setCategoryConfirmed] = useState(false);
 
   const activeSlot = slots.find((s) => s.id === activeSlotId)!;
+  const hasAnyImage = slots.some((s) => s.imageSrc !== null);
 
   // Update a specific slot
   const updateSlot = useCallback(
@@ -156,6 +158,7 @@ export default function Home() {
           sourceCanvas: canvas,
           correctedImage: null,
           viewMode: "edit",
+          zoom: 1,
         });
       };
       img.src = dataUrl;
@@ -481,6 +484,7 @@ export default function Home() {
   const handleCategoryChange = useCallback(
     (cat: BeverageCategory) => {
       setBeverageCategory(cat);
+      setCategoryConfirmed(true);
       setSlots((prev) =>
         prev.map((s) => {
           const position = s.id === "front" ? "front" : s.id === "back" ? "back" : "other";
@@ -525,25 +529,39 @@ export default function Home() {
               TTB Label Validator
             </h1>
             <p className="text-sm text-gray-500">
-              Upload front and back label images, adjust corners, and correct
-              perspective distortion
+              Upload label images, correct perspective, and validate TTB compliance
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg p-1">
-              {(["wine", "beer", "spirits"] as BeverageCategory[]).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => handleCategoryChange(cat)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-                    beverageCategory === cat
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </button>
-              ))}
+            <div className="relative">
+              {/* Coach mark pulse — visible until user confirms category */}
+              {!categoryConfirmed && !hasAnyImage && (
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                  <div className="bg-amber-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full shadow-md animate-bounce">
+                    Start here — choose your beverage type
+                  </div>
+                  <div className="w-2 h-2 bg-amber-500 rotate-45 mx-auto -mt-1" />
+                </div>
+              )}
+              <div className={`flex items-center gap-1.5 rounded-lg p-1 transition-all ${
+                !categoryConfirmed && !hasAnyImage
+                  ? "bg-amber-50 ring-2 ring-amber-400 ring-offset-1"
+                  : "bg-gray-100"
+              }`}>
+                {(["wine", "beer", "spirits"] as BeverageCategory[]).map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategoryChange(cat)}
+                    className={`px-4 py-2 text-xs font-semibold rounded-md transition ${
+                      beverageCategory === cat
+                        ? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                    }`}
+                  >
+                    {cat === "wine" ? "Wine" : cat === "beer" ? "Beer" : "Spirits"}
+                  </button>
+                ))}
+              </div>
             </div>
             <span className="text-xs text-gray-400">
               {filledSlots}/{totalSlots} labels uploaded
@@ -615,6 +633,18 @@ export default function Home() {
               </p>
             </div>
             <ImageInput onImageLoaded={handleImageLoaded} />
+
+            {/* Multi-label image tip */}
+            <div className="mt-4 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-700 leading-relaxed">
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                Have one image with both front and back labels?
+              </p>
+              <p>
+                No problem! Upload the same image to both the <strong>Front Label</strong> and <strong>Back Label</strong> tabs.
+                Then use the corner points to select just the portion you need — you don&apos;t need to crop or edit the image first.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
@@ -750,9 +780,20 @@ export default function Home() {
               <div className="bg-white rounded-xl border border-gray-200 p-4 mt-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-800">
-                      Pre-Submission Checklist — {activeSlot.name}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-gray-800">
+                        Pre-Submission Checklist — {activeSlot.name}
+                      </h3>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        beverageCategory === "wine"
+                          ? "bg-purple-100 text-purple-700"
+                          : beverageCategory === "beer"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-slate-200 text-slate-700"
+                      }`}>
+                        {beverageCategory}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-500 mt-0.5">
                       Verify these items before submitting. Checked items reduce review time and rejection risk.
                     </p>

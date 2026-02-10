@@ -60,8 +60,9 @@ export default function CornerEditor({
 
   const effectiveScale = baseScale * zoom;
 
-  // Load image
+  // Load image and reset pan when image changes
   useEffect(() => {
+    setPanOffset({ x: 0, y: 0 });
     const img = new Image();
     img.onload = () => {
       imageRef.current = img;
