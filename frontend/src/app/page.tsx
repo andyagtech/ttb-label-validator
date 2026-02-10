@@ -59,12 +59,14 @@ type ViewMode = "edit" | "preview";
 type WarpMode = "simple" | "mesh";
 
 type ImageType = "graphic" | "photo" | null;
+type MultiLabelChoice = "yes" | "no" | "unknown" | null;
 
 interface LabelSlot {
   id: string;
   name: string;
   imageSrc: string | null;
   imageType: ImageType;
+  multiLabelChoice: MultiLabelChoice;
   corners: [Point, Point, Point, Point] | null;
   surfaceMode: SurfaceMode;
   curvature: number;
@@ -88,6 +90,7 @@ function createSlot(id: string, name: string, category: BeverageCategory = "wine
     name,
     imageSrc: null,
     imageType: null,
+    multiLabelChoice: null,
     corners: null,
     surfaceMode: "flat",
     curvature: 0.5,
@@ -168,6 +171,85 @@ export default function Home() {
       img.src = dataUrl;
     },
     [activeSlotId, updateSlot]
+  );
+
+  // Auto-split image into Front + Back label regions
+  const handleMultiLabelSplit = useCallback(
+    (choice: MultiLabelChoice) => {
+      // Update current slot's multiLabelChoice
+      updateSlot(activeSlotId, { multiLabelChoice: choice });
+
+      if (choice === "no") return;
+
+      // Need image dimensions to compute split
+      const slot = slots.find((s) => s.id === activeSlotId);
+      if (!slot?.sourceCanvas || !slot?.imageSrc) return;
+
+      const w = slot.sourceCanvas.width;
+      const h = slot.sourceCanvas.height;
+      const inset = Math.min(w, h) * 0.03;
+      const gap = Math.min(w, h) * 0.02; // small gap between the two halves
+
+      // Heuristic: landscape → left/right split, portrait → top/bottom split
+      const isLandscape = w > h * 1.2;
+
+      let frontCorners: [Point, Point, Point, Point];
+      let backCorners: [Point, Point, Point, Point];
+
+      if (isLandscape) {
+        const mid = w / 2;
+        frontCorners = [
+          { x: inset, y: inset },
+          { x: mid - gap, y: inset },
+          { x: mid - gap, y: h - inset },
+          { x: inset, y: h - inset },
+        ];
+        backCorners = [
+          { x: mid + gap, y: inset },
+          { x: w - inset, y: inset },
+          { x: w - inset, y: h - inset },
+          { x: mid + gap, y: h - inset },
+        ];
+      } else {
+        const mid = h / 2;
+        frontCorners = [
+          { x: inset, y: inset },
+          { x: w - inset, y: inset },
+          { x: w - inset, y: mid - gap },
+          { x: inset, y: mid - gap },
+        ];
+        backCorners = [
+          { x: inset, y: mid + gap },
+          { x: w - inset, y: mid + gap },
+          { x: w - inset, y: h - inset },
+          { x: inset, y: h - inset },
+        ];
+      }
+
+      // Set front slot corners
+      updateSlot(activeSlotId, {
+        multiLabelChoice: choice,
+        corners: frontCorners,
+        meshEdges: createMeshEdgesFromCorners(frontCorners, 3),
+      });
+
+      // Copy image to the "back" slot with back corners
+      const backSlot = slots.find((s) => s.id === "back");
+      if (backSlot) {
+        updateSlot("back", {
+          imageSrc: slot.imageSrc,
+          imageType: slot.imageType,
+          multiLabelChoice: choice,
+          corners: backCorners,
+          meshEdges: createMeshEdgesFromCorners(backCorners, 3),
+          sourceCanvas: slot.sourceCanvas,
+          correctedImage: null,
+          viewMode: "edit",
+          zoom: 1,
+        });
+      }
+    },
+    [activeSlotId, slots, updateSlot]
   );
 
   // Update corners for the active slot
@@ -925,6 +1007,73 @@ export default function Home() {
                     </button>
                   </div>
 
+                  {/* Multi-label question — shown after imageType is set, before controls */}
+                  {activeSlot.multiLabelChoice === null ? (
+                    <div className="bg-white rounded-xl border-2 border-violet-300 p-4 space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-800">
+                        Does this file have more than one label?
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        Many submissions include both front and back labels in a single image. If so, we&apos;ll help you outline each one.
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => handleMultiLabelSplit("yes")}
+                          className="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition text-left"
+                        >
+                          <div className="shrink-0 w-7 h-7 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-bold">2+</div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">Yes — multiple labels</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">We&apos;ll auto-detect the regions and split them into Front &amp; Back.</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => handleMultiLabelSplit("no")}
+                          className="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition text-left"
+                        >
+                          <div className="shrink-0 w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold">1</div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">No — just one label</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">This image shows a single label only.</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => handleMultiLabelSplit("unknown")}
+                          className="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition text-left"
+                        >
+                          <div className="shrink-0 w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">?</div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">I&apos;m not sure</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">We&apos;ll try to detect label regions for you to confirm.</p>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Multi-label answer indicator */}
+                      {activeSlot.multiLabelChoice !== "no" && (
+                        <div className="bg-violet-50 rounded-xl border border-violet-200 p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="shrink-0 w-5 h-5 rounded-full bg-violet-200 text-violet-700 flex items-center justify-center text-[10px] font-bold">2</div>
+                              <span className="text-xs font-medium text-violet-800">
+                                Multi-label detected — image split into Front &amp; Back
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => updateSlot(activeSlotId, { multiLabelChoice: null })}
+                              className="text-[11px] text-violet-600 hover:text-violet-800 font-medium"
+                            >
+                              Redo
+                            </button>
+                          </div>
+                          <p className="text-[11px] text-violet-600">
+                            Adjust the corner points on each tab to fine-tune the selection. The <strong>Back Label</strong> tab has been auto-populated.
+                          </p>
+                        </div>
+                      )}
+
                   {/* Photo mode: full warp + surface controls */}
                   {activeSlot.imageType === "photo" && (
                     <>
@@ -1361,6 +1510,8 @@ export default function Home() {
                       resolution.
                     </p>
                   </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
