@@ -176,9 +176,14 @@ ttb_cola_project/
 │   │   │   ├── ocr.ts            # Tesseract.js + server OCR + field mapping
 │   │   │   ├── validation.ts     # TTB validation rules engine (category-aware)
 │   │   │   ├── fuzzyMatch.ts     # Levenshtein fuzzy matching for form comparison
-│   │   │   └── types.ts          # Checklist items, review types, submissions
+│   │   │   ├── types.ts          # Checklist items, review types, submissions
+│   │   │   └── __tests__/        # Unit tests (Vitest)
+│   │   │       ├── validation.test.ts  # 31 tests — rules engine
+│   │   │       ├── ocr.test.ts         # 32 tests — OCR parsing
+│   │   │       └── fuzzyMatch.test.ts  # 14 tests — fuzzy matching
 │   │   └── types/
 │   │       └── tesseract.d.ts    # Tesseract.js type declarations
+│   ├── vitest.config.ts          # Test configuration
 │   └── package.json
 ├── backend/                     # AWS Lambda proxy
 │   ├── src/
@@ -188,10 +193,38 @@ ttb_cola_project/
 │   │       └── ocr.ts           # Vision model OCR with structured extraction prompt
 │   ├── package.json
 │   └── README.md
+├── docs/
+│   └── openapi.yaml             # OpenAPI 3.1 spec for all API endpoints
 ├── references/                  # TTB reference documents
 ├── sample_labels/               # Test label images
 └── project_description.md       # Original project brief
 ```
+
+## Testing
+
+```bash
+cd frontend
+npm test        # Run all 77 tests once
+npm run test:watch  # Watch mode
+```
+
+**77 unit tests** across 3 test suites:
+- **validation.test.ts** (31 tests) — government warning, ABV format, net contents, presence rules, class/type lookup, cross-field rules, sample label integration
+- **ocr.test.ts** (32 tests) — alcohol content parsing (7 ABV formats), net contents, government warning, sulfite, brand name, class/type, country of origin, vintage, name/address
+- **fuzzyMatch.test.ts** (14 tests) — normalization, Levenshtein scoring, Dave's "STONE'S THROW" case, smart quotes, edge cases
+
+## API Documentation
+
+Full OpenAPI 3.1 specification: [`docs/openapi.yaml`](docs/openapi.yaml)
+
+| Endpoint | Method | Surface | Description |
+|---|---|---|---|
+| `/health` | GET | Lambda | Service health check |
+| `/ocr` | POST | Lambda | Structured label field extraction via vision model |
+| `/openrouter` | POST | Lambda | Generic OpenRouter chat completions proxy |
+| `/api/ocr` | POST | Next.js | Local dev fallback (same schema as `/ocr`) |
+
+All OCR endpoints accept `{ imageBase64, mimeType }` and return `{ success, fields, model }` where `fields` is a structured `ExtractedFields` object with 12 TTB label field keys.
 
 ## Approach & Design Decisions
 

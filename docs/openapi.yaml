@@ -1,0 +1,372 @@
+openapi: 3.1.0
+info:
+  title: TTB Label Validator API
+  version: 0.1.0
+  description: |
+    API endpoints for the TTB Label Validator — AI-powered alcohol label
+    verification tool. There are two deployment surfaces:
+
+    1. **AWS Lambda** (`POST /ocr`, `POST /openrouter`, `GET /health`) —
+       production proxy that keeps the OpenRouter API key server-side.
+    2. **Next.js API Route** (`POST /api/ocr`) — local development fallback
+       with the same request/response schema as the Lambda `/ocr` endpoint.
+
+    Both OCR endpoints accept a base64-encoded label image and return
+    structured TTB label fields extracted by a vision model (Claude 3.5 Sonnet).
+  contact:
+    name: TTB Label Validator
+    url: https://github.com/andyagtech/ttb-label-validator
+  license:
+    name: MIT
+
+servers:
+  - url: https://your-lambda-url.lambda-url.us-east-1.on.aws
+    description: AWS Lambda (production)
+  - url: http://localhost:3000
+    description: Next.js dev server (local)
+
+tags:
+  - name: OCR
+    description: Vision-model OCR extraction of structured label fields
+  - name: Proxy
+    description: Generic OpenRouter chat completions proxy
+  - name: Health
+    description: Service health check
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [Health]
+      summary: Health check
+      description: Returns service status. Used for uptime monitoring.
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: ttb-ocr-proxy
+
+  /ocr:
+    post:
+      operationId: extractLabelFields
+      tags: [OCR]
+      summary: Extract structured label fields from an image
+      description: |
+        Sends a base64-encoded label image to a vision model (Claude 3.5 Sonnet
+        via OpenRouter) with a structured extraction prompt. Returns all
+        TTB-required fields as a JSON object.
+
+        **Environment variables required:**
+        - `OPENROUTER_API_KEY` — API key for OpenRouter
+        - `OPENROUTER_MODEL` — Model ID (default: `anthropic/claude-3.5-sonnet`)
+        - `OCR_ENABLED` — Must be `"true"` (Next.js route only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OcrRequest"
+            example:
+              imageBase64: "/9j/4AAQSkZJRg..."
+              mimeType: "image/jpeg"
+      responses:
+        "200":
+          description: Extraction succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OcrSuccessResponse"
+              example:
+                success: true
+                fields:
+                  brandName: "OLD TOM DISTILLERY"
+                  classType: "Kentucky Straight Bourbon Whiskey"
+                  alcoholContent: "45% Alc./Vol. (90 Proof)"
+                  netContents: "750 mL"
+                  healthWarning: "GOVERNMENT WARNING: (1) According to the Surgeon General..."
+                  nameAddress: "Old Tom Distillery, Louisville, KY"
+                  countryOfOrigin: null
+                  sulfiteDeclaration: null
+                  rawText: "OLD TOM DISTILLERY Kentucky Straight Bourbon Whiskey..."
+                model: "anthropic/claude-3.5-sonnet"
+        "400":
+          description: Bad request (missing imageBase64 or invalid JSON)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server misconfiguration (missing API key)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OcrErrorResponse"
+        "502":
+          description: Upstream OpenRouter error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OcrErrorResponse"
+
+  /api/ocr:
+    post:
+      operationId: extractLabelFieldsLocal
+      tags: [OCR]
+      summary: Extract label fields (Next.js local dev route)
+      description: |
+        Identical interface to `POST /ocr` but runs as a Next.js API route
+        for local development. Falls back to this when `NEXT_PUBLIC_LAMBDA_URL`
+        is not set.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OcrRequest"
+      responses:
+        "200":
+          description: Extraction succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OcrSuccessResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OcrErrorResponse"
+
+  /openrouter:
+    post:
+      operationId: proxyOpenRouter
+      tags: [Proxy]
+      summary: Proxy to OpenRouter Chat Completions API
+      description: |
+        Transparent proxy to the OpenRouter `/v1/chat/completions` endpoint.
+        Injects the `OPENROUTER_API_KEY` server-side so it is never exposed
+        to the browser. Supports all standard chat completion parameters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenRouterRequest"
+            example:
+              model: "anthropic/claude-3.5-sonnet"
+              messages:
+                - role: user
+                  content: "Describe this label"
+              max_tokens: 500
+              temperature: 0
+      responses:
+        "200":
+          description: Upstream response forwarded as-is
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenRouterResponse"
+        "400":
+          description: Missing model or messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: API key not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Failed to reach OpenRouter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    OcrRequest:
+      type: object
+      required: [imageBase64]
+      properties:
+        imageBase64:
+          type: string
+          description: Base64-encoded image data (no `data:` prefix)
+        mimeType:
+          type: string
+          default: image/png
+          description: MIME type of the image
+          enum: [image/png, image/jpeg, image/webp]
+
+    ExtractedFields:
+      type: object
+      description: Structured TTB label fields extracted by the vision model
+      properties:
+        brandName:
+          type: string
+          nullable: true
+          description: Brand name as displayed on label
+        classType:
+          type: string
+          nullable: true
+          description: "Class and type designation (e.g., Red Wine, Blended Whiskey)"
+        alcoholContent:
+          type: string
+          nullable: true
+          description: "Alcohol content statement exactly as written (e.g., 45% Alc./Vol.)"
+        netContents:
+          type: string
+          nullable: true
+          description: "Net contents/volume statement (e.g., 750 mL)"
+        appellation:
+          type: string
+          nullable: true
+          description: Appellation of origin if present
+        vintageDate:
+          type: string
+          nullable: true
+          description: Vintage year if present
+        varietal:
+          type: string
+          nullable: true
+          description: Grape varietal if present
+        healthWarning:
+          type: string
+          nullable: true
+          description: Government health warning text if present
+        nameAddress:
+          type: string
+          nullable: true
+          description: Bottler/importer name and address
+        countryOfOrigin:
+          type: string
+          nullable: true
+          description: Country of origin if stated
+        sulfiteDeclaration:
+          type: string
+          nullable: true
+          description: Sulfite declaration if present
+        ageStatement:
+          type: string
+          nullable: true
+          description: Age statement if present
+        rawText:
+          type: string
+          nullable: true
+          description: All visible text on the label (unstructured)
+
+    OcrSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        fields:
+          $ref: "#/components/schemas/ExtractedFields"
+        model:
+          type: string
+          description: Model ID used for extraction
+          example: anthropic/claude-3.5-sonnet
+
+    OcrErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        fields:
+          type: object
+          description: Empty object on error
+        error:
+          type: string
+          description: Human-readable error message
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    OpenRouterRequest:
+      type: object
+      required: [model, messages]
+      properties:
+        model:
+          type: string
+          description: OpenRouter model ID
+          example: anthropic/claude-3.5-sonnet
+        messages:
+          type: array
+          description: Chat messages array (OpenAI format)
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [system, user, assistant]
+              content:
+                description: Text string or array of content blocks (for vision)
+        max_tokens:
+          type: integer
+          description: Maximum tokens in response
+        temperature:
+          type: number
+          description: Sampling temperature (0-2)
+        top_p:
+          type: number
+          description: Nucleus sampling parameter
+        stream:
+          type: boolean
+          description: Whether to stream the response
+
+    OpenRouterResponse:
+      type: object
+      description: |
+        Standard OpenAI-compatible chat completion response. Forwarded as-is
+        from OpenRouter. See https://openrouter.ai/docs for full schema.
+      properties:
+        id:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  content:
+                    type: string
+              finish_reason:
+                type: string
+        model:
+          type: string
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+            completion_tokens:
+              type: integer
+            total_tokens:
+              type: integer

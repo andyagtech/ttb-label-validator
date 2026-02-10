@@ -187,7 +187,7 @@ function validateAbvFormat(
   const validFormat1 = /alcohol\s*(?:\(alc\))?\s+\d+\.?\d*\s*%\s*by\s+vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
   const validFormat2 = /\d+\.?\d*\s*%\s*alc\.?\s*(?:\(alc\))?\s*by\s*vol\.?(?:\s*\(vol\))?/i.test(text);
   const validFormat3 = /\d+\.?\d*\s*%\s*alcohol\s*(?:\(alc\))?\s+by\s+vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
-  const validFormat4 = /\d+\.?\d*\s*%\s*alc(?:ohol)?\s*(?:\(alc\))?\s*\/\s*vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
+  const validFormat4 = /\d+\.?\d*\s*%\s*alc(?:ohol)?\.?\s*(?:\(alc\))?\s*\/\s*vol(?:ume)?\.?(?:\s*\(vol\))?/i.test(text);
   const validFormat5 = /alcohol\s*(?:\(alc\))?\s*by\s+vol(?:ume)?(?:\s*\(vol\))?\s+\d+\.?\d*\s*%/i.test(text);
 
   if (validFormat1 || validFormat2 || validFormat3 || validFormat4 || validFormat5) {
