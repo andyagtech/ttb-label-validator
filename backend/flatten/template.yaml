@@ -15,13 +15,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ttb-ai-flatten
+      CodeUri: .
       Handler: lambda_function.handler
       Description: Flatten bottle/angled label images using OpenCV cylindrical projection or perspective rectification
-      Layers:
-        # Klayers OpenCV layer for Python 3.11 x86_64 (us-west-2)
-        # See: https://github.com/keithrozario/Klayers
-        # Update ARN for your region
-        - arn:aws:lambda:us-west-2:770693421928:layer:Klayers-p311-opencv-python-headless:3
       FunctionUrlConfig:
         AuthType: NONE
         Cors:
@@ -34,13 +30,9 @@ Resources:
             - Content-Type
       Environment:
         Variables:
-          # No env vars needed — pure image processing
-          PYTHONPATH: /opt/python
+          PYTHONPATH: /var/task
 
 Outputs:
   FlattenFunctionUrl:
     Description: Lambda Function URL for AI Flatten
     Value: !GetAtt FlattenFunctionUrl.FunctionUrl
-  FlattenFunctionArn:
-    Description: Lambda Function ARN
-    Value: !GetAtt FlattenFunction.Arn
