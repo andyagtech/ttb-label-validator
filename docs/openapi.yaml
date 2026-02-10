@@ -32,6 +32,8 @@ tags:
     description: Generic OpenRouter chat completions proxy
   - name: Health
     description: Service health check
+  - name: Queue
+    description: Review queue for submission management and agent review workflow
 
 paths:
   /health:
@@ -200,8 +202,316 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/queue:
+    get:
+      operationId: listSubmissions
+      tags: [Queue]
+      summary: List all submissions
+      description: Returns a lightweight summary of all submissions, optionally filtered by status.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated status filter (e.g. "submitted,in_review")
+      responses:
+        "200":
+          description: List of submissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submissions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/QueueItem"
+                  total:
+                    type: integer
+    post:
+      operationId: createSubmission
+      tags: [Queue]
+      summary: Create a new submission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [beverageCategory, productName]
+              properties:
+                beverageCategory:
+                  type: string
+                  enum: [beer, wine, spirits]
+                productName:
+                  type: string
+                submitterId:
+                  type: string
+                  default: anonymous
+                labels:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        "201":
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submission:
+                    $ref: "#/components/schemas/Submission"
+        "400":
+          description: Missing required fields
+
+  /api/queue/{id}:
+    get:
+      operationId: getSubmission
+      tags: [Queue]
+      summary: Get full submission detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full submission with labels, OCR data, and review history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submission:
+                    $ref: "#/components/schemas/Submission"
+        "404":
+          description: Submission not found
+    patch:
+      operationId: updateSubmissionStatus
+      tags: [Queue]
+      summary: Update submission status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [draft, submitted, in_review, approved, rejected, needs_revision]
+      responses:
+        "200":
+          description: Status updated
+        "404":
+          description: Submission not found
+    post:
+      operationId: submitReview
+      tags: [Queue]
+      summary: Submit a review decision for a submission
+      description: |
+        Adds a review record to the submission. Automatically updates the
+        submission status based on the decision (approve → approved, reject → rejected, etc.).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+            example:
+              decision: approve
+              reviewerId: Jenny Park
+              notes: All fields match application. Clean label.
+              findings: []
+              activeSeconds: 180
+      responses:
+        "200":
+          description: Review submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submission:
+                    $ref: "#/components/schemas/Submission"
+                  review:
+                    $ref: "#/components/schemas/ReviewRecord"
+        "400":
+          description: Missing decision or reviewerId
+        "404":
+          description: Submission not found
+
 components:
   schemas:
+    QueueItem:
+      type: object
+      description: Lightweight submission summary for queue list view
+      properties:
+        id:
+          type: string
+        productName:
+          type: string
+        beverageCategory:
+          type: string
+          enum: [beer, wine, spirits]
+        status:
+          type: string
+          enum: [draft, submitted, in_review, approved, rejected, needs_revision]
+        submitterId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        labelCount:
+          type: integer
+        reviewCount:
+          type: integer
+        lastReviewer:
+          type: string
+          nullable: true
+        lastDecision:
+          type: string
+          nullable: true
+
+    Submission:
+      type: object
+      properties:
+        id:
+          type: string
+        submitterId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [draft, submitted, in_review, approved, rejected, needs_revision]
+        beverageCategory:
+          type: string
+          enum: [beer, wine, spirits]
+        productName:
+          type: string
+        labels:
+          type: array
+          items:
+            type: object
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewRecord"
+        serverValidation:
+          type: object
+          nullable: true
+          properties:
+            completedAt:
+              type: string
+              format: date-time
+            findings:
+              type: array
+              items:
+                type: object
+            ocrResults:
+              type: object
+              additionalProperties:
+                type: string
+
+    ReviewRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        submissionId:
+          type: string
+        reviewerId:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        activeSeconds:
+          type: integer
+          description: Active review time in seconds
+        decision:
+          type: string
+          enum: [approve, reject, needs_revision, escalate]
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewFinding"
+        notes:
+          type: string
+        reviewType:
+          type: string
+          enum: [primary, secondary, audit, senior]
+
+    ReviewFinding:
+      type: object
+      properties:
+        checklistItemId:
+          type: string
+        severity:
+          type: string
+          enum: [error, warning, info]
+        message:
+          type: string
+        region:
+          type: object
+          nullable: true
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+            width:
+              type: number
+            height:
+              type: number
+
+    ReviewRequest:
+      type: object
+      required: [decision, reviewerId]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject, needs_revision, escalate]
+        reviewerId:
+          type: string
+        notes:
+          type: string
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewFinding"
+        startedAt:
+          type: string
+          format: date-time
+        activeSeconds:
+          type: integer
+
     OcrRequest:
       type: object
       required: [imageBase64]

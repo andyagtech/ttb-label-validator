@@ -220,6 +220,14 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Compare tab** — side-by-side form-vs-label comparison with Levenshtein fuzzy matching (handles Dave's "STONE'S THROW" vs "Stone's Throw" case)
 - **High-resolution export** — PNG or JPEG with quality control
 
+### Review Queue
+- **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed)
+- **`/queue/[id]` review page** — full review workspace with label checklists, OCR extracted fields, review history, findings editor, notes, and decision buttons (Approve / Reject / Needs Revision / Escalate)
+- **Live timer** — tracks active review time per session
+- **Review history** — full audit trail showing reviewer, decision, findings, time spent
+- **Mock seed data** — 8 realistic submissions across beer/wine/spirits with various statuses
+- **REST API** — `GET /api/queue`, `POST /api/queue`, `GET /api/queue/[id]`, `PATCH /api/queue/[id]`, `POST /api/queue/[id]` (submit review)
+
 ## Technical Stack
 
 | Layer | Technology |
@@ -242,7 +250,14 @@ ttb_cola_project/
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── page.tsx         # Main app — slots, editor, checklist, OCR
-│   │   │   ├── api/ocr/route.ts # Local dev OCR fallback route
+│   │   │   ├── queue/
+│   │   │   │   ├── page.tsx     # Review queue dashboard
+│   │   │   │   └── [id]/page.tsx # Submission review page
+│   │   │   ├── api/
+│   │   │   │   ├── ocr/route.ts # Local dev OCR fallback route
+│   │   │   │   └── queue/       # Queue REST API
+│   │   │   │       ├── route.ts # GET (list) + POST (create)
+│   │   │   │       └── [id]/route.ts # GET + PATCH + POST (review)
 │   │   │   └── layout.tsx
 │   │   ├── components/
 │   │   │   ├── CornerEditor.tsx  # 4-point corner editor with zoom/pan
@@ -260,6 +275,7 @@ ttb_cola_project/
 │   │   │   ├── validation.ts     # TTB validation rules engine (category-aware)
 │   │   │   ├── fuzzyMatch.ts     # Levenshtein fuzzy matching for form comparison
 │   │   │   ├── types.ts          # Checklist items, review types, submissions
+│   │   │   ├── store.ts          # In-memory submission store + mock seed data
 │   │   │   └── __tests__/        # Unit tests (Vitest)
 │   │   │       ├── validation.test.ts  # 31 tests — rules engine
 │   │   │       ├── ocr.test.ts         # 32 tests — OCR parsing

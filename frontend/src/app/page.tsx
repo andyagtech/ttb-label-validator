@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
+import Link from "next/link";
 import {
   RotateCcw,
   Download,
@@ -17,6 +18,7 @@ import {
   Loader2,
   ScanSearch,
   Sparkles,
+  ClipboardCheck,
 } from "lucide-react";
 import ImageInput from "@/components/ImageInput";
 import CornerEditor from "@/components/CornerEditor";
@@ -728,6 +730,14 @@ export default function Home() {
               <Plus size={13} />
               Batch
             </button>
+            <Link
+              href="/queue"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
+              title="View the review queue"
+            >
+              <ClipboardCheck size={13} />
+              Queue
+            </Link>
             <span className="text-xs text-gray-400">
               {filledSlots}/{totalSlots} labels uploaded
             </span>
