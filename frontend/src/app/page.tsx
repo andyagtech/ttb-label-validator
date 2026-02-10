@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   RotateCcw,
@@ -140,6 +140,29 @@ export default function Home() {
   const [showBatchUpload, setShowBatchUpload] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [isSharpening, setIsSharpening] = useState(false);
+  const [isAiFlattening, setIsAiFlattening] = useState(false);
+  const [aiFlattenResult, setAiFlattenResult] = useState<{ mode: string; details?: Record<string, unknown> } | null>(null);
+  const [aiFlattenCooldown, setAiFlattenCooldown] = useState(0);
+  const [flattenMode, setFlattenMode] = useState<"cylindrical" | "perspective">("cylindrical");
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cooldown timer for AI Flatten debounce
+  useEffect(() => {
+    if (aiFlattenCooldown > 0) {
+      cooldownRef.current = setInterval(() => {
+        setAiFlattenCooldown((prev) => {
+          if (prev <= 1) {
+            if (cooldownRef.current) clearInterval(cooldownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => {
+        if (cooldownRef.current) clearInterval(cooldownRef.current);
+      };
+    }
+  }, [aiFlattenCooldown > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeSlot = slots.find((s) => s.id === activeSlotId)!;
   const hasAnyImage = slots.some((s) => s.imageSrc !== null);
@@ -367,6 +390,66 @@ export default function Home() {
       setSmartCropDone(true);
     }, 50);
   }, [activeSlot, activeSlotId, updateSlot]);
+
+  // AI Flatten: send image to Lambda for OpenCV cylindrical unroll or perspective rectification
+  const handleAiFlatten = useCallback(async () => {
+    if (!activeSlot.sourceCanvas || isAiFlattening || aiFlattenCooldown > 0) return;
+    setIsAiFlattening(true);
+    setAiFlattenResult(null);
+
+    try {
+      // Convert canvas to base64
+      const dataUrl = activeSlot.sourceCanvas.toDataURL("image/png");
+      const imageBase64 = dataUrl.split(",")[1];
+
+      const res = await fetch("/api/flatten", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64,
+          mode: flattenMode,
+          mimeType: "image/png",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.imageBase64) {
+        // Load the flattened image back into a canvas
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0);
+
+          updateSlot(activeSlotId, {
+            sourceCanvas: canvas,
+            correctedImage: canvas.toDataURL("image/png"),
+            viewMode: "preview",
+          });
+
+          setAiFlattenResult({ mode: data.mode, details: data.details });
+          setIsAiFlattening(false);
+          setAiFlattenCooldown(10); // 10-second cooldown
+        };
+        img.src = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
+      } else {
+        // Show error in result
+        setAiFlattenResult({ mode: flattenMode, details: { error: data.error || "Unknown error" } });
+        setIsAiFlattening(false);
+        setAiFlattenCooldown(5); // shorter cooldown on error
+      }
+    } catch (err) {
+      setAiFlattenResult({
+        mode: flattenMode,
+        details: { error: err instanceof Error ? err.message : "Network error" },
+      });
+      setIsAiFlattening(false);
+      setAiFlattenCooldown(5);
+    }
+  }, [activeSlot, activeSlotId, flattenMode, isAiFlattening, aiFlattenCooldown, updateSlot]);
 
   // Apply perspective correction on active slot
   const applyCorrection = useCallback(() => {
@@ -918,6 +1001,35 @@ export default function Home() {
                     )}
                     {isSharpening ? "Sharpening..." : "Sharpen"}
                   </button>
+                  <div className="mr-2 flex items-center gap-0.5">
+                    <button
+                      onClick={handleAiFlatten}
+                      disabled={isAiFlattening || aiFlattenCooldown > 0 || !activeSlot.sourceCanvas}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-l-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+                      title={aiFlattenCooldown > 0 ? `Wait ${aiFlattenCooldown}s` : `AI Flatten (${flattenMode})`}
+                      data-walkthrough="ai-flatten"
+                    >
+                      {isAiFlattening ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={14} />
+                      )}
+                      {isAiFlattening
+                        ? "Flattening..."
+                        : aiFlattenCooldown > 0
+                        ? `Wait ${aiFlattenCooldown}s`
+                        : "AI Flatten"}
+                    </button>
+                    <select
+                      value={flattenMode}
+                      onChange={(e) => setFlattenMode(e.target.value as "cylindrical" | "perspective")}
+                      className="px-1.5 py-2 text-[10px] font-medium rounded-r-lg bg-rose-600 text-white border-l border-rose-400 cursor-pointer hover:bg-rose-700 transition"
+                      title="Flatten mode"
+                    >
+                      <option value="cylindrical">Bottle</option>
+                      <option value="perspective">Flat</option>
+                    </select>
+                  </div>
                   <button
                     onClick={handleClearSlot}
                     className="mr-3 text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
@@ -971,6 +1083,42 @@ export default function Home() {
                     </div>
                     <button
                       onClick={() => setAutoFitResult(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* AI Flatten result banner */}
+                {aiFlattenResult && (
+                  <div className={`mx-4 mt-3 px-3 py-2 rounded-lg flex items-center gap-3 text-xs ${
+                    aiFlattenResult.details?.error
+                      ? "bg-gradient-to-r from-red-50 to-orange-50 border border-red-200"
+                      : "bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200"
+                  }`}>
+                    <Sparkles size={14} className={aiFlattenResult.details?.error ? "text-red-500 shrink-0" : "text-pink-500 shrink-0"} />
+                    <div className="flex-1 text-gray-700">
+                      {aiFlattenResult.details?.error ? (
+                        <span><span className="font-medium text-red-700">AI Flatten failed:</span> {String(aiFlattenResult.details.error)}</span>
+                      ) : (
+                        <span>
+                          <span className="font-medium text-pink-700">AI Flatten applied</span>
+                          {" — "}
+                          <span className="text-gray-600">
+                            Mode: <strong>{aiFlattenResult.mode === "cylindrical" ? "Bottle Unroll" : "Perspective Rectify"}</strong>
+                            {typeof aiFlattenResult.details?.focal_length === "number" && (
+                              <> · Focal: {aiFlattenResult.details.focal_length}px</>
+                            )}
+                            {Array.isArray(aiFlattenResult.details?.output_size) && (
+                              <> · {Number(aiFlattenResult.details.output_size[0])}×{Number(aiFlattenResult.details.output_size[1])}px</>
+                            )}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setAiFlattenResult(null)}
                       className="text-gray-400 hover:text-gray-600"
                     >
                       <X size={14} />

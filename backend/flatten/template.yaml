@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TTB Label Validator — AI Flatten Lambda (OpenCV)
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 2048
+    Runtime: python3.11
+    Architectures:
+      - x86_64
+
+Resources:
+  FlattenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ttb-ai-flatten
+      Handler: lambda_function.handler
+      Description: Flatten bottle/angled label images using OpenCV cylindrical projection or perspective rectification
+      Layers:
+        # Klayers OpenCV layer for Python 3.11 x86_64 (us-west-2)
+        # See: https://github.com/keithrozario/Klayers
+        # Update ARN for your region
+        - arn:aws:lambda:us-west-2:770693421928:layer:Klayers-p311-opencv-python-headless:3
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - "*"
+          AllowMethods:
+            - POST
+            - OPTIONS
+          AllowHeaders:
+            - Content-Type
+      Environment:
+        Variables:
+          # No env vars needed — pure image processing
+          PYTHONPATH: /opt/python
+
+Outputs:
+  FlattenFunctionUrl:
+    Description: Lambda Function URL for AI Flatten
+    Value: !GetAtt FlattenFunctionUrl.FunctionUrl
+  FlattenFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt FlattenFunction.Arn

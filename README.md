@@ -238,6 +238,18 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **No network required** — runs entirely in-browser via Canvas API pixel manipulation
 - **Stackable** — can be applied multiple times for stronger effect
 
+### AI Flatten (OpenCV Lambda)
+- **Two modes** — "Bottle" (cylindrical unroll) for curved bottle labels, "Flat" (perspective rectify) for angled/flat-surface labels
+- **Cylindrical projection** — uses `f * tan((x - cx) / f)` mapping to compensate for bottle curvature, with vertical stretch via `sec(x/f)`
+- **Perspective rectification** — detects largest rectangular contour via Canny edges + contour approximation, applies 4-point warp with auto-orientation
+- **Python Lambda** — OpenCV-powered (`backend/flatten/`), uses Klayers opencv-python-headless layer, 2048 MB memory
+- **SAM template** — `backend/flatten/template.yaml` for one-command deployment via `sam deploy`
+- **Unsharp mask post-processing** — light sharpening applied after both flatten modes for crisp text
+- **Debounce** — 10-second client-side cooldown after each request; server-side rate limit of 5 requests/minute/IP with `X-RateLimit-*` headers
+- **Split button UI** — pink/rose gradient button with mode dropdown (Bottle/Flat) in the editor toolbar
+- **Result banner** — shows mode, focal length, output dimensions; error state with red styling
+- **API route** — `POST /api/flatten` with `{ imageBase64, mode, mimeType, focalMultiplier? }`
+
 ### Review Queue
 - **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed)
 - **`/queue/[id]` review page** — full review workspace with label checklists, OCR extracted fields, review history, findings editor, notes, and decision buttons (Approve / Reject / Needs Revision / Escalate)

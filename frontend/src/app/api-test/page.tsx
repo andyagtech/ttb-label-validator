@@ -54,6 +54,14 @@ const ENDPOINTS: EndpointDef[] = [
     needsBody: false,
   },
   {
+    id: "flatten",
+    method: "POST",
+    path: "/api/flatten",
+    description: "AI Flatten — cylindrical unroll (bottles) or perspective rectify (flat labels) via OpenCV Lambda",
+    needsImage: true,
+    needsBody: false,
+  },
+  {
     id: "queue-list",
     method: "GET",
     path: "/api/queue",
@@ -254,7 +262,11 @@ export default function ApiTestPage() {
         }
 
         (fetchOptions.headers as Record<string, string>)["Content-Type"] = "application/json";
-        fetchOptions.body = JSON.stringify({ imageBase64: base64, mimeType });
+        const imageBody: Record<string, string> = { imageBase64: base64, mimeType };
+        if (selectedEndpoint.id === "flatten") {
+          imageBody.mode = "cylindrical"; // default; user can edit body for "perspective"
+        }
+        fetchOptions.body = JSON.stringify(imageBody);
       } else if (selectedEndpoint.needsBody) {
         (fetchOptions.headers as Record<string, string>)["Content-Type"] = "application/json";
         fetchOptions.body = bodyText;
