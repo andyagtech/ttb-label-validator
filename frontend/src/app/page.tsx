@@ -23,6 +23,7 @@ import CornerEditor from "@/components/CornerEditor";
 import MeshWarpEditor from "@/components/MeshWarpEditor";
 import LabelChecklist from "@/components/LabelChecklist";
 import FormComparison from "@/components/FormComparison";
+import BatchUpload from "@/components/BatchUpload";
 import {
   Point,
   SurfaceMode,
@@ -130,6 +131,7 @@ export default function Home() {
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const [categoryConfirmed, setCategoryConfirmed] = useState(false);
   const [checklistTab, setChecklistTab] = useState<"checklist" | "data" | "compare">("checklist");
+  const [showBatchUpload, setShowBatchUpload] = useState(false);
 
   const activeSlot = slots.find((s) => s.id === activeSlotId)!;
   const hasAnyImage = slots.some((s) => s.imageSrc !== null);
@@ -718,6 +720,14 @@ export default function Home() {
                 ))}
               </div>
             </div>
+            <button
+              onClick={() => setShowBatchUpload(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
+              title="Upload and process multiple label images at once"
+            >
+              <Plus size={13} />
+              Batch
+            </button>
             <span className="text-xs text-gray-400">
               {filledSlots}/{totalSlots} labels uploaded
             </span>
@@ -1745,6 +1755,15 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* Batch Upload Modal */}
+      {showBatchUpload && (
+        <BatchUpload
+          category={beverageCategory}
+          ocrTier="ai"
+          onClose={() => setShowBatchUpload(false)}
+        />
+      )}
     </div>
   );
 }
