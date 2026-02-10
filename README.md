@@ -39,51 +39,134 @@ NEXT_PUBLIC_LAMBDA_URL=https://your-lambda-url.lambda-url.us-east-1.on.aws
 
 ## Architecture
 
+### System Overview
+
+```mermaid
+flowchart TB
+    subgraph Browser["Browser — Next.js 14 / React / TailwindCSS"]
+        Upload["Image Upload\n& Label Tabs"]
+        Editor["Corner / Mesh\nWarp Editor"]
+        Canvas["Perspective Correction\n& Cylindrical Unwrap\n(Canvas API)"]
+        T1["Tier 1: Quick Check\n(Tesseract.js)\nBrowser-side OCR"]
+        T2Trigger["Tier 2: AI Extract\n(request)"]
+        Validation["Validation Rules Engine\n(category-aware)"]
+        Checklist["Checklist / Data / Compare\nUI Tabs"]
+        Batch["Batch Upload\nQueue + CSV Export"]
+
+        Upload --> Editor --> Canvas
+        Canvas --> T1
+        Canvas --> T2Trigger
+        T1 --> Validation
+        Validation --> Checklist
+        Batch --> T2Trigger
+    end
+
+    subgraph Vercel["Vercel — Next.js API Route (local dev / fallback)"]
+        ApiOcr["POST /api/ocr"]
+    end
+
+    subgraph Lambda["AWS Lambda — OpenRouter Proxy"]
+        LambdaRouter["Lambda Handler\nCORS · Routing"]
+        Health["GET /health"]
+        OcrHandler["POST /ocr\nStructured extraction prompt"]
+        ProxyHandler["POST /openrouter\nGeneric chat proxy"]
+
+        LambdaRouter --> Health
+        LambdaRouter --> OcrHandler
+        LambdaRouter --> ProxyHandler
+    end
+
+    subgraph OpenRouter["OpenRouter API"]
+        Claude["Claude 3.5 Sonnet\n(Vision Model)"]
+    end
+
+    T2Trigger -- "base64 image\n+ mimeType" --> ApiOcr
+    T2Trigger -- "base64 image\n+ mimeType" --> LambdaRouter
+    ApiOcr -- "Chat Completions\n+ image_url" --> Claude
+    OcrHandler -- "Chat Completions\n+ image_url" --> Claude
+    ProxyHandler -- "Chat Completions" --> Claude
+    Claude -- "Structured JSON\n(12 TTB fields)" --> OcrHandler
+    Claude -- "Structured JSON" --> ApiOcr
+    OcrHandler -- "{ success, fields, model }" --> T2Trigger
+    ApiOcr -- "{ success, fields, model }" --> T2Trigger
+    T2Trigger --> Validation
 ```
-┌─────────────────────────────────────────────────────┐
-│  Browser (Next.js 14 / React / TailwindCSS)         │
-│                                                     │
-│  ┌──────────────┐   ┌──────────────┐                │
-│  │ Image Upload  │──▶│ Corner/Mesh  │                │
-│  │ & Label Tabs  │   │ Warp Editor  │                │
-│  └──────────────┘   └──────┬───────┘                │
-│                            │                        │
-│                     ┌──────▼───────┐                │
-│                     │  Perspective  │                │
-│                     │  Correction   │                │
-│                     │  (Canvas API) │                │
-│                     └──────┬───────┘                │
-│                            │                        │
-│            ┌───────────────┼───────────────┐        │
-│            ▼               ▼               │        │
-│  ┌─────────────┐  ┌───────────────┐        │        │
-│  │ Tier 1: OCR │  │ Tier 2: OCR   │        │        │
-│  │ Quick Check │  │ AI Extract    │        │        │
-│  │ (Tesseract) │  │ (via Lambda)  │        │        │
-│  └──────┬──────┘  └───────┬───────┘        │        │
-│         │                 │                │        │
-│         ▼                 │                ▼        │
-│  ┌──────────────┐         │       ┌────────────┐    │
-│  │ Validation   │◀────────┘       │ Checklist  │    │
-│  │ Rules Engine │────────────────▶│ UI         │    │
-│  └──────────────┘                 └────────────┘    │
-└─────────────────────────────────────────────────────┘
-                            │
-                   ┌────────▼────────┐
-                   │  AWS Lambda      │
-                   │  (OpenRouter     │
-                   │   Proxy)         │
-                   │                  │
-                   │  POST /ocr       │
-                   │  POST /openrouter│
-                   │  GET  /health    │
-                   └────────┬────────┘
-                            │
-                   ┌────────▼────────┐
-                   │  OpenRouter API  │
-                   │  (Claude 3.5     │
-                   │   Sonnet Vision) │
-                   └─────────────────┘
+
+### Backend Detail
+
+```mermaid
+flowchart LR
+    subgraph Client["Client Request"]
+        Req["POST /ocr\n{ imageBase64, mimeType }"]
+    end
+
+    subgraph Lambda["AWS Lambda Function"]
+        Entry["index.ts\nhandler()"]
+        CORS["CORS Headers\n(ALLOWED_ORIGINS)"]
+        Route{"Route\nmatching"}
+        OCR["handlers/ocr.ts\nhandleOcr()"]
+        Proxy["handlers/openrouter.ts\nhandleOpenRouter()"]
+        HealthEP["GET /health\n{ status: ok }"]
+
+        Entry --> CORS --> Route
+        Route -- "/ocr" --> OCR
+        Route -- "/openrouter" --> Proxy
+        Route -- "/health" --> HealthEP
+    end
+
+    subgraph Processing["OCR Processing"]
+        Prompt["Structured Extraction Prompt\n(12 TTB field keys)"]
+        Parse["JSON Parse\n(regex fallback)"]
+    end
+
+    subgraph External["OpenRouter API"]
+        Model["Claude 3.5 Sonnet\nVision Model"]
+    end
+
+    Req --> Entry
+    OCR --> Prompt --> Model
+    Model -- "JSON response" --> Parse
+    Parse -- "{ success, fields, model }" --> Req
+
+    style Lambda fill:#f0f4ff,stroke:#3b82f6
+    style External fill:#fef3c7,stroke:#f59e0b
+```
+
+### Environment & Deployment
+
+```mermaid
+flowchart TB
+    subgraph Dev["Local Development"]
+        DevServer["next dev\nlocalhost:3000"]
+        DevRoute["POST /api/ocr\n(Next.js API route)"]
+        DevServer --> DevRoute
+    end
+
+    subgraph Prod["Production"]
+        VercelApp["Vercel\nfrontend-purlpal.vercel.app"]
+        LambdaFn["AWS Lambda\nFunction URL"]
+        VercelApp -- "NEXT_PUBLIC_LAMBDA_URL" --> LambdaFn
+    end
+
+    subgraph Env["Environment Variables"]
+        E1["OPENROUTER_API_KEY — server-side only"]
+        E2["OPENROUTER_MODEL — default: claude-3.5-sonnet"]
+        E3["OCR_ENABLED=true — Next.js route gate"]
+        E4["NEXT_PUBLIC_LAMBDA_URL — production Lambda URL"]
+        E5["ALLOWED_ORIGINS — Lambda CORS whitelist"]
+    end
+
+    DevRoute -- "reads" --> E1
+    DevRoute -- "reads" --> E2
+    DevRoute -- "reads" --> E3
+    LambdaFn -- "reads" --> E1
+    LambdaFn -- "reads" --> E2
+    LambdaFn -- "reads" --> E5
+    VercelApp -- "reads" --> E4
+
+    style Dev fill:#ecfdf5,stroke:#10b981
+    style Prod fill:#eff6ff,stroke:#3b82f6
+    style Env fill:#fefce8,stroke:#eab308
 ```
 
 ### Two-Tier OCR Strategy
