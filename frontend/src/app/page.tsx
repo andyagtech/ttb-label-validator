@@ -15,6 +15,8 @@ import {
   AlertCircle,
   Wand2,
   Loader2,
+  ScanSearch,
+  Sparkles,
 } from "lucide-react";
 import ImageInput from "@/components/ImageInput";
 import CornerEditor from "@/components/CornerEditor";
@@ -40,6 +42,18 @@ import {
   getChecklistTemplate,
 } from "@/lib/types";
 import { autoEstimateCurvature, AutoFitResult } from "@/lib/autofit";
+import {
+  runServerOcr,
+  runTesseractOcr,
+  parseOcrText,
+  applyExtractedFields,
+  ExtractedFields,
+  TESSERACT_ENABLED,
+} from "@/lib/ocr";
+import {
+  validateExtractedFields,
+  applyValidationResults,
+} from "@/lib/validation";
 
 type ViewMode = "edit" | "preview";
 type WarpMode = "simple" | "mesh";
@@ -100,6 +114,9 @@ export default function Home() {
   const [exportFormat, setExportFormat] = useState<"png" | "jpeg">("png");
   const [isAutoFitting, setIsAutoFitting] = useState(false);
   const [autoFitResult, setAutoFitResult] = useState<AutoFitResult | null>(null);
+  const [isQuickChecking, setIsQuickChecking] = useState(false);
+  const [isServerExtracting, setIsServerExtracting] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState<string | null>(null);
 
   const activeSlot = slots.find((s) => s.id === activeSlotId)!;
 
@@ -321,6 +338,120 @@ export default function Home() {
     },
     [activeSlotId]
   );
+
+  // --- OCR Handlers ---
+
+  // Helper: get the corrected image canvas for the active slot
+  const getCorrectedCanvas = useCallback((): HTMLCanvasElement | null => {
+    if (!activeSlot.sourceCanvas) return null;
+
+    if (activeSlot.warpMode === "mesh" && activeSlot.meshEdges) {
+      const { width, height } = computeMeshOutputDimensions(activeSlot.meshEdges);
+      return applyMeshWarp(activeSlot.sourceCanvas, activeSlot.meshEdges, width, height);
+    } else if (activeSlot.corners) {
+      const { width, height } = computeOutputDimensions(activeSlot.corners);
+      return applyTransform(
+        activeSlot.sourceCanvas,
+        activeSlot.corners,
+        width,
+        height,
+        activeSlot.surfaceMode,
+        activeSlot.curvature,
+        activeSlot.cylinderAxis,
+        activeSlot.crossCurvature
+      );
+    }
+    return null;
+  }, [activeSlot]);
+
+  // Helper: run validation and update checklist
+  const applyOcrResults = useCallback(
+    (fields: ExtractedFields, tier: "quick" | "full") => {
+      const labelPosition =
+        activeSlotId === "front" ? "front" : activeSlotId === "back" ? "back" : "other";
+
+      // Apply extracted values to checklist
+      let updatedChecklist = applyExtractedFields(activeSlot.checklist, fields);
+
+      // Run validation rules
+      const validationResults = validateExtractedFields(
+        fields,
+        beverageCategory,
+        labelPosition as "front" | "back" | "other"
+      );
+      updatedChecklist = applyValidationResults(updatedChecklist, validationResults);
+
+      updateSlot(activeSlotId, { checklist: updatedChecklist });
+
+      const passCount = validationResults.filter((r) => r.pass).length;
+      const failCount = validationResults.filter((r) => !r.pass).length;
+      setOcrStatus(
+        `${tier === "quick" ? "Quick Check" : "AI Extract"}: ${passCount} passed, ${failCount} issue${failCount !== 1 ? "s" : ""} found`
+      );
+    },
+    [activeSlot, activeSlotId, beverageCategory, updateSlot]
+  );
+
+  // Tier 1: Quick Check — browser-side Tesseract.js OCR
+  const handleQuickCheck = useCallback(async () => {
+    const canvas = getCorrectedCanvas();
+    if (!canvas) {
+      setOcrStatus("Generate a preview first before running Quick Check.");
+      return;
+    }
+
+    setIsQuickChecking(true);
+    setOcrStatus("Running browser OCR...");
+
+    try {
+      if (TESSERACT_ENABLED) {
+        const rawText = await runTesseractOcr(canvas);
+        const fields = parseOcrText(rawText);
+        applyOcrResults(fields, "quick");
+      } else {
+        // Tesseract not enabled — use heuristic presence check on the image
+        // Fall back to server OCR as quick check
+        setOcrStatus("Tesseract.js not enabled. Running server extraction instead...");
+        const dataUrl = canvas.toDataURL("image/png");
+        const base64 = dataUrl.split(",")[1];
+        const fields = await runServerOcr(base64, "image/png");
+        applyOcrResults(fields, "quick");
+      }
+    } catch (err) {
+      console.error("[Quick Check] Error:", err);
+      setOcrStatus("Quick Check failed. Try AI Extract instead.");
+    } finally {
+      setIsQuickChecking(false);
+    }
+  }, [getCorrectedCanvas, applyOcrResults]);
+
+  // Tier 2: AI Extract — server-side vision model OCR
+  const handleServerExtract = useCallback(async () => {
+    const canvas = getCorrectedCanvas();
+    if (!canvas) {
+      setOcrStatus("Generate a preview first before running AI Extract.");
+      return;
+    }
+
+    setIsServerExtracting(true);
+    setOcrStatus("Sending to AI vision model...");
+
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const base64 = dataUrl.split(",")[1];
+      const startTime = Date.now();
+      const fields = await runServerOcr(base64, "image/png");
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      applyOcrResults(fields, "full");
+      setOcrStatus((prev) => `${prev} (${elapsed}s)`);
+    } catch (err) {
+      console.error("[AI Extract] Error:", err);
+      setOcrStatus("AI extraction failed. Check your connection and try again.");
+    } finally {
+      setIsServerExtracting(false);
+    }
+  }, [getCorrectedCanvas, applyOcrResults]);
 
   // Toggle a checklist item for active slot
   const handleChecklistToggle = useCallback(
@@ -617,12 +748,56 @@ export default function Home() {
 
               {/* Pre-submission checklist */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 mt-4">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">
-                  Pre-Submission Checklist — {activeSlot.name}
-                </h3>
-                <p className="text-xs text-gray-500 mb-3">
-                  Verify these items before submitting. Checked items reduce review time and rejection risk.
-                </p>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800">
+                      Pre-Submission Checklist — {activeSlot.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Verify these items before submitting. Checked items reduce review time and rejection risk.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0 ml-4">
+                    <button
+                      onClick={handleQuickCheck}
+                      disabled={isQuickChecking || isServerExtracting || !activeSlot.sourceCanvas}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      {isQuickChecking ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <ScanSearch size={13} />
+                      )}
+                      Quick Check
+                    </button>
+                    <button
+                      onClick={handleServerExtract}
+                      disabled={isQuickChecking || isServerExtracting || !activeSlot.sourceCanvas}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-violet-500 to-blue-500 text-white hover:from-violet-600 hover:to-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                    >
+                      {isServerExtracting ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={13} />
+                      )}
+                      AI Extract
+                    </button>
+                  </div>
+                </div>
+
+                {/* OCR status bar */}
+                {ocrStatus && (
+                  <div className="mb-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-between text-xs">
+                    <span className="text-blue-700">{ocrStatus}</span>
+                    <button
+                      onClick={() => setOcrStatus(null)}
+                      className="text-blue-400 hover:text-blue-600 ml-2"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+
                 <LabelChecklist
                   items={activeSlot.checklist}
                   onToggle={handleChecklistToggle}
