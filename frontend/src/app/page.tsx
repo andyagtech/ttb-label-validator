@@ -22,6 +22,7 @@ import ImageInput from "@/components/ImageInput";
 import CornerEditor from "@/components/CornerEditor";
 import MeshWarpEditor from "@/components/MeshWarpEditor";
 import LabelChecklist from "@/components/LabelChecklist";
+import FormComparison from "@/components/FormComparison";
 import {
   Point,
   SurfaceMode,
@@ -128,7 +129,7 @@ export default function Home() {
   const [isServerExtracting, setIsServerExtracting] = useState(false);
   const [ocrStatus, setOcrStatus] = useState<string | null>(null);
   const [categoryConfirmed, setCategoryConfirmed] = useState(false);
-  const [checklistTab, setChecklistTab] = useState<"checklist" | "data">("checklist");
+  const [checklistTab, setChecklistTab] = useState<"checklist" | "data" | "compare">("checklist");
 
   const activeSlot = slots.find((s) => s.id === activeSlotId)!;
   const hasAnyImage = slots.some((s) => s.imageSrc !== null);
@@ -1029,7 +1030,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Tab toggle: Checklist vs Data */}
+                {/* Tab toggle: Checklist / Data / Compare */}
                 <div className="flex border-b border-gray-200 mb-3">
                   <button
                     onClick={() => setChecklistTab("checklist")}
@@ -1056,6 +1057,17 @@ export default function Home() {
                       </span>
                     )}
                   </button>
+                  <button
+                    onClick={() => setChecklistTab("compare")}
+                    className={`px-4 py-2 text-xs font-medium border-b-2 transition ${
+                      checklistTab === "compare"
+                        ? "border-blue-600 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                    title="Compare COLA application form values against label OCR results"
+                  >
+                    Compare
+                  </button>
                 </div>
 
                 {checklistTab === "checklist" ? (
@@ -1064,6 +1076,8 @@ export default function Home() {
                     onToggle={handleChecklistToggle}
                     onValueChange={handleChecklistValueChange}
                   />
+                ) : checklistTab === "compare" ? (
+                  <FormComparison extractedFields={activeSlot.extractedFields} />
                 ) : (
                   <div className="space-y-3">
                     {activeSlot.extractedFields ? (

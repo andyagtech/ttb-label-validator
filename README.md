@@ -25,16 +25,16 @@ npm run dev
 Create `frontend/.env.local`:
 
 ```env
-# Lambda proxy for AI extraction (production)
-NEXT_PUBLIC_LAMBDA_URL=https://your-lambda-url.lambda-url.us-east-1.on.aws
+# Browser-side OCR — Tesseract.js for Quick Check
+NEXT_PUBLIC_TESSERACT_ENABLED=true
 
-# Browser-side OCR — set to "true" to enable Tesseract.js
-NEXT_PUBLIC_TESSERACT_ENABLED=false
-
-# Local dev fallback (only needed without Lambda)
-OCR_ENABLED=false
+# Server-side OCR — Claude 3.5 Sonnet via OpenRouter for AI Extract
+OCR_ENABLED=true
 OPENROUTER_API_KEY=sk-or-...
 OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
+
+# Optional: Lambda proxy (production). If unset, uses local /api/ocr route.
+NEXT_PUBLIC_LAMBDA_URL=https://your-lambda-url.lambda-url.us-east-1.on.aws
 ```
 
 ## Architecture
@@ -105,23 +105,30 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Perspective correction** — 4-point corner alignment with bilinear interpolation
 - **Cylindrical unwrap** — compensate for label curvature on round bottles/cans
 - **Mesh warp** — multi-point spline-based edge tracing for precise flattening
-- **Auto-flatten** — automatic curvature estimation via Sobel edge orientation analysis
+- **Auto-flatten** (photos) — automatic curvature estimation via Sobel edge orientation analysis
+- **AI Smart Crop** (graphics) — edge-detection-based label boundary estimation for flat design files
+- **Multi-label auto-split** — detects landscape/portrait orientation, splits image into Front+Back with auto-set corners
 - **Configurable control points** — 3-6 points per edge for mesh warp
 
 ### OCR & Validation
-- **Quick Check** — browser-side OCR for instant pre-submission feedback
-- **AI Extract** — vision model extracts all TTB-required fields as structured data
+- **Quick Check** — browser-side OCR (Tesseract.js) for instant pre-submission feedback
+- **AI Extract** — vision model (Claude 3.5 Sonnet) extracts all TTB-required fields as structured data
+- **Data tab** — view and edit all extracted fields, re-run validation, view raw OCR text and JSON
 - **Validation rules engine** with three rule categories:
   - **Presence rules** — are required fields present? (brand name, class/type, ABV, etc.)
   - **Format rules** — does the content match TTB formatting requirements?
     - Government warning: all-caps "GOVERNMENT WARNING:", both prescribed statements
-    - ABV: rejects "ABV" abbreviation, accepts "Alcohol __% by volume" or "__% Alc. By Vol."
-    - Net contents: validates unit presence (mL, L, FL OZ)
+    - ABV: rejects "ABV" abbreviation, accepts "Alcohol __% by volume", "__% Alc. By Vol.", "__% Alc./Vol." + parenthetical forms
+    - Net contents: category-aware — American measure required for beer, metric for wine/spirits
+    - ABV optionality: mandatory for wine/spirits, optional for malt beverages per 27 CFR 7.71
   - **Cross-field rules** — conditional logic (varietal → appellation required, vintage → appellation required)
 
 ### User Experience
+- **Guided onboarding** — coach marks, beverage category selector, graphic vs. photo chooser
 - **Category-aware checklist** — different rules for wine, beer, and spirits
+- **Multi-label question** — "Does this file have more than one label?" with auto-split into Front+Back
 - **Front/back label tabs** — plus custom label slots (strip labels, neck labels)
+- **Data tab** — inspect, edit, and re-validate extracted fields; view raw text and JSON
 - **Inline value editing** — correct OCR results directly in the checklist
 - **Auto-detected vs manual items** — clear visual distinction with confidence scores
 - **High-resolution export** — PNG or JPEG with quality control
@@ -159,8 +166,9 @@ ttb_cola_project/
 │   │   │   ├── perspective.ts    # Perspective transform + cylindrical unwrap
 │   │   │   ├── meshwarp.ts       # Coons patch mesh warp + curved edge generation
 │   │   │   ├── autofit.ts        # Curvature auto-estimation (Sobel analysis)
+│   │   │   ├── smartcrop.ts      # Edge-detection label boundary detection (graphics)
 │   │   │   ├── ocr.ts            # Tesseract.js + server OCR + field mapping
-│   │   │   ├── validation.ts     # TTB validation rules engine
+│   │   │   ├── validation.ts     # TTB validation rules engine (category-aware)
 │   │   │   └── types.ts          # Checklist items, review types, submissions
 │   │   └── types/
 │   │       └── tesseract.d.ts    # Tesseract.js type declarations
@@ -198,11 +206,11 @@ Different use cases need different trade-offs:
 - **Reviewers** need accurate structured extraction — a vision model is slower but far more reliable for field-level extraction
 
 ### Trade-offs & Limitations
-- **No batch upload yet** — processing is single-label; batch would require a queue/progress UI
-- **No application form comparison** — the tool validates what's on the label, but doesn't compare against a separate COLA application form
 - **Bold detection** — OCR can't reliably detect bold text, so the "GOVERNMENT WARNING:" bold requirement is flagged for manual review
 - **Tesseract.js accuracy** — browser OCR is significantly less accurate than the vision model, especially for curved or low-contrast labels. It's a quick sanity check, not a substitute for AI Extract.
 - **No persistent storage** — all state is in-memory; refreshing the page loses progress
+- **ABV type size** — 27 CFR mandates max type size for malt beverage ABV (3mm/4mm); can't validate via OCR, noted as manual check
+- **Domestic vs. imported** — name & address placement rules differ; currently checks both positions but doesn't distinguish domestic/imported
 
 ## Deployment
 
@@ -213,7 +221,12 @@ cd frontend
 vercel --prod
 ```
 
-Set `NEXT_PUBLIC_LAMBDA_URL` in Vercel environment variables.
+Set these Vercel environment variables:
+- `NEXT_PUBLIC_LAMBDA_URL` — Lambda proxy URL (optional)
+- `NEXT_PUBLIC_TESSERACT_ENABLED` — `true` for browser-side OCR
+- `OCR_ENABLED` — `true` for server-side AI Extract
+- `OPENROUTER_API_KEY` — your OpenRouter API key
+- `OPENROUTER_MODEL` — `anthropic/claude-3.5-sonnet`
 
 ### Backend (AWS Lambda)
 

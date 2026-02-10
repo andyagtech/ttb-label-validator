@@ -336,6 +336,113 @@ function validatePresence(
 }
 
 // ---------------------------------------------------------------------------
+// Class/Type Designation Lookup — per TTB Beverage Alcohol Manual
+// ---------------------------------------------------------------------------
+
+const BEER_DESIGNATIONS = [
+  "ale", "beer", "lager", "stout", "porter", "malt liquor", "malt beverage",
+  "india pale ale", "ipa", "pale ale", "amber ale", "brown ale", "blonde ale",
+  "golden ale", "cream ale", "scotch ale", "old ale", "barley wine", "barleywine",
+  "wheat beer", "hefeweizen", "witbier", "weissbier", "dunkelweizen",
+  "pilsner", "pilsener", "bock", "doppelbock", "maibock", "eisbock",
+  "dunkel", "schwarzbier", "vienna lager", "oktoberfest", "märzen", "marzen",
+  "kölsch", "kolsch", "altbier", "rauchbier",
+  "saison", "farmhouse ale", "belgian ale", "tripel", "dubbel", "quadrupel",
+  "sour ale", "gose", "berliner weisse", "lambic", "gueuze", "flanders red",
+  "hard seltzer", "hard cider", "flavored malt beverage", "malt cooler",
+  "near beer", "non-alcoholic malt beverage",
+];
+
+const WINE_DESIGNATIONS = [
+  "red wine", "white wine", "rosé", "rose", "blush wine",
+  "sparkling wine", "champagne", "prosecco", "cava", "crémant", "cremant",
+  "dessert wine", "fortified wine", "port", "sherry", "madeira", "marsala",
+  "vermouth", "aperitif wine",
+  "table wine", "light wine",
+  "cabernet sauvignon", "merlot", "pinot noir", "syrah", "shiraz",
+  "zinfandel", "malbec", "tempranillo", "sangiovese", "grenache", "nebbiolo",
+  "chardonnay", "sauvignon blanc", "riesling", "pinot grigio", "pinot gris",
+  "gewürztraminer", "gewurztraminer", "viognier", "chenin blanc", "semillon",
+  "muscat", "moscato", "moscatel",
+  "fruit wine", "apple wine", "berry wine", "honey wine", "mead",
+  "sake", "rice wine",
+];
+
+const SPIRITS_DESIGNATIONS = [
+  "whiskey", "whisky", "bourbon", "rye whiskey", "corn whiskey",
+  "kentucky straight bourbon", "kentucky straight bourbon whiskey",
+  "straight bourbon whiskey", "straight bourbon", "straight rye whiskey",
+  "tennessee whiskey", "scotch whisky", "scotch", "irish whiskey",
+  "canadian whisky", "blended whiskey", "blended whisky",
+  "single malt", "single malt scotch whisky", "single malt whiskey",
+  "vodka", "flavored vodka",
+  "gin", "london dry gin", "dry gin", "old tom gin",
+  "rum", "white rum", "gold rum", "dark rum", "aged rum", "spiced rum",
+  "tequila", "blanco tequila", "reposado tequila", "añejo tequila", "anejo tequila",
+  "mezcal", "sotol", "raicilla",
+  "brandy", "cognac", "armagnac", "grappa", "pisco", "eau de vie",
+  "liqueur", "cordial", "cream liqueur",
+  "absinthe", "aquavit", "baijiu", "cachaça", "cachaca", "soju", "shochu",
+];
+
+function validateClassType(
+  text: string | undefined,
+  category: BeverageCategory
+): ValidationResult[] {
+  const results: ValidationResult[] = [];
+  const id = "class_type";
+
+  if (!text) return results; // presence is checked elsewhere
+
+  const normalized = text.toLowerCase().trim();
+  const designations =
+    category === "beer" ? BEER_DESIGNATIONS
+    : category === "wine" ? WINE_DESIGNATIONS
+    : SPIRITS_DESIGNATIONS;
+
+  const matched = designations.some((d) => normalized.includes(d));
+
+  if (matched) {
+    results.push({
+      ruleId: "class_type_recognized",
+      checklistItemId: id,
+      severity: "info",
+      message: `"${text}" is a recognized TTB ${category} designation.`,
+      pass: true,
+    });
+  } else {
+    // Check if it matches a DIFFERENT category's designations
+    const allOther = [
+      ...(category !== "beer" ? BEER_DESIGNATIONS : []),
+      ...(category !== "wine" ? WINE_DESIGNATIONS : []),
+      ...(category !== "spirits" ? SPIRITS_DESIGNATIONS : []),
+    ];
+    const crossMatch = allOther.some((d) => normalized.includes(d));
+
+    if (crossMatch) {
+      results.push({
+        ruleId: "class_type_wrong_category",
+        checklistItemId: id,
+        severity: "warning",
+        message: `"${text}" appears to be a designation for a different beverage category. Verify the selected category is correct.`,
+        pass: false,
+      });
+    } else {
+      results.push({
+        ruleId: "class_type_unrecognized",
+        checklistItemId: id,
+        severity: "warning",
+        message: `"${text}" is not in the standard TTB designation list for ${category}. This may still be valid — verify against TTB guidelines.`,
+        suggestion: `Common ${category} designations include: ${designations.slice(0, 6).map(d => `"${d}"`).join(", ")}, etc.`,
+        pass: false,
+      });
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Cross-field rules
 // ---------------------------------------------------------------------------
 
@@ -392,6 +499,7 @@ export function validateExtractedFields(
   if (labelPosition === "front" || labelPosition === "other") {
     results.push(validatePresence(fields.brandName, "brand_name", "Brand name"));
     results.push(validatePresence(fields.classType, "class_type", "Class/type designation"));
+    results.push(...validateClassType(fields.classType, category));
   }
 
   // --- Format validations ---
