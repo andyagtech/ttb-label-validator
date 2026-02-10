@@ -196,6 +196,51 @@ flowchart TB
     style Env fill:#fefce8,stroke:#eab308
 ```
 
+### Production Path
+
+The current prototype is serverless-first and infrastructure-agnostic. The same application logic runs on production backing services with no rewrites. See [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md) for full capacity analysis.
+
+```mermaid
+flowchart TB
+    subgraph Current["Current (POC)"]
+        direction LR
+        C1["In-memory store"]
+        C2["No auth"]
+        C3["Sequential batch"]
+        C4["In-memory rate limiter"]
+        C5["Commercial AWS"]
+    end
+
+    subgraph Production["Production (Gov Scale)"]
+        direction LR
+        P1["PostgreSQL (RDS)\nor DynamoDB"]
+        P2["Cognito / Azure AD\n+ MFA + RBAC"]
+        P3["SQS + Lambda fan-out\n300 labels → 30s"]
+        P4["Redis / DynamoDB\ntoken-bucket"]
+        P5["AWS GovCloud\n+ FedRAMP"]
+    end
+
+    C1 -- "swap store.ts\n(same API)" --> P1
+    C2 -- "add NextAuth.js\n+ Cognito" --> P2
+    C3 -- "add SQS\nworker Lambdas" --> P3
+    C4 -- "add ElastiCache" --> P4
+    C5 -- "migrate region\n(same services)" --> P5
+
+    subgraph Unchanged["No Change Required"]
+        U1["React UI components"]
+        U2["Client-side image processing"]
+        U3["Validation rules engine"]
+        U4["Lambda OCR / Flatten"]
+        U5["77 unit tests"]
+    end
+
+    style Current fill:#fef3c7,stroke:#f59e0b
+    style Production fill:#ecfdf5,stroke:#10b981
+    style Unchanged fill:#eff6ff,stroke:#3b82f6
+```
+
+**Key capacity finding:** At 605 labels/business day with 47 agents, our Lambda compute uses **<5% of default capacity**. The entire annual infrastructure cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md).
+
 ### Two-Tier OCR Strategy
 
 | | Tier 1: Quick Check | Tier 2: AI Extract |
