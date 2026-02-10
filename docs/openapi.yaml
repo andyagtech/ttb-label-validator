@@ -34,6 +34,8 @@ tags:
     description: Service health check
   - name: Queue
     description: Review queue for submission management and agent review workflow
+  - name: Flatten
+    description: OpenCV-powered image flattening (cylindrical unroll, perspective rectify)
 
 paths:
   /health:
@@ -680,3 +682,82 @@ components:
               type: integer
             total_tokens:
               type: integer
+
+  /api/flatten:
+    post:
+      operationId: flattenImage
+      tags: [Flatten]
+      summary: Flatten a label image using OpenCV
+      description: |
+        Proxies the image to a Python AWS Lambda running OpenCV. Two modes:
+        - **cylindrical** — unrolls a label from a curved bottle surface using
+          cylindrical-to-planar projection (f·tan mapping with vertical sec compensation).
+        - **perspective** — detects the largest rectangular contour via Canny edges
+          and contour approximation, applies 4-point perspective rectification.
+
+        Rate-limited to 5 requests per IP per minute. Returns `X-RateLimit-Limit`,
+        `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [imageBase64]
+              properties:
+                imageBase64:
+                  type: string
+                  description: Base64-encoded image data (PNG, JPEG, etc.)
+                mode:
+                  type: string
+                  enum: [cylindrical, perspective]
+                  default: cylindrical
+                  description: Flatten mode — cylindrical for bottles, perspective for flat/angled labels
+                mimeType:
+                  type: string
+                  default: image/png
+                  description: MIME type of the input image
+                focalMultiplier:
+                  type: number
+                  default: 1.5
+                  description: Focal length multiplier for cylindrical mode (1.0 = aggressive, 2.0 = mild)
+      responses:
+        "200":
+          description: Image flattened successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  imageBase64:
+                    type: string
+                    description: Base64-encoded flattened image
+                  mimeType:
+                    type: string
+                    example: image/png
+                  mode:
+                    type: string
+                    enum: [cylindrical, perspective]
+                  details:
+                    type: object
+                    description: Processing metadata (focal length, output size, corners, etc.)
+        "400":
+          description: Bad request (missing image, decode error)
+        "429":
+          description: Rate limit exceeded
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+                description: Seconds until rate limit resets
+        "503":
+          description: Flatten Lambda not configured (FLATTEN_ENABLED not set)

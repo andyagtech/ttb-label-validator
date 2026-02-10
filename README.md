@@ -47,25 +47,33 @@ flowchart TB
         Upload["Image Upload\n& Label Tabs"]
         Editor["Corner / Mesh\nWarp Editor"]
         Canvas["Perspective Correction\n& Cylindrical Unwrap\n(Canvas API)"]
+        Sharpen["Sharpen\n(Unsharp Mask)"]
+        AiFlatBtn["AI Flatten Button\n(10s debounce)"]
         T1["Tier 1: Quick Check\n(Tesseract.js)\nBrowser-side OCR"]
         T2Trigger["Tier 2: AI Extract\n(request)"]
         Validation["Validation Rules Engine\n(category-aware)"]
         Checklist["Checklist / Data / Compare\nUI Tabs"]
         Batch["Batch Upload\nQueue + CSV Export"]
+        Queue["Review Queue\n/queue · /queue/[id]"]
 
         Upload --> Editor --> Canvas
+        Canvas --> Sharpen
+        Canvas --> AiFlatBtn
         Canvas --> T1
         Canvas --> T2Trigger
         T1 --> Validation
         Validation --> Checklist
         Batch --> T2Trigger
+        Checklist --> Queue
     end
 
-    subgraph Vercel["Vercel — Next.js API Route (local dev / fallback)"]
-        ApiOcr["POST /api/ocr"]
+    subgraph VercelAPI["Vercel — Next.js API Routes"]
+        ApiOcr["POST /api/ocr\n(OpenRouter proxy)"]
+        ApiFlatten["POST /api/flatten\n(rate-limited, 5/min/IP)"]
+        ApiQueue["REST /api/queue\nGET · POST · PATCH"]
     end
 
-    subgraph Lambda["AWS Lambda — OpenRouter Proxy"]
+    subgraph LambdaOCR["AWS Lambda — Node.js (OpenRouter Proxy)"]
         LambdaRouter["Lambda Handler\nCORS · Routing"]
         Health["GET /health"]
         OcrHandler["POST /ocr\nStructured extraction prompt"]
@@ -76,12 +84,20 @@ flowchart TB
         LambdaRouter --> ProxyHandler
     end
 
+    subgraph LambdaFlatten["AWS Lambda — Python (OpenCV)"]
+        FlattenHandler["lambda_function.handler\ncylindrical unroll\nperspective rectify"]
+    end
+
     subgraph OpenRouter["OpenRouter API"]
         Claude["Claude 3.5 Sonnet\n(Vision Model)"]
     end
 
     T2Trigger -- "base64 image\n+ mimeType" --> ApiOcr
     T2Trigger -- "base64 image\n+ mimeType" --> LambdaRouter
+    AiFlatBtn -- "base64 image\n+ mode" --> ApiFlatten
+    ApiFlatten -- "proxy" --> FlattenHandler
+    FlattenHandler -- "flattened image" --> ApiFlatten
+    ApiFlatten -- "base64 result" --> AiFlatBtn
     ApiOcr -- "Chat Completions\n+ image_url" --> Claude
     OcrHandler -- "Chat Completions\n+ image_url" --> Claude
     ProxyHandler -- "Chat Completions" --> Claude
@@ -90,6 +106,7 @@ flowchart TB
     OcrHandler -- "{ success, fields, model }" --> T2Trigger
     ApiOcr -- "{ success, fields, model }" --> T2Trigger
     T2Trigger --> Validation
+    Queue -- "CRUD" --> ApiQueue
 ```
 
 ### Backend Detail
@@ -138,30 +155,40 @@ flowchart LR
 flowchart TB
     subgraph Dev["Local Development"]
         DevServer["next dev\nlocalhost:3000"]
-        DevRoute["POST /api/ocr\n(Next.js API route)"]
-        DevServer --> DevRoute
+        DevOcr["POST /api/ocr"]
+        DevFlatten["POST /api/flatten"]
+        DevQueue["REST /api/queue"]
+        DevServer --> DevOcr
+        DevServer --> DevFlatten
+        DevServer --> DevQueue
     end
 
     subgraph Prod["Production"]
         VercelApp["Vercel\nfrontend-purlpal.vercel.app"]
-        LambdaFn["AWS Lambda\nFunction URL"]
-        VercelApp -- "NEXT_PUBLIC_LAMBDA_URL" --> LambdaFn
+        LambdaOCR["AWS Lambda (Node.js)\nOpenRouter Proxy"]
+        LambdaFlat["AWS Lambda (Python)\nOpenCV Flatten"]
+        VercelApp -- "NEXT_PUBLIC_LAMBDA_URL" --> LambdaOCR
+        VercelApp -- "FLATTEN_LAMBDA_URL\n(via /api/flatten)" --> LambdaFlat
     end
 
     subgraph Env["Environment Variables"]
         E1["OPENROUTER_API_KEY — server-side only"]
         E2["OPENROUTER_MODEL — default: claude-3.5-sonnet"]
         E3["OCR_ENABLED=true — Next.js route gate"]
-        E4["NEXT_PUBLIC_LAMBDA_URL — production Lambda URL"]
+        E4["NEXT_PUBLIC_LAMBDA_URL — production OCR Lambda URL"]
         E5["ALLOWED_ORIGINS — Lambda CORS whitelist"]
+        E6["FLATTEN_ENABLED=true — flatten route gate"]
+        E7["FLATTEN_LAMBDA_URL — production flatten Lambda URL"]
     end
 
-    DevRoute -- "reads" --> E1
-    DevRoute -- "reads" --> E2
-    DevRoute -- "reads" --> E3
-    LambdaFn -- "reads" --> E1
-    LambdaFn -- "reads" --> E2
-    LambdaFn -- "reads" --> E5
+    DevOcr -- "reads" --> E1
+    DevOcr -- "reads" --> E2
+    DevOcr -- "reads" --> E3
+    DevFlatten -- "reads" --> E6
+    DevFlatten -- "reads" --> E7
+    LambdaOCR -- "reads" --> E1
+    LambdaOCR -- "reads" --> E2
+    LambdaOCR -- "reads" --> E5
     VercelApp -- "reads" --> E4
 
     style Dev fill:#ecfdf5,stroke:#10b981
@@ -269,6 +296,7 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 | Browser OCR | Tesseract.js |
 | Server OCR | OpenRouter → Claude 3.5 Sonnet (vision) |
 | Backend Proxy | AWS Lambda (Node.js 20, Function URL) |
+| Image Flatten | AWS Lambda (Python 3.11, OpenCV, Function URL) |
 | Hosting | Vercel |
 | Source Control | GitHub |
 
@@ -276,37 +304,42 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 
 ```
 ttb_cola_project/
-├── frontend/                    # Next.js application
+├── frontend/                    # Next.js 14 application (Vercel)
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── page.tsx         # Main app — slots, editor, checklist, OCR
+│   │   │   ├── page.tsx         # Main app — upload, editor, OCR, checklist, flatten
+│   │   │   ├── api-test/page.tsx # Interactive API endpoint tester
 │   │   │   ├── queue/
 │   │   │   │   ├── page.tsx     # Review queue dashboard
 │   │   │   │   └── [id]/page.tsx # Submission review page
 │   │   │   ├── api/
-│   │   │   │   ├── ocr/route.ts # Local dev OCR fallback route
+│   │   │   │   ├── ocr/route.ts # POST — OpenRouter OCR proxy
+│   │   │   │   ├── flatten/route.ts # POST — OpenCV flatten proxy + rate limiter
 │   │   │   │   └── queue/       # Queue REST API
 │   │   │   │       ├── route.ts # GET (list) + POST (create)
 │   │   │   │       └── [id]/route.ts # GET + PATCH + POST (review)
-│   │   │   └── layout.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── globals.css      # Tailwind + walkthrough animations
 │   │   ├── components/
 │   │   │   ├── CornerEditor.tsx  # 4-point corner editor with zoom/pan
 │   │   │   ├── MeshWarpEditor.tsx# Multi-point mesh warp editor
 │   │   │   ├── LabelChecklist.tsx# Checklist with validation results
 │   │   │   ├── FormComparison.tsx# COLA form vs label fuzzy comparison
 │   │   │   ├── BatchUpload.tsx   # Batch upload modal with queue + CSV export
-│   │   │   └── ImageInput.tsx    # Drag-and-drop image upload
+│   │   │   ├── ImageInput.tsx    # Drag-and-drop image upload
+│   │   │   └── WalkthroughPanel.tsx # 8-step guided tutorial with highlights
 │   │   ├── lib/
 │   │   │   ├── perspective.ts    # Perspective transform + cylindrical unwrap
 │   │   │   ├── meshwarp.ts       # Coons patch mesh warp + curved edge generation
 │   │   │   ├── autofit.ts        # Curvature auto-estimation (Sobel analysis)
 │   │   │   ├── smartcrop.ts      # Edge-detection label boundary detection (graphics)
+│   │   │   ├── sharpen.ts        # Client-side unsharp mask (Canvas pixel manipulation)
 │   │   │   ├── ocr.ts            # Tesseract.js + server OCR + field mapping
 │   │   │   ├── validation.ts     # TTB validation rules engine (category-aware)
 │   │   │   ├── fuzzyMatch.ts     # Levenshtein fuzzy matching for form comparison
 │   │   │   ├── types.ts          # Checklist items, review types, submissions
 │   │   │   ├── store.ts          # In-memory submission store + mock seed data
-│   │   │   └── __tests__/        # Unit tests (Vitest)
+│   │   │   └── __tests__/        # Unit tests (Vitest) — 77 tests
 │   │   │       ├── validation.test.ts  # 31 tests — rules engine
 │   │   │       ├── ocr.test.ts         # 32 tests — OCR parsing
 │   │   │       └── fuzzyMatch.test.ts  # 14 tests — fuzzy matching
@@ -314,7 +347,7 @@ ttb_cola_project/
 │   │       └── tesseract.d.ts    # Tesseract.js type declarations
 │   ├── vitest.config.ts          # Test configuration
 │   └── package.json
-├── backend/                     # AWS Lambda proxy
+├── backend/                     # AWS Lambda — Node.js OpenRouter proxy
 │   ├── src/
 │   │   ├── index.ts             # Lambda entry point + CORS + routing
 │   │   └── handlers/
@@ -322,10 +355,16 @@ ttb_cola_project/
 │   │       └── ocr.ts           # Vision model OCR with structured extraction prompt
 │   ├── package.json
 │   └── README.md
+├── backend/flatten/             # AWS Lambda — Python OpenCV image flatten
+│   ├── lambda_function.py       # Cylindrical unroll + perspective rectify
+│   ├── requirements.txt         # opencv-python-headless, numpy
+│   └── template.yaml            # SAM deployment template
 ├── docs/
-│   └── openapi.yaml             # OpenAPI 3.1 spec for all API endpoints
-├── references/                  # TTB reference documents
-├── sample_labels/               # Test label images
+│   ├── openapi.yaml             # OpenAPI 3.1 spec for all API endpoints
+│   └── validation-and-review-architecture.md # Two-tier validation + review queue design
+├── references/                  # TTB reference documents (PDFs, markdown)
+├── sample_labels/               # Test label images (PNG, JPG, HEIC)
+├── INDEX.md                     # This repo structure guide
 └── project_description.md       # Original project brief
 ```
 
@@ -348,12 +387,20 @@ Full OpenAPI 3.1 specification: [`docs/openapi.yaml`](docs/openapi.yaml)
 
 | Endpoint | Method | Surface | Description |
 |---|---|---|---|
-| `/health` | GET | Lambda | Service health check |
-| `/ocr` | POST | Lambda | Structured label field extraction via vision model |
-| `/openrouter` | POST | Lambda | Generic OpenRouter chat completions proxy |
-| `/api/ocr` | POST | Next.js | Local dev fallback (same schema as `/ocr`) |
+| `/health` | GET | Lambda (Node.js) | Service health check |
+| `/ocr` | POST | Lambda (Node.js) | Structured label field extraction via vision model |
+| `/openrouter` | POST | Lambda (Node.js) | Generic OpenRouter chat completions proxy |
+| `/api/ocr` | POST | Next.js | OpenRouter OCR proxy (local dev / fallback) |
+| `/api/flatten` | POST | Next.js | OpenCV image flatten proxy + rate limiter (5 req/min/IP) |
+| `/api/queue` | GET | Next.js | List all submissions in the review queue |
+| `/api/queue` | POST | Next.js | Create a new submission |
+| `/api/queue/{id}` | GET | Next.js | Get submission detail |
+| `/api/queue/{id}` | PATCH | Next.js | Update submission status |
+| `/api/queue/{id}` | POST | Next.js | Submit a review decision |
+| Lambda URL | POST | Lambda (Python) | Direct OpenCV flatten (cylindrical or perspective) |
 
-All OCR endpoints accept `{ imageBase64, mimeType }` and return `{ success, fields, model }` where `fields` is a structured `ExtractedFields` object with 12 TTB label field keys.
+- **OCR endpoints** accept `{ imageBase64, mimeType }` and return `{ success, fields, model }` with 12 TTB field keys.
+- **Flatten endpoint** accepts `{ imageBase64, mode, mimeType }` and returns `{ success, imageBase64, mode, details }`.
 
 ## Approach & Design Decisions
 
@@ -396,8 +443,10 @@ Set these Vercel environment variables:
 - `OCR_ENABLED` — `true` for server-side AI Extract
 - `OPENROUTER_API_KEY` — your OpenRouter API key
 - `OPENROUTER_MODEL` — `anthropic/claude-3.5-sonnet`
+- `FLATTEN_ENABLED` — `true` to enable the AI Flatten route
+- `FLATTEN_LAMBDA_URL` — Python Lambda Function URL for OpenCV flatten
 
-### Backend (AWS Lambda)
+### Backend — Node.js Lambda (OpenRouter Proxy)
 
 ```bash
 cd backend
@@ -407,6 +456,35 @@ npm run deploy  # uses --profile personal
 ```
 
 See `backend/README.md` for full Lambda setup instructions.
+
+### Backend — Python Lambda (OpenCV Flatten)
+
+```bash
+# Download Linux-compatible wheels
+pip3 download --platform manylinux2014_x86_64 --python-version 3.11 \
+  --only-binary=:all: --no-deps -d /tmp/wheels opencv-python-headless numpy
+
+# Package with handler
+mkdir -p /tmp/flatten-pkg && cd /tmp/flatten-pkg
+unzip -qo /tmp/wheels/*.whl
+cp backend/flatten/lambda_function.py .
+zip -qr9 flatten-lambda.zip .
+
+# Upload to S3 and create/update Lambda
+aws s3 cp flatten-lambda.zip s3://your-bucket/flatten-lambda.zip
+aws lambda create-function --function-name ttb-ai-flatten \
+  --runtime python3.11 --handler lambda_function.handler \
+  --code S3Bucket=your-bucket,S3Key=flatten-lambda.zip \
+  --timeout 30 --memory-size 2048 --architectures x86_64 \
+  --role arn:aws:iam::ACCOUNT:role/lambda-execution-role
+
+# Add Function URL
+aws lambda create-function-url-config --function-name ttb-ai-flatten \
+  --auth-type NONE --cors '{"AllowOrigins":["*"],"AllowMethods":["POST"],"AllowHeaders":["Content-Type"]}'
+aws lambda add-permission --function-name ttb-ai-flatten \
+  --statement-id PublicAccess --action lambda:InvokeFunctionUrl \
+  --principal "*" --function-url-auth-type NONE
+```
 
 ## References
 
