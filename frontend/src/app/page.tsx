@@ -58,10 +58,13 @@ import {
 type ViewMode = "edit" | "preview";
 type WarpMode = "simple" | "mesh";
 
+type ImageType = "graphic" | "photo" | null;
+
 interface LabelSlot {
   id: string;
   name: string;
   imageSrc: string | null;
+  imageType: ImageType;
   corners: [Point, Point, Point, Point] | null;
   surfaceMode: SurfaceMode;
   curvature: number;
@@ -84,6 +87,7 @@ function createSlot(id: string, name: string, category: BeverageCategory = "wine
     id,
     name,
     imageSrc: null,
+    imageType: null,
     corners: null,
     surfaceMode: "flat",
     curvature: 0.5,
@@ -534,13 +538,13 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
-              {/* Coach mark pulse — visible until user confirms category */}
+              {/* Coach mark — visible until user confirms category */}
               {!categoryConfirmed && !hasAnyImage && (
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <div className="absolute -bottom-9 left-1/2 -translate-x-1/2 whitespace-nowrap z-10">
+                  <div className="w-2 h-2 bg-amber-500 rotate-45 mx-auto -mb-1" />
                   <div className="bg-amber-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full shadow-md animate-bounce">
                     Start here — choose your beverage type
                   </div>
-                  <div className="w-2 h-2 bg-amber-500 rotate-45 mx-auto -mt-1" />
                 </div>
               )}
               <div className={`flex items-center gap-1.5 rounded-lg p-1 transition-all ${
@@ -863,436 +867,502 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Warp mode toggle */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  Warp Mode
-                </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() =>
-                      updateSlot(activeSlotId, { warpMode: "simple" })
-                    }
-                    className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border-2 transition ${
-                      activeSlot.warpMode === "simple"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                    }`}
-                  >
-                    <RectangleHorizontal size={18} />
-                    <span className="text-xs font-medium">4-Point</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (activeSlot.corners && activeSlot.sourceCanvas) {
-                        // Run auto-fit to get curvature estimate, then create curved mesh
-                        const fit = autoEstimateCurvature(
-                          activeSlot.sourceCanvas,
-                          activeSlot.corners
-                        );
-                        const pts = activeSlot.meshPointsPerEdge;
-                        updateSlot(activeSlotId, {
-                          warpMode: "mesh",
-                          meshEdges: createCurvedMeshEdges(
-                            activeSlot.corners,
-                            pts,
-                            fit.curvature,
-                            fit.axis,
-                            fit.crossCurvature
-                          ),
-                          curvature: fit.curvature,
-                          crossCurvature: fit.crossCurvature,
-                          cylinderAxis: fit.axis,
-                          surfaceMode: fit.surfaceMode,
-                        });
-                      } else if (activeSlot.corners) {
-                        updateSlot(activeSlotId, {
-                          warpMode: "mesh",
-                          meshEdges: createMeshEdgesFromCorners(
-                            activeSlot.corners,
-                            activeSlot.meshPointsPerEdge
-                          ),
-                        });
-                      } else {
-                        updateSlot(activeSlotId, { warpMode: "mesh" });
-                      }
-                    }}
-                    className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border-2 transition ${
-                      activeSlot.warpMode === "mesh"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                    }`}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="1" />
-                      <line x1="3" y1="9" x2="21" y2="9" />
-                      <line x1="3" y1="15" x2="21" y2="15" />
-                      <line x1="9" y1="3" x2="9" y2="21" />
-                      <line x1="15" y1="3" x2="15" y2="21" />
-                    </svg>
-                    <span className="text-xs font-medium">Mesh Warp</span>
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500">
-                  {activeSlot.warpMode === "simple"
-                    ? "4 corners + curvature sliders. Good for mild distortion."
-                    : "Multi-point edges with spline curves. Drag points along each edge to trace the exact label shape for true flattening."}
-                </p>
-              </div>
-
-              {/* View mode toggle */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex rounded-lg overflow-hidden border border-gray-200">
-                  <button
-                    onClick={() =>
-                      updateSlot(activeSlotId, { viewMode: "edit" })
-                    }
-                    className={`flex-1 py-2 text-sm font-medium transition ${
-                      activeSlot.viewMode === "edit"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={applyCorrection}
-                    className={`flex-1 py-2 text-sm font-medium transition ${
-                      activeSlot.viewMode === "preview"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    Preview
-                  </button>
-                </div>
-              </div>
-
-              {/* Surface mode — only for simple warp */}
-              {activeSlot.warpMode === "simple" && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  Label Surface
-                </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() =>
-                      updateSlot(activeSlotId, { surfaceMode: "flat" })
-                    }
-                    className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition ${
-                      activeSlot.surfaceMode === "flat"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                    }`}
-                  >
-                    <RectangleHorizontal size={20} />
-                    <span className="text-xs font-medium">Flat</span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      updateSlot(activeSlotId, { surfaceMode: "curved" })
-                    }
-                    className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition ${
-                      activeSlot.surfaceMode === "curved"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Circle size={20} />
-                    <span className="text-xs font-medium">Curved</span>
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500">
-                  {activeSlot.surfaceMode === "flat"
-                    ? "For flat labels on boxes, cases, or flat-sided bottles."
-                    : "For labels wrapped around round bottles or cans."}
-                </p>
-                {activeSlot.surfaceMode === "curved" && (
-                  <>
-                    {/* Axis toggle */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Cylinder Orientation</p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => updateSlot(activeSlotId, { cylinderAxis: "vertical" })}
-                          className={`flex-1 py-1.5 text-xs rounded-md border transition ${
-                            activeSlot.cylinderAxis === "vertical"
-                              ? "bg-blue-50 border-blue-300 text-blue-700"
-                              : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                          }`}
-                        >
-                          Vertical
-                        </button>
-                        <button
-                          onClick={() => updateSlot(activeSlotId, { cylinderAxis: "horizontal" })}
-                          className={`flex-1 py-1.5 text-xs rounded-md border transition ${
-                            activeSlot.cylinderAxis === "horizontal"
-                              ? "bg-blue-50 border-blue-300 text-blue-700"
-                              : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                          }`}
-                        >
-                          Horizontal
-                        </button>
+              {/* Image type chooser — shown until user picks */}
+              {!activeSlot.imageType ? (
+                <div className="bg-white rounded-xl border-2 border-blue-300 p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-800">
+                    What kind of image is this?
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    This helps us show you the right tools.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => updateSlot(activeSlotId, { imageType: "graphic" })}
+                      className="flex items-start gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition text-left"
+                    >
+                      <div className="mt-0.5 shrink-0">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
                       </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Design / Graphic File</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">A flat artwork file (PDF export, screenshot, or design proof). Minimal correction needed.</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => updateSlot(activeSlotId, { imageType: "photo" })}
+                      className="flex items-start gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition text-left"
+                    >
+                      <div className="mt-0.5 shrink-0">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Photo of a Label</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">A picture taken of a physical bottle or can. May need perspective and curvature correction.</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Image type indicator (clickable to change) */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {activeSlot.imageType === "graphic" ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></svg>
+                      )}
+                      <span className="text-xs font-medium text-gray-700">
+                        {activeSlot.imageType === "graphic" ? "Design / Graphic" : "Photo of Label"}
+                      </span>
                     </div>
+                    <button
+                      onClick={() => updateSlot(activeSlotId, { imageType: null })}
+                      className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Change
+                    </button>
+                  </div>
 
-                    {/* Curvature slider */}
+                  {/* Photo mode: full warp + surface controls */}
+                  {activeSlot.imageType === "photo" && (
+                    <>
+                      {/* Warp mode toggle */}
+                      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-gray-700">
+                          Warp Mode
+                        </h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              updateSlot(activeSlotId, { warpMode: "simple" })
+                            }
+                            className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border-2 transition ${
+                              activeSlot.warpMode === "simple"
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            <RectangleHorizontal size={18} />
+                            <span className="text-xs font-medium">4-Point</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (activeSlot.corners && activeSlot.sourceCanvas) {
+                                const fit = autoEstimateCurvature(
+                                  activeSlot.sourceCanvas,
+                                  activeSlot.corners
+                                );
+                                const pts = activeSlot.meshPointsPerEdge;
+                                updateSlot(activeSlotId, {
+                                  warpMode: "mesh",
+                                  meshEdges: createCurvedMeshEdges(
+                                    activeSlot.corners,
+                                    pts,
+                                    fit.curvature,
+                                    fit.axis,
+                                    fit.crossCurvature
+                                  ),
+                                  curvature: fit.curvature,
+                                  crossCurvature: fit.crossCurvature,
+                                  cylinderAxis: fit.axis,
+                                  surfaceMode: fit.surfaceMode,
+                                });
+                              } else if (activeSlot.corners) {
+                                updateSlot(activeSlotId, {
+                                  warpMode: "mesh",
+                                  meshEdges: createMeshEdgesFromCorners(
+                                    activeSlot.corners,
+                                    activeSlot.meshPointsPerEdge
+                                  ),
+                                });
+                              } else {
+                                updateSlot(activeSlotId, { warpMode: "mesh" });
+                              }
+                            }}
+                            className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border-2 transition ${
+                              activeSlot.warpMode === "mesh"
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="3" y="3" width="18" height="18" rx="1" />
+                              <line x1="3" y1="9" x2="21" y2="9" />
+                              <line x1="3" y1="15" x2="21" y2="15" />
+                              <line x1="9" y1="3" x2="9" y2="21" />
+                              <line x1="15" y1="3" x2="15" y2="21" />
+                            </svg>
+                            <span className="text-xs font-medium">Mesh Warp</span>
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {activeSlot.warpMode === "simple"
+                            ? "4 corners + curvature sliders. Good for mild distortion."
+                            : "Multi-point edges with spline curves. Drag points along each edge to trace the exact label shape for true flattening."}
+                        </p>
+                      </div>
+
+                      {/* Surface mode — only for simple warp */}
+                      {activeSlot.warpMode === "simple" && (
+                      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-gray-700">
+                          Label Surface
+                        </h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              updateSlot(activeSlotId, { surfaceMode: "flat" })
+                            }
+                            className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition ${
+                              activeSlot.surfaceMode === "flat"
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            <RectangleHorizontal size={20} />
+                            <span className="text-xs font-medium">Flat</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              updateSlot(activeSlotId, { surfaceMode: "curved" })
+                            }
+                            className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition ${
+                              activeSlot.surfaceMode === "curved"
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            <Circle size={20} />
+                            <span className="text-xs font-medium">Curved</span>
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {activeSlot.surfaceMode === "flat"
+                            ? "For flat labels on boxes, cases, or flat-sided bottles."
+                            : "For labels wrapped around round bottles or cans."}
+                        </p>
+                        {activeSlot.surfaceMode === "curved" && (
+                          <>
+                            {/* Axis toggle */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Cylinder Orientation</p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => updateSlot(activeSlotId, { cylinderAxis: "vertical" })}
+                                  className={`flex-1 py-1.5 text-xs rounded-md border transition ${
+                                    activeSlot.cylinderAxis === "vertical"
+                                      ? "bg-blue-50 border-blue-300 text-blue-700"
+                                      : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  Vertical
+                                </button>
+                                <button
+                                  onClick={() => updateSlot(activeSlotId, { cylinderAxis: "horizontal" })}
+                                  className={`flex-1 py-1.5 text-xs rounded-md border transition ${
+                                    activeSlot.cylinderAxis === "horizontal"
+                                      ? "bg-blue-50 border-blue-300 text-blue-700"
+                                      : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  Horizontal
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Curvature slider */}
+                            <div>
+                              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Curvature</span>
+                                <span>
+                                  {Math.round(activeSlot.curvature * 100)}%
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min={10}
+                                max={120}
+                                value={Math.round(activeSlot.curvature * 100)}
+                                onChange={(e) =>
+                                  updateSlot(activeSlotId, {
+                                    curvature: parseInt(e.target.value) / 100,
+                                  })
+                                }
+                                className="w-full accent-blue-600"
+                              />
+                              <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                                <span>Slight</span>
+                                <span>Strong</span>
+                              </div>
+                            </div>
+
+                            {/* Cross-curvature (edge bow) slider */}
+                            <div>
+                              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>
+                                  {activeSlot.cylinderAxis === "vertical"
+                                    ? "Vertical Bow"
+                                    : "Horizontal Bow"}
+                                </span>
+                                <span>
+                                  {Math.round(activeSlot.crossCurvature * 100)}%
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min={0}
+                                max={80}
+                                value={Math.round(activeSlot.crossCurvature * 100)}
+                                onChange={(e) =>
+                                  updateSlot(activeSlotId, {
+                                    crossCurvature: parseInt(e.target.value) / 100,
+                                  })
+                                }
+                                className="w-full accent-blue-600"
+                              />
+                              <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                                <span>None</span>
+                                <span>Strong</span>
+                              </div>
+                            </div>
+
+                            {/* Grid toggle */}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={activeSlot.showGrid}
+                                onChange={(e) =>
+                                  updateSlot(activeSlotId, { showGrid: e.target.checked })
+                                }
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 accent-blue-600"
+                              />
+                              <span className="text-xs text-gray-600">Show deformation grid</span>
+                            </label>
+                          </>
+                        )}
+                      </div>
+                      )}
+
+                      {/* Mesh mode controls */}
+                      {activeSlot.warpMode === "mesh" && (
+                      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                        <h3 className="text-sm font-semibold text-gray-700">
+                          Mesh Controls
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          Drag control points to trace the label boundary.
+                        </p>
+
+                        {/* Points per edge */}
+                        <div>
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>Points per edge</span>
+                            <span>{activeSlot.meshPointsPerEdge - 2} intermediate</span>
+                          </div>
+                          <div className="flex gap-1">
+                            {[3, 4, 5, 6].map((n) => (
+                              <button
+                                key={n}
+                                onClick={() => {
+                                  if (activeSlot.corners && activeSlot.sourceCanvas) {
+                                    const fit = autoEstimateCurvature(
+                                      activeSlot.sourceCanvas,
+                                      activeSlot.corners
+                                    );
+                                    updateSlot(activeSlotId, {
+                                      meshPointsPerEdge: n,
+                                      meshEdges: createCurvedMeshEdges(
+                                        activeSlot.corners,
+                                        n,
+                                        fit.curvature,
+                                        fit.axis,
+                                        fit.crossCurvature
+                                      ),
+                                    });
+                                  } else if (activeSlot.corners) {
+                                    updateSlot(activeSlotId, {
+                                      meshPointsPerEdge: n,
+                                      meshEdges: createMeshEdgesFromCorners(activeSlot.corners, n),
+                                    });
+                                  }
+                                }}
+                                className={`flex-1 py-1.5 text-xs rounded-md border transition ${
+                                  activeSlot.meshPointsPerEdge === n
+                                    ? "bg-blue-50 border-blue-300 text-blue-700 font-medium"
+                                    : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                                }`}
+                              >
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={activeSlot.showGrid}
+                            onChange={(e) =>
+                              updateSlot(activeSlotId, { showGrid: e.target.checked })
+                            }
+                            className="w-4 h-4 rounded border-gray-300 text-blue-600 accent-blue-600"
+                          />
+                          <span className="text-xs text-gray-600">Show interior mesh grid</span>
+                        </label>
+                      </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* View mode toggle — shown for both types */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex rounded-lg overflow-hidden border border-gray-200">
+                      <button
+                        onClick={() =>
+                          updateSlot(activeSlotId, { viewMode: "edit" })
+                        }
+                        className={`flex-1 py-2 text-sm font-medium transition ${
+                          activeSlot.viewMode === "edit"
+                            ? "bg-blue-600 text-white"
+                            : "bg-white text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={applyCorrection}
+                        className={`flex-1 py-2 text-sm font-medium transition ${
+                          activeSlot.viewMode === "preview"
+                            ? "bg-blue-600 text-white"
+                            : "bg-white text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Corner actions & Zoom */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-gray-700">
+                      {activeSlot.imageType === "graphic" ? "Selection" : activeSlot.warpMode === "mesh" ? "Controls" : "Corner Points"}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {activeSlot.imageType === "graphic"
+                        ? "Drag the corners to select the label area. Scroll to zoom."
+                        : activeSlot.warpMode === "mesh"
+                        ? "Drag edge points to match the label. Scroll to zoom, drag empty space to pan."
+                        : "Drag corners to outline the label. Scroll to zoom, drag empty space to pan."}
+                    </p>
+
+                    {/* Zoom control */}
                     <div>
                       <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>Curvature</span>
-                        <span>
-                          {Math.round(activeSlot.curvature * 100)}%
-                        </span>
+                        <span>Zoom</span>
+                        <span>{Math.round(activeSlot.zoom * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={50}
+                        max={500}
+                        value={Math.round(activeSlot.zoom * 100)}
+                        onChange={(e) =>
+                          updateSlot(activeSlotId, {
+                            zoom: parseInt(e.target.value) / 100,
+                          })
+                        }
+                        className="w-full accent-blue-600"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleResetCorners}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 text-xs rounded-lg border border-gray-300 hover:bg-gray-50 transition text-gray-600"
+                      >
+                        <RotateCcw size={12} />
+                        Reset Corners
+                      </button>
+                      <button
+                        onClick={() => updateSlot(activeSlotId, { zoom: 1 })}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 text-xs rounded-lg border border-gray-300 hover:bg-gray-50 transition text-gray-600"
+                      >
+                        Fit View
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Export controls */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-700">Export</h3>
+
+                    {/* Quality slider */}
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Quality</span>
+                        <span>{exportQuality}%</span>
                       </div>
                       <input
                         type="range"
                         min={10}
-                        max={120}
-                        value={Math.round(activeSlot.curvature * 100)}
+                        max={100}
+                        value={exportQuality}
                         onChange={(e) =>
-                          updateSlot(activeSlotId, {
-                            curvature: parseInt(e.target.value) / 100,
-                          })
+                          setExportQuality(parseInt(e.target.value))
                         }
                         className="w-full accent-blue-600"
                       />
-                      <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-                        <span>Slight</span>
-                        <span>Strong</span>
-                      </div>
                     </div>
 
-                    {/* Cross-curvature (edge bow) slider */}
+                    {/* Format */}
                     <div>
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>
-                          {activeSlot.cylinderAxis === "vertical"
-                            ? "Vertical Bow"
-                            : "Horizontal Bow"}
-                        </span>
-                        <span>
-                          {Math.round(activeSlot.crossCurvature * 100)}%
-                        </span>
+                      <p className="text-xs text-gray-500 mb-1">Format</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setExportFormat("png")}
+                          className={`flex-1 py-1.5 text-xs rounded-md border transition ${
+                            exportFormat === "png"
+                              ? "bg-blue-50 border-blue-300 text-blue-700"
+                              : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                          }`}
+                        >
+                          PNG
+                        </button>
+                        <button
+                          onClick={() => setExportFormat("jpeg")}
+                          className={`flex-1 py-1.5 text-xs rounded-md border transition ${
+                            exportFormat === "jpeg"
+                              ? "bg-blue-50 border-blue-300 text-blue-700"
+                              : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                          }`}
+                        >
+                          JPEG
+                        </button>
                       </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={80}
-                        value={Math.round(activeSlot.crossCurvature * 100)}
-                        onChange={(e) =>
-                          updateSlot(activeSlotId, {
-                            crossCurvature: parseInt(e.target.value) / 100,
-                          })
-                        }
-                        className="w-full accent-blue-600"
-                      />
-                      <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-                        <span>None</span>
-                        <span>Strong</span>
-                      </div>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {exportFormat === "png"
+                          ? "Using PNG format for maximum quality"
+                          : "Using JPEG for smaller file size"}
+                      </p>
                     </div>
 
-                    {/* Grid toggle */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={activeSlot.showGrid}
-                        onChange={(e) =>
-                          updateSlot(activeSlotId, { showGrid: e.target.checked })
-                        }
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 accent-blue-600"
-                      />
-                      <span className="text-xs text-gray-600">Show deformation grid</span>
-                    </label>
-                  </>
-                )}
-              </div>
-              )}
-
-              {/* Mesh mode controls */}
-              {activeSlot.warpMode === "mesh" && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  Mesh Controls
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Drag control points to trace the label boundary.
-                </p>
-
-                {/* Points per edge */}
-                <div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Points per edge</span>
-                    <span>{activeSlot.meshPointsPerEdge - 2} intermediate</span>
-                  </div>
-                  <div className="flex gap-1">
-                    {[3, 4, 5, 6].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => {
-                          if (activeSlot.corners && activeSlot.sourceCanvas) {
-                            const fit = autoEstimateCurvature(
-                              activeSlot.sourceCanvas,
-                              activeSlot.corners
-                            );
-                            updateSlot(activeSlotId, {
-                              meshPointsPerEdge: n,
-                              meshEdges: createCurvedMeshEdges(
-                                activeSlot.corners,
-                                n,
-                                fit.curvature,
-                                fit.axis,
-                                fit.crossCurvature
-                              ),
-                            });
-                          } else if (activeSlot.corners) {
-                            updateSlot(activeSlotId, {
-                              meshPointsPerEdge: n,
-                              meshEdges: createMeshEdgesFromCorners(activeSlot.corners, n),
-                            });
-                          }
-                        }}
-                        className={`flex-1 py-1.5 text-xs rounded-md border transition ${
-                          activeSlot.meshPointsPerEdge === n
-                            ? "bg-blue-50 border-blue-300 text-blue-700 font-medium"
-                            : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={activeSlot.showGrid}
-                    onChange={(e) =>
-                      updateSlot(activeSlotId, { showGrid: e.target.checked })
-                    }
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 accent-blue-600"
-                  />
-                  <span className="text-xs text-gray-600">Show interior mesh grid</span>
-                </label>
-              </div>
-              )}
-
-              {/* Corner actions & Zoom */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  {activeSlot.warpMode === "mesh" ? "Controls" : "Corner Points"}
-                </h3>
-                <p className="text-xs text-gray-500">
-                  {activeSlot.warpMode === "mesh"
-                    ? "Drag edge points to match the label. Scroll to zoom, drag empty space to pan."
-                    : "Drag corners to outline the label. Scroll to zoom, drag empty space to pan."}
-                </p>
-
-                {/* Zoom control */}
-                <div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Zoom</span>
-                    <span>{Math.round(activeSlot.zoom * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={50}
-                    max={500}
-                    value={Math.round(activeSlot.zoom * 100)}
-                    onChange={(e) =>
-                      updateSlot(activeSlotId, {
-                        zoom: parseInt(e.target.value) / 100,
-                      })
-                    }
-                    className="w-full accent-blue-600"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleResetCorners}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 text-xs rounded-lg border border-gray-300 hover:bg-gray-50 transition text-gray-600"
-                  >
-                    <RotateCcw size={12} />
-                    Reset Corners
-                  </button>
-                  <button
-                    onClick={() => updateSlot(activeSlotId, { zoom: 1 })}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 text-xs rounded-lg border border-gray-300 hover:bg-gray-50 transition text-gray-600"
-                  >
-                    Fit View
-                  </button>
-                </div>
-              </div>
-
-              {/* Export controls */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700">Export</h3>
-
-                {/* Quality slider */}
-                <div>
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Quality</span>
-                    <span>{exportQuality}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={10}
-                    max={100}
-                    value={exportQuality}
-                    onChange={(e) =>
-                      setExportQuality(parseInt(e.target.value))
-                    }
-                    className="w-full accent-blue-600"
-                  />
-                </div>
-
-                {/* Format */}
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Format</p>
-                  <div className="flex gap-2">
+                    {/* Export button */}
                     <button
-                      onClick={() => setExportFormat("png")}
-                      className={`flex-1 py-1.5 text-xs rounded-md border transition ${
-                        exportFormat === "png"
-                          ? "bg-blue-50 border-blue-300 text-blue-700"
-                          : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
+                      onClick={handleExport}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
                     >
-                      PNG
+                      <Download size={16} />
+                      Export High-Resolution Image
                     </button>
-                    <button
-                      onClick={() => setExportFormat("jpeg")}
-                      className={`flex-1 py-1.5 text-xs rounded-md border transition ${
-                        exportFormat === "jpeg"
-                          ? "bg-blue-50 border-blue-300 text-blue-700"
-                          : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      JPEG
-                    </button>
+                    <p className="text-xs text-gray-400">
+                      Exports the current label with perspective correction at full
+                      resolution.
+                    </p>
                   </div>
-                  <p className="text-xs text-blue-600 mt-1">
-                    {exportFormat === "png"
-                      ? "Using PNG format for maximum quality"
-                      : "Using JPEG for smaller file size"}
-                  </p>
-                </div>
-
-                {/* Export button */}
-                <button
-                  onClick={handleExport}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
-                >
-                  <Download size={16} />
-                  Export High-Resolution Image
-                </button>
-                <p className="text-xs text-gray-400">
-                  Exports the current label with perspective correction at full
-                  resolution.
-                </p>
-              </div>
+                </>
+              )}
             </div>
           </div>
         )}
