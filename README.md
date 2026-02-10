@@ -114,6 +114,8 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Quick Check** — browser-side OCR (Tesseract.js) for instant pre-submission feedback
 - **AI Extract** — vision model (Claude 3.5 Sonnet) extracts all TTB-required fields as structured data
 - **Data tab** — view and edit all extracted fields, re-run validation, view raw OCR text and JSON
+- **Compare tab** — enter COLA application form values, fuzzy-match against OCR-extracted label data with similarity scoring
+- **Class/type designation lookup** — validates against ~150 known TTB designations per category; flags cross-category mismatches
 - **Validation rules engine** with three rule categories:
   - **Presence rules** — are required fields present? (brand name, class/type, ABV, etc.)
   - **Format rules** — does the content match TTB formatting requirements?
@@ -131,6 +133,8 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Data tab** — inspect, edit, and re-validate extracted fields; view raw text and JSON
 - **Inline value editing** — correct OCR results directly in the checklist
 - **Auto-detected vs manual items** — clear visual distinction with confidence scores
+- **Batch upload** — multi-file drag-and-drop, sequential OCR processing with progress tracking, CSV export of results
+- **Compare tab** — side-by-side form-vs-label comparison with Levenshtein fuzzy matching (handles Dave's "STONE'S THROW" vs "Stone's Throw" case)
 - **High-resolution export** — PNG or JPEG with quality control
 
 ## Technical Stack
@@ -161,6 +165,8 @@ ttb_cola_project/
 │   │   │   ├── CornerEditor.tsx  # 4-point corner editor with zoom/pan
 │   │   │   ├── MeshWarpEditor.tsx# Multi-point mesh warp editor
 │   │   │   ├── LabelChecklist.tsx# Checklist with validation results
+│   │   │   ├── FormComparison.tsx# COLA form vs label fuzzy comparison
+│   │   │   ├── BatchUpload.tsx   # Batch upload modal with queue + CSV export
 │   │   │   └── ImageInput.tsx    # Drag-and-drop image upload
 │   │   ├── lib/
 │   │   │   ├── perspective.ts    # Perspective transform + cylindrical unwrap
@@ -169,6 +175,7 @@ ttb_cola_project/
 │   │   │   ├── smartcrop.ts      # Edge-detection label boundary detection (graphics)
 │   │   │   ├── ocr.ts            # Tesseract.js + server OCR + field mapping
 │   │   │   ├── validation.ts     # TTB validation rules engine (category-aware)
+│   │   │   ├── fuzzyMatch.ts     # Levenshtein fuzzy matching for form comparison
 │   │   │   └── types.ts          # Checklist items, review types, submissions
 │   │   └── types/
 │   │       └── tesseract.d.ts    # Tesseract.js type declarations
