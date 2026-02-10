@@ -87,19 +87,27 @@ export async function runServerOcr(
   imageBase64: string,
   mimeType: string = "image/png"
 ): Promise<ExtractedFields> {
-  const lambdaUrl = process.env.NEXT_PUBLIC_LAMBDA_URL;
-  const endpoint = lambdaUrl ? `${lambdaUrl}/ocr` : "/api/ocr";
+  // Always use the local Next.js API route for OCR
+  // (The Lambda proxy does not have an /ocr endpoint)
+  const endpoint = "/api/ocr";
 
   try {
-    console.log(`[OCR] Calling ${lambdaUrl ? "Lambda" : "local"} endpoint: ${endpoint}`);
+    console.log(`[OCR] Calling local API route: ${endpoint}`);
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageBase64, mimeType }),
     });
 
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`[OCR] Server OCR HTTP ${response.status}:`, errText);
+      return {};
+    }
+
     const data = await response.json();
     if (data.success) {
+      console.log("[OCR] Server OCR fields:", Object.keys(data.fields).filter(k => data.fields[k]));
       return data.fields as ExtractedFields;
     } else {
       console.warn("[OCR] Server OCR error:", data.error);
@@ -122,32 +130,130 @@ export async function runServerOcr(
 export function parseOcrText(rawText: string): ExtractedFields {
   const fields: ExtractedFields = { rawText };
   const text = rawText.replace(/\n/g, " ").replace(/\s+/g, " ");
+  const lines = rawText.split(/\n/).map((l) => l.trim()).filter(Boolean);
 
-  // Alcohol content: "Alcohol __% by volume" or "__% Alc. By Vol."
+  // --- Alcohol content ---
+  // Match: "Alcohol 5% By Volume", "5% Alc. By Vol.", "5% ALC./VOL.", "Alcohol 5% by volume"
   const abvMatch = text.match(
-    /(?:alcohol\s+)?(\d+\.?\d*)\s*%\s*(?:by\s+vol(?:ume)?|alc\.?\s*by\s*vol\.?)/i
+    /(?:alcohol\s+)?(\d+\.?\d*)\s*%\s*(?:by\s+vol(?:ume)?|alc\.?\s*(?:by\s*vol|\/\s*vol)\.?)/i
   );
   if (abvMatch) {
     fields.alcoholContent = abvMatch[0].trim();
+  } else {
+    // Fallback: "Alc __% by Vol" with looser spacing
+    const abvFallback = text.match(/(\d+\.?\d*)\s*%\s*alc/i);
+    if (abvFallback) {
+      fields.alcoholContent = abvFallback[0].trim();
+    }
   }
 
-  // Net contents: "750 mL", "12 FL OZ", "1.75 L", etc.
+  // --- Net contents ---
+  // Match: "750 mL", "12 FL OZ", "1.75 L", "1 PINT", "0.9 FL. OZ."
   const netMatch = text.match(
-    /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|liters?|milliliters?)/i
+    /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|liters?|milliliters?|cl|pint|gallon|gal)/i
   );
   if (netMatch) {
     fields.netContents = netMatch[0].trim();
   }
 
-  // Government warning
+  // --- Government warning ---
   if (/government\s+warning/i.test(text)) {
     const gwStart = text.search(/government\s+warning/i);
-    fields.healthWarning = text.slice(gwStart, gwStart + 200).trim();
+    // Capture up to 500 chars to get both statements
+    fields.healthWarning = text.slice(gwStart, gwStart + 500).trim();
   }
 
-  // Contains Sulfites
+  // --- Contains Sulfites ---
   if (/contains?\s+sulfites?/i.test(text)) {
     fields.sulfiteDeclaration = "Contains Sulfites";
+  }
+
+  // --- Brand name ---
+  // Heuristic: look for prominent text lines (all-caps, short, near the top)
+  // Also try common patterns like "BRAND NAME" or "XYZ BREWERY/WINERY/DISTILLERY"
+  const brandPatterns = [
+    /(\w[\w\s&']+(?:brew(?:ery|ing)|winer(?:y|ies)|distiller(?:y|ies)|cellars?|vineyards?|estate))/i,
+  ];
+  for (const pat of brandPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      fields.brandName = m[1].trim();
+      break;
+    }
+  }
+  // Fallback: first prominent all-caps line that's 2+ words
+  if (!fields.brandName) {
+    for (const line of lines.slice(0, 8)) {
+      if (
+        line.length >= 4 &&
+        line.length <= 60 &&
+        /^[A-Z][A-Z\s&']+$/.test(line) &&
+        line.split(/\s+/).length >= 2
+      ) {
+        fields.brandName = line;
+        break;
+      }
+    }
+  }
+
+  // --- Class / type designation ---
+  const classPatterns = [
+    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+beer|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|blonde\s+ale)\b/i,
+    /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
+    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe)\b/i,
+    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|hard\s+seltzer|hard\s+cider|wine\s+cooler)\b/i,
+  ];
+  for (const pat of classPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      fields.classType = m[0].trim();
+      break;
+    }
+  }
+
+  // --- Name & address ---
+  // Look for patterns like "City, STATE" or "City, ST ZIPCODE"
+  const addressMatch = text.match(
+    /[\w\s]+,\s*[A-Z]{2}\s*\d{5}/
+  );
+  if (addressMatch) {
+    // Grab some context before the zip
+    const idx = text.indexOf(addressMatch[0]);
+    const start = Math.max(0, idx - 60);
+    fields.nameAddress = text.slice(start, idx + addressMatch[0].length).trim();
+  } else {
+    // Fallback: "City, ST" pattern
+    const cityStateMatch = text.match(
+      /([\w\s]+,\s*[A-Z]{2})\b/
+    );
+    if (cityStateMatch) {
+      const idx = text.indexOf(cityStateMatch[0]);
+      const start = Math.max(0, idx - 60);
+      fields.nameAddress = text.slice(start, idx + cityStateMatch[0].length).trim();
+    }
+  }
+
+  // --- Varietal ---
+  const varietalPatterns = /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|gewürztraminer|chenin\s+blanc|semillon|muscat|moscato)\b/i;
+  const varietalMatch = text.match(varietalPatterns);
+  if (varietalMatch) {
+    fields.varietal = varietalMatch[0].trim();
+  }
+
+  // --- Vintage date ---
+  const vintageMatch = text.match(/\b(19|20)\d{2}\b/);
+  if (vintageMatch) {
+    const yr = parseInt(vintageMatch[0]);
+    if (yr >= 1950 && yr <= new Date().getFullYear()) {
+      fields.vintageDate = vintageMatch[0];
+    }
+  }
+
+  // --- Country of origin ---
+  const countryPatterns = /\b(product\s+of\s+[\w\s]+|imported\s+(?:from|by)\s+[\w\s]+|made\s+in\s+[\w\s]+)/i;
+  const countryMatch = text.match(countryPatterns);
+  if (countryMatch) {
+    fields.countryOfOrigin = countryMatch[0].trim();
   }
 
   return fields;

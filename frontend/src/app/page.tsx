@@ -42,6 +42,7 @@ import {
   getChecklistTemplate,
 } from "@/lib/types";
 import { autoEstimateCurvature, AutoFitResult } from "@/lib/autofit";
+import { detectLabelBounds } from "@/lib/smartcrop";
 import {
   runServerOcr,
   runTesseractOcr,
@@ -313,6 +314,46 @@ export default function Home() {
     }, 50);
   }, [activeSlot, activeSlotId, updateSlot]);
 
+  // Smart Crop for graphics: detect label edges and tighten corners
+  const [isSmartCropping, setIsSmartCropping] = useState(false);
+  const [smartCropDone, setSmartCropDone] = useState(false);
+  const handleSmartCrop = useCallback(() => {
+    if (!activeSlot.sourceCanvas) return;
+    setIsSmartCropping(true);
+    setSmartCropDone(false);
+
+    setTimeout(() => {
+      const corners = detectLabelBounds(activeSlot.sourceCanvas!, 0.005);
+
+      updateSlot(activeSlotId, {
+        corners,
+        meshEdges: createMeshEdgesFromCorners(corners, 3),
+        warpMode: "simple",
+      });
+
+      // Generate a cropped preview (flat, no curvature)
+      const { width, height } = computeOutputDimensions(corners);
+      const corrected = applyTransform(
+        activeSlot.sourceCanvas!,
+        corners,
+        width,
+        height,
+        "flat",
+        0,
+        "vertical",
+        0
+      );
+
+      updateSlot(activeSlotId, {
+        correctedImage: corrected.toDataURL("image/png"),
+        viewMode: "preview",
+      });
+
+      setIsSmartCropping(false);
+      setSmartCropDone(true);
+    }, 50);
+  }, [activeSlot, activeSlotId, updateSlot]);
+
   // Apply perspective correction on active slot
   const applyCorrection = useCallback(() => {
     if (!activeSlot.sourceCanvas) return;
@@ -459,6 +500,27 @@ export default function Home() {
       const labelPosition =
         activeSlotId === "front" ? "front" : activeSlotId === "back" ? "back" : "other";
 
+      // Count how many useful fields were extracted (excluding rawText)
+      const foundFields = Object.entries(fields).filter(
+        ([k, v]) => k !== "rawText" && v && String(v).trim().length > 0
+      );
+
+      if (foundFields.length === 0 && fields.rawText) {
+        // OCR ran but heuristic parsing found nothing useful
+        const snippet = fields.rawText.slice(0, 120).replace(/\s+/g, " ");
+        setOcrStatus(
+          `${tier === "quick" ? "Quick Check" : "AI Extract"}: Text detected but no structured fields matched. Raw: "${snippet}…"`
+        );
+        return;
+      }
+
+      if (foundFields.length === 0 && !fields.rawText) {
+        setOcrStatus(
+          `${tier === "quick" ? "Quick Check" : "AI Extract"}: No text detected. Try adjusting corner selection or use a clearer image.`
+        );
+        return;
+      }
+
       // Apply extracted values to checklist
       let updatedChecklist = applyExtractedFields(activeSlot.checklist, fields);
 
@@ -475,7 +537,7 @@ export default function Home() {
       const passCount = validationResults.filter((r) => r.pass).length;
       const failCount = validationResults.filter((r) => !r.pass).length;
       setOcrStatus(
-        `${tier === "quick" ? "Quick Check" : "AI Extract"}: ${passCount} passed, ${failCount} issue${failCount !== 1 ? "s" : ""} found`
+        `${tier === "quick" ? "Quick Check" : "AI Extract"}: ${passCount} passed, ${failCount} issue${failCount !== 1 ? "s" : ""} found (${foundFields.length} field${foundFields.length !== 1 ? "s" : ""} detected)`
       );
     },
     [activeSlot, activeSlotId, beverageCategory, updateSlot]
@@ -764,18 +826,35 @@ export default function Home() {
                     Preview
                   </button>
                   <div className="flex-1" />
-                  <button
-                    onClick={handleAutoFlatten}
-                    disabled={isAutoFitting || !activeSlot.corners}
-                    className="mr-2 flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-violet-500 to-blue-500 text-white hover:from-violet-600 hover:to-blue-600 disabled:opacity-50 transition shadow-sm"
-                  >
-                    {isAutoFitting ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Wand2 size={14} />
-                    )}
-                    {isAutoFitting ? "Analyzing..." : "Auto-Flatten"}
-                  </button>
+                  {activeSlot.imageType === "graphic" ? (
+                    <button
+                      onClick={handleSmartCrop}
+                      disabled={isSmartCropping || !activeSlot.sourceCanvas}
+                      className="mr-2 flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 transition shadow-sm"
+                      title="Detect label edges and auto-crop to the content area"
+                    >
+                      {isSmartCropping ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <ScanSearch size={14} />
+                      )}
+                      {isSmartCropping ? "Detecting..." : "AI Smart Crop"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleAutoFlatten}
+                      disabled={isAutoFitting || !activeSlot.corners}
+                      className="mr-2 flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-violet-500 to-blue-500 text-white hover:from-violet-600 hover:to-blue-600 disabled:opacity-50 transition shadow-sm"
+                      title="Estimate curvature and flatten the label automatically"
+                    >
+                      {isAutoFitting ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Wand2 size={14} />
+                      )}
+                      {isAutoFitting ? "Analyzing..." : "Auto-Flatten"}
+                    </button>
+                  )}
                   <button
                     onClick={handleClearSlot}
                     className="mr-3 text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
@@ -784,8 +863,25 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Auto-flatten result banner */}
-                {autoFitResult && activeSlot.viewMode === "preview" && (
+                {/* Smart crop result banner (graphic mode) */}
+                {smartCropDone && activeSlot.imageType === "graphic" && activeSlot.viewMode === "preview" && (
+                  <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 flex items-center gap-3 text-xs">
+                    <ScanSearch size={14} className="text-emerald-500 shrink-0" />
+                    <span className="flex-1 text-gray-700">
+                      <span className="font-medium text-emerald-700">Label edges detected.</span>{" "}
+                      Switch to <strong>Edit</strong> to fine-tune the corners, or run <strong>Quick Check</strong> / <strong>AI Extract</strong> on this crop.
+                    </span>
+                    <button
+                      onClick={() => setSmartCropDone(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Auto-flatten result banner (photo mode) */}
+                {autoFitResult && activeSlot.imageType !== "graphic" && activeSlot.viewMode === "preview" && (
                   <div className="mx-4 mt-3 px-3 py-2 rounded-lg bg-gradient-to-r from-violet-50 to-blue-50 border border-violet-200 flex items-center gap-3 text-xs">
                     <Wand2 size={14} className="text-violet-500 shrink-0" />
                     <div className="flex-1 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -889,6 +985,7 @@ export default function Home() {
                       onClick={handleQuickCheck}
                       disabled={isQuickChecking || isServerExtracting || !activeSlot.sourceCanvas}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                      title="Fast browser-side OCR (Tesseract.js) — free, runs locally, good for a quick scan"
                     >
                       {isQuickChecking ? (
                         <Loader2 size={13} className="animate-spin" />
@@ -901,6 +998,7 @@ export default function Home() {
                       onClick={handleServerExtract}
                       disabled={isQuickChecking || isServerExtracting || !activeSlot.sourceCanvas}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-violet-500 to-blue-500 text-white hover:from-violet-600 hover:to-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                      title="AI vision model (Claude 3.5 Sonnet) — more accurate, extracts structured fields directly from the image"
                     >
                       {isServerExtracting ? (
                         <Loader2 size={13} className="animate-spin" />
