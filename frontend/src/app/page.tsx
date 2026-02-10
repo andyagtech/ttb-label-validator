@@ -19,6 +19,8 @@ import {
   ScanSearch,
   Sparkles,
   ClipboardCheck,
+  FlaskConical,
+  Zap,
 } from "lucide-react";
 import ImageInput from "@/components/ImageInput";
 import CornerEditor from "@/components/CornerEditor";
@@ -26,6 +28,7 @@ import MeshWarpEditor from "@/components/MeshWarpEditor";
 import LabelChecklist from "@/components/LabelChecklist";
 import FormComparison from "@/components/FormComparison";
 import BatchUpload from "@/components/BatchUpload";
+import WalkthroughPanel from "@/components/WalkthroughPanel";
 import {
   Point,
   SurfaceMode,
@@ -47,6 +50,7 @@ import {
 } from "@/lib/types";
 import { autoEstimateCurvature, AutoFitResult } from "@/lib/autofit";
 import { detectLabelBounds } from "@/lib/smartcrop";
+import { sharpenCanvas } from "@/lib/sharpen";
 import {
   runServerOcr,
   runTesseractOcr,
@@ -134,6 +138,8 @@ export default function Home() {
   const [categoryConfirmed, setCategoryConfirmed] = useState(false);
   const [checklistTab, setChecklistTab] = useState<"checklist" | "data" | "compare">("checklist");
   const [showBatchUpload, setShowBatchUpload] = useState(false);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [isSharpening, setIsSharpening] = useState(false);
 
   const activeSlot = slots.find((s) => s.id === activeSlotId)!;
   const hasAnyImage = slots.some((s) => s.imageSrc !== null);
@@ -702,7 +708,7 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              <div className={`flex items-center gap-1.5 rounded-lg p-1 transition-all ${
+              <div data-walkthrough="category" className={`flex items-center gap-1.5 rounded-lg p-1 transition-all ${
                 !categoryConfirmed && !hasAnyImage
                   ? "bg-amber-50 ring-2 ring-amber-400 ring-offset-1"
                   : "bg-gray-100"
@@ -737,6 +743,14 @@ export default function Home() {
             >
               <ClipboardCheck size={13} />
               Queue
+            </Link>
+            <Link
+              href="/api-test"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
+              title="Test API endpoints"
+            >
+              <FlaskConical size={13} />
+              API
             </Link>
             <span className="text-xs text-gray-400">
               {filledSlots}/{totalSlots} labels uploaded
@@ -882,6 +896,28 @@ export default function Home() {
                       {isAutoFitting ? "Analyzing..." : "Auto-Flatten"}
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      if (!activeSlot.sourceCanvas) return;
+                      setIsSharpening(true);
+                      setTimeout(() => {
+                        const sharpened = sharpenCanvas(activeSlot.sourceCanvas!, 0.6);
+                        updateSlot(activeSlotId, { sourceCanvas: sharpened });
+                        setIsSharpening(false);
+                      }, 50);
+                    }}
+                    disabled={isSharpening || !activeSlot.sourceCanvas}
+                    className="mr-2 flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition shadow-sm"
+                    title="Apply sharpening filter to improve text clarity"
+                    data-walkthrough="sharpen"
+                  >
+                    {isSharpening ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Zap size={14} />
+                    )}
+                    {isSharpening ? "Sharpening..." : "Sharpen"}
+                  </button>
                   <button
                     onClick={handleClearSlot}
                     className="mr-3 text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
@@ -1773,6 +1809,26 @@ export default function Home() {
           ocrTier="ai"
           onClose={() => setShowBatchUpload(false)}
         />
+      )}
+
+      {/* Walkthrough Panel */}
+      {showWalkthrough && (
+        <WalkthroughPanel onClose={() => setShowWalkthrough(false)} />
+      )}
+
+      {/* Walkthrough FAB — question mark icon */}
+      {!showWalkthrough && (
+        <button
+          onClick={() => setShowWalkthrough(true)}
+          className="fixed bottom-5 left-5 w-12 h-12 rounded-full bg-white border-2 border-gray-200 shadow-lg hover:shadow-xl hover:scale-110 transition-all z-30 flex items-center justify-center group"
+          title="Guided walkthrough"
+        >
+          <img
+            src="/question-mark.svg"
+            alt="Help"
+            className="w-6 h-6 text-gray-600 group-hover:text-blue-600 transition"
+          />
+        </button>
       )}
     </div>
   );

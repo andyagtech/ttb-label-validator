@@ -220,6 +220,24 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Compare tab** — side-by-side form-vs-label comparison with Levenshtein fuzzy matching (handles Dave's "STONE'S THROW" vs "Stone's Throw" case)
 - **High-resolution export** — PNG or JPEG with quality control
 
+### API Test Page
+- **`/api-test` page** — interactive endpoint tester with sample label gallery (6 images), file upload, JSON body editor, and syntax-highlighted response viewer
+- **Endpoint picker** — supports all API routes: `POST /api/ocr`, `GET /api/queue`, `POST /api/queue`, `GET /api/queue/{id}`, `PATCH /api/queue/{id}`, `POST /api/queue/{id}`
+- **Response panel** — status code, response time, copy-to-clipboard, dark-themed JSON with syntax highlighting
+
+### Guided Walkthrough
+- **Question-mark FAB** — fixed bottom-left button using `question-mark.svg`, opens a right-side panel
+- **8-step tutorial** — walks through: Choose Category → Upload Image → Correct Perspective → Run OCR → Review Checklist → Inspect Data → Compare with Form → Submit for Review
+- **Element highlighting** — active step pulses/glows the relevant UI element on the main page
+- **Keyboard navigation** — arrow keys to navigate, Escape to close
+- **Step-specific tips** — contextual hints for category selection, OCR performance, Dave's fuzzy matching case
+
+### Image Sharpening
+- **Sharpen button** — in the editor toolbar (amber gradient), applies client-side unsharp mask convolution
+- **Laplacian kernel** — center-weighted sharpening at amount=0.6 for improved text clarity
+- **No network required** — runs entirely in-browser via Canvas API pixel manipulation
+- **Stackable** — can be applied multiple times for stronger effect
+
 ### Review Queue
 - **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed)
 - **`/queue/[id]` review page** — full review workspace with label checklists, OCR extracted fields, review history, findings editor, notes, and decision buttons (Approve / Reject / Needs Revision / Escalate)
