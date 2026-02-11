@@ -1,5 +1,33 @@
 # Infrastructure Justification & Capacity Analysis
 
+## Two Audiences, Two Load Profiles
+
+This system serves **two distinct user populations** with very different usage patterns:
+
+### Submitters (Industry)
+
+Breweries, wineries, distilleries, and importers — potentially **thousands** of companies submitting label applications. They interact with:
+
+- **Client-side image processing** — perspective correction, cylindrical unwrap, mesh warp, sharpen, auto-flatten, smart crop. All run in the submitter's browser at zero server cost.
+- **Browser-side Quick Check** (Tesseract.js) — instant OCR pre-validation before submission, no server round-trip.
+- **Server-side AI Extract** (Lambda → Claude) — triggered at submission time to produce structured field extraction.
+- **Server-side AI Flatten** (Lambda → OpenCV) — triggered on-demand for curved/distorted labels.
+
+The client-side tools help submitters prepare clean, corrected images and catch obvious errors *before* they submit — reducing the rejection rate and resubmission volume that creates backlog.
+
+### Agents (TTB Reviewers)
+
+47 specialist agents who review submitted applications. By the time an agent sees a submission:
+
+- Images are already corrected and flattened
+- OCR has already extracted structured fields
+- Validation rules have already flagged issues
+- The checklist is pre-populated with auto-detected items
+
+Agents spend their time on **judgment calls** — not processing. Their server load is lightweight: reading from the queue, viewing pre-processed results, submitting review decisions.
+
+---
+
 ## TTB Scale: The Real Numbers
 
 Source: [ttb.gov/regulated-commodities/labeling/processing-times](https://www.ttb.gov/regulated-commodities/labeling/processing-times), retrieved Feb 10 2026; stakeholder interview with Sarah Chen, Deputy Director.
@@ -15,18 +43,19 @@ Source: [ttb.gov/regulated-commodities/labeling/processing-times](https://www.tt
 | Agents | 47 | Sarah Chen interview |
 | Labels per agent per day | ~13 | 605 / 47 |
 | Time per review (simple) | 5–10 min | Sarah Chen interview |
-| Active review time per agent/day | 65–130 min | 13 × 5–10 min |
 | Current median backlog | 3–6 days | TTB processing times page |
 | Customer service goal | 85% within 15 days | TTB website |
 
 ### Peak Load Scenarios
 
-| Scenario | Volume | Timing |
-|----------|--------|--------|
-| Normal weekday | ~605 labels | Spread across 8h workday |
-| Post-holiday surge | ~1,200 labels | Concentrated in first 2–3 hours |
-| Large importer batch | 200–300 labels | Single submission, needs queue processing |
-| Peak concurrent agents | 47 | All agents actively reviewing simultaneously |
+| Scenario | Volume | Driven by |
+|----------|--------|-----------|
+| Normal weekday | ~605 submissions | Submitters (spread across business hours + evenings) |
+| Post-holiday surge | ~1,200 submissions | Submitters (concentrated in first 2–3 days back) |
+| Large importer batch | 200–300 labels | Single submitter dumping a full product line |
+| Peak concurrent reviews | 47 | All agents reviewing simultaneously (read-heavy, low server load) |
+
+**Key insight:** Server-side compute load is driven by **submitter** activity (OCR + flatten at submission time), not by agent activity. Agents consume pre-processed results.
 
 ---
 
@@ -38,7 +67,7 @@ Source: [ttb.gov/regulated-commodities/labeling/processing-times](https://www.tt
 
 | Concern | Assessment |
 |---------|------------|
-| Concurrent users | 47 agents is trivial; Vercel handles millions of requests |
+| Concurrent users | Thousands of submitters + 47 agents; Vercel handles millions of requests |
 | Static assets | Cached at 100+ edge locations globally |
 | Serverless functions | Auto-scale per-request, no capacity planning needed |
 | Cold start | ~200ms for Next.js functions; well within 5-second target |
@@ -46,7 +75,7 @@ Source: [ttb.gov/regulated-commodities/labeling/processing-times](https://www.tt
 
 #### 2. Client-Side Image Processing (Canvas API)
 
-This is the most deliberately scalable part of the architecture. **All** computationally expensive image operations run in the agent's browser:
+All computationally expensive image operations run in the **submitter's** browser:
 
 - Perspective correction (4-point homography)
 - Cylindrical unwrap (tan/sec projection)
@@ -58,34 +87,38 @@ This is the most deliberately scalable part of the architecture. **All** computa
 
 | Concern | Assessment |
 |---------|------------|
-| Compute capacity | 47 agents = 47 independent processors; zero server load |
-| Scaling cost | $0 — adding agents adds free compute |
-| Network dependency | None for image processing; works offline |
-| Latency | <500ms for correction operations (measured) |
-| **Verdict** | **Scales linearly with headcount at zero infrastructure cost** |
+| Compute capacity | Each submitter's browser is an independent processor; zero server load |
+| Scaling cost | $0 — more submitters = more free compute |
+| Network dependency | None for image processing; works offline until submission |
+| Latency | <500ms for correction operations; <100ms for interactive adjustments |
+| **Verdict** | **Scales with submitter count at zero infrastructure cost** |
 
-This is a conscious architectural decision: by pushing image processing to the browser, the server only handles structured data (OCR text, validation results, review decisions). The heavy lifting is distributed across every agent's workstation.
+This is a conscious architectural decision. By pushing image processing to the browser, the server only handles structured data at two discrete moments: (1) submission-time extraction and (2) agent review decisions. Everything between — the iterative correction, re-cropping, checking — is free.
 
 #### 3. AWS Lambda — OCR Proxy (Node.js)
+
+Triggered at **submission time** when a submitter clicks "AI Extract."
 
 | Concern | Assessment |
 |---------|------------|
 | Default concurrency | 1,000 concurrent executions |
-| Our peak concurrent | 47 (one per agent) = 4.7% of limit |
+| Peak concurrent (normal) | ~75/hour ÷ 60 = ~1–2 concurrent at any moment |
+| Peak concurrent (burst) | 200–300 (large importer batch) = 30% of limit |
 | Invocation duration | ~3–5s per OCR call |
-| Daily invocations | ~605 (one per label, normal day) |
-| Burst capacity | 300 concurrent (batch scenario) = 30% of limit |
+| Daily invocations | ~605 (one per submission, normal day) |
 | Monthly cost | 605 × 22 days × $0.0000004 × 5s × 256MB/1024 = **~$0.07/month** |
-| **Verdict** | **Uses <5% of default Lambda capacity** |
+| **Verdict** | **Uses <5% of default Lambda capacity on normal days** |
 
 #### 4. AWS Lambda — Flatten (Python/OpenCV)
+
+Triggered on-demand when a submitter needs to unwrap a curved or distorted label.
 
 | Concern | Assessment |
 |---------|------------|
 | Memory | 2048 MB (sufficient for 4000×3000 images) |
 | Duration | ~2–5s per flatten |
-| Concurrency | Same 1,000 default; our peak: 47 |
-| Monthly cost (est. 50% flatten rate) | 302 × 22 × $0.0000004 × 5s × 2048/1024 = **~$0.05/month** |
+| Concurrency | Same 1,000 default; normal peak well under 50 |
+| Monthly cost (est. 30% of submissions need flatten) | ~180 × 22 × $0.0000004 × 5s × 2048/1024 = **~$0.03/month** |
 | **Verdict** | **Well within limits** |
 
 #### 5. Vision Model (Claude 3.5 Sonnet via OpenRouter)
@@ -93,12 +126,13 @@ This is a conscious architectural decision: by pushing image processing to the b
 | Concern | Assessment |
 |---------|------------|
 | Requests/day (normal) | ~605 |
-| Requests/hour (peak) | ~150 (all agents active in same hour) |
-| Requests/min (sustained) | ~1.3 average, ~47 burst |
+| Requests/hour (spread evenly) | ~75 |
+| Requests/min (sustained) | ~1.3 average |
+| Burst (batch import) | 200–300 in rapid succession |
 | Cost per label | ~$0.01 (image tokens + structured extraction prompt + response) |
 | Annual cost | 150,000 × $0.01 = **~$1,500/year** |
 | Rate limits | Depends on OpenRouter tier; enterprise plans support 1000+ rpm |
-| **Verdict** | **Adequate; need enterprise OpenRouter plan for batch bursts** |
+| **Verdict** | **Adequate for normal flow; need enterprise tier for batch bursts** |
 
 ### Annual Infrastructure Cost Estimate (Compute Only)
 
@@ -111,7 +145,19 @@ This is a conscious architectural decision: by pushing image processing to the b
 | S3 storage (production, est.) | ~$50 |
 | **Total compute** | **~$1,800/year** |
 
-For context: the scanning vendor pilot Sarah mentioned (which failed on latency) would typically cost $50,000–$200,000/year for comparable volume. The contractor who quoted the COLA rebuild estimated $4.2M.
+For context: the scanning vendor pilot Sarah mentioned would typically cost $50,000–$200,000/year for comparable volume. The contractor who quoted the COLA rebuild estimated $4.2M.
+
+### Why the scanning vendor pilot failed — and why our approach is different
+
+Sarah described a vendor tool that took "30, 40 seconds sometimes to process a single label" during agent review. Agents abandoned it because "they could do five labels in the time it took the machine to do one."
+
+That tool attempted to assist agents **during** review — meaning every label had to be processed in real-time while the agent waited. Our architecture is fundamentally different:
+
+1. **Submitters** do the interactive image correction themselves (client-side, instant feedback)
+2. **Server-side OCR/validation runs at submission time** — before an agent ever sees it
+3. **Agents see pre-processed results** — extracted fields, validation flags, pre-populated checklist
+
+The agent never waits for processing. The 3–5 second AI Extract latency is absorbed by the submitter at submission time, not by the agent during review. Sarah's 5-second threshold still applies to the submitter experience, and we meet it.
 
 ---
 
@@ -123,9 +169,10 @@ These are **deliberate** prototype simplifications — not architectural mistake
 
 **Current:** `let submissions: Submission[] = []` in `lib/store.ts` — in-memory, lost on restart.
 
-**Why it's OK for POC:** Demonstrates the full workflow (create → review → decide) without ops overhead.
+**Why it's OK for POC:** Demonstrates the full workflow (submit → queue → review → decide) without ops overhead.
 
 **Production swap:**
+
 | Option | Fit | Notes |
 |--------|-----|-------|
 | **Amazon RDS (PostgreSQL)** | Best | Relational model fits submissions/reviews/agents. FedRAMP authorized on GovCloud. |
@@ -138,9 +185,9 @@ These are **deliberate** prototype simplifications — not architectural mistake
 
 **Current:** Label images live only in browser memory and transient API request bodies.
 
-**Why it's OK for POC:** Client-side processing means images never need to leave the browser for the core workflow.
+**Why it's OK for POC:** Demonstrates the processing pipeline without storage infrastructure.
 
-**Production swap:** Amazon S3 (or Azure Blob if on Azure). Upload corrected images + originals. Federal document retention policies require keeping submitted label artwork.
+**Production swap:** Amazon S3 (or Azure Blob). Upload corrected images + originals at submission time. Federal document retention policies require keeping submitted label artwork. Pre-signed URLs for agent viewing.
 
 **Effort:** 1 week. Add upload-on-submit to the frontend, pre-signed URL generation in the API.
 
@@ -149,31 +196,33 @@ These are **deliberate** prototype simplifications — not architectural mistake
 **Current:** No login, no user accounts, no roles.
 
 **Production swap:**
+
 | Option | Fit | Notes |
 |--------|-----|-------|
-| **AWS Cognito (GovCloud)** | Best for new build | FedRAMP authorized, supports MFA, SAML federation with existing AD |
+| **Login.gov** | Best for submitters | Federal shared service, already FedRAMP, public-facing |
+| **AWS Cognito (GovCloud)** | Best for agents | FedRAMP authorized, supports MFA, SAML federation with existing AD |
 | Azure AD | Best if staying on Azure | TTB already on Azure per Marcus |
-| Login.gov | Best for public-facing | Federal shared service, already FedRAMP |
 
 **Roles needed:**
+- `submitter` — upload labels, correct images, submit applications
 - `agent` — review labels, submit decisions
 - `senior_agent` — handle escalations, dual-review
 - `supervisor` — view metrics dashboard, manage queue assignments
 - `admin` — configure rules, manage accounts
 
-**Effort:** 2–3 weeks with Cognito/NextAuth.js.
+**Effort:** 2–3 weeks with Cognito/NextAuth.js. Login.gov integration adds ~1 week.
 
 #### 4. No Batch Job Queue
 
 **Current:** Batch upload processes labels sequentially in the browser (`BatchUpload.tsx`).
 
-**Why it's OK for POC:** 10 labels × 5s each = 50s — fine for demos. 300 labels × 5s = 25 minutes — not acceptable.
+**Why it's OK for POC:** 10 labels × 5s each = 50s — fine for demos. 300 labels × 5s = 25 minutes — not acceptable for production.
 
 **Production swap:**
 ```
-BatchUpload → S3 upload → SQS queue → Lambda workers (fan-out) → DynamoDB results
+Submitter batch upload → S3 → SQS queue → Lambda workers (fan-out) → DB results → notify agent queue
 ```
-AWS Step Functions could orchestrate: upload → OCR → validate → score → assign to queue.
+AWS Step Functions could orchestrate: upload → OCR → validate → score → assign to review queue.
 
 At 50 concurrent Lambda workers: 300 labels / 50 = 6 batches × 5s = **30 seconds** (vs 25 minutes sequential).
 
@@ -191,7 +240,7 @@ At 50 concurrent Lambda workers: 300 labels / 50 = 6 batches × 5s = **30 second
 
 **Current:** No structured logging of who reviewed what, when, or what they changed.
 
-**Production requirement:** Federal records management. Every review decision, field edit, status change, and login needs a tamper-evident audit trail.
+**Production requirement:** Federal records management. Every submission, review decision, field edit, status change, and login needs a tamper-evident audit trail.
 
 **Production swap:** CloudWatch Logs (structured JSON) + DynamoDB audit table with TTL-based retention. The `ReviewRecord` type in `types.ts` already captures `reviewerId`, `startedAt`, `completedAt`, `activeSeconds`, `decision`, `findings` — the schema is production-ready, it just needs a durable backend.
 
@@ -216,61 +265,68 @@ Vercel is not FedRAMP authorized. Production options:
 
 ### The utilization math
 
-47 agents × 13 reviews/day × 8 hours = **each agent uses the server for ~65 seconds per day** (13 OCR calls × 5s each). The rest is client-side work.
+Server-side processing happens at two moments:
+1. **Submission time** — OCR extraction + optional flatten (~5–10s of Lambda compute per submission)
+2. **Review time** — reading queue data + writing decisions (~50ms of serverless function time per action)
 
-Total server utilization: 47 × 65s = ~51 minutes of compute per 8-hour workday across the entire agency.
+Daily server compute: 605 submissions × 10s = ~100 minutes of Lambda time, spread across the day. Agent review actions: 605 × ~10 actions × 50ms = ~5 minutes of serverless function time.
 
-A traditional server running 24/7 would be **idle 99.6% of the time**. Serverless bills only for that 0.4%.
+Total: **~105 minutes of compute per 8-hour workday** across the entire agency.
+
+A traditional server running 24/7 would be **idle 99.8% of the time**. Serverless bills only for the 0.2% that's actual work.
 
 ### Scaling characteristics
 
 ```
-                        Serverless (our approach)     Traditional Server
-Adding 50 more agents   Zero changes, auto-scales     Capacity planning, provisioning
-Holiday surge (2×)      Zero changes, auto-scales     Over-provision or queue overflow
-Batch of 300 labels     Lambda fan-out (30s)          Thread pool exhaustion risk
-Off-hours               $0                            Still paying for idle servers
-Multi-region DR         Deploy same stack to 2nd      Duplicate infrastructure + sync
+                            Serverless (our approach)     Traditional Server
+More submitters             Zero changes, auto-scales     Capacity planning, provisioning
+Holiday surge (2× volume)   Zero changes, auto-scales     Over-provision or queue overflow
+Batch of 300 labels         Lambda fan-out (30s)          Thread pool exhaustion risk
+Off-hours                   $0                            Still paying for idle servers
+Multi-region DR             Deploy same stack to 2nd      Duplicate infrastructure + sync
 ```
 
 ### Why client-side image processing matters at scale
 
+The submitter-side image processing is the architectural decision that makes the cost numbers work:
+
 If we processed images server-side:
 - 150,000 labels/year × avg 2MB × 3 operations each = **900 GB of upload bandwidth/year**
 - Each operation: 500ms–2s server compute = **125–500 compute-hours/year**
-- Plus: latency for every drag-adjust of a corner point
+- Plus: latency for every drag-adjust of a corner point (bad UX for submitters)
 
 With client-side processing:
-- Upload bandwidth for images: **zero** (unless submitting for review)
+- Upload bandwidth for images: **zero** until final submission
 - Server compute for image ops: **zero**
-- Latency: **<100ms** for interactive operations
+- Latency: **<100ms** for interactive operations (submitters get instant feedback)
+- Submitters can iterate on corrections without incurring server costs
 
-This is why Sarah's scanning vendor pilot failed — they required server round-trips for image processing, and "30, 40 seconds to process a single label" made agents abandon it. Our approach gives instant feedback.
+The server only sees the final corrected image once, at submission time.
 
 ---
 
 ## Production Architecture Roadmap
 
 ### Phase 1: Database + Storage (Weeks 1–3)
-Replace in-memory store with PostgreSQL. Add S3 for image storage. All existing API contracts remain the same.
+Replace in-memory store with PostgreSQL. Add S3 for label image storage. Submitters upload corrected images at submission time. All existing API contracts remain the same.
 
 ### Phase 2: Authentication (Weeks 3–5)
-Add Cognito (or Azure AD) with role-based access. Protect all API routes. Add agent identity to review records.
+Add Login.gov for submitters, Cognito for agents. Role-based access control. Protect all API routes. Add identity to submissions and review records.
 
 ### Phase 3: Batch Processing Queue (Weeks 5–7)
-SQS + Lambda fan-out for batch uploads. Step Functions for orchestration. Reduce 300-label batch from 25 min → 30s.
+SQS + Lambda fan-out for large importer batch uploads. Step Functions for orchestration. Reduce 300-label batch from 25 min → 30s. Automatically route processed submissions to agent review queue.
 
 ### Phase 4: Audit & Compliance (Weeks 7–9)
-Structured audit logging. Review decision trail. Reviewer metrics dashboard (already designed in `validation-and-review-architecture.md`).
+Structured audit logging. Submission and review decision trail. Reviewer metrics dashboard (already designed in `validation-and-review-architecture.md`).
 
 ### Phase 5: GovCloud Migration (Weeks 9–12 + FedRAMP process)
 Migrate Lambda + S3 + RDS to AWS GovCloud. Replace Vercel with Amplify or ECS. Begin FedRAMP authorization.
 
 ### What doesn't change:
-- Frontend React components
-- Client-side image processing pipeline
+- Frontend React components (serve both submitters and agents)
+- Client-side image processing pipeline (submitter-side)
 - Validation rules engine
-- OCR integration pattern
+- OCR integration pattern (Lambda proxy)
 - Review queue workflow
 - All 77 unit tests
 
@@ -283,10 +339,11 @@ The core application logic is **infrastructure-agnostic**. The production migrat
 | Question | Answer |
 |----------|--------|
 | Can the compute layer handle 150K labels/year? | **Yes.** Lambda uses <5% of default capacity. |
-| Can it handle 47 concurrent agents? | **Yes.** Client-side processing = zero server contention. |
+| Can it handle thousands of concurrent submitters? | **Yes.** Client-side processing = zero server load per submitter until submission. |
 | Can it handle 300-label batch imports? | **POC: sequential (25 min). Production: parallel (30s).** Clear path via SQS. |
 | Is the architecture cost-efficient? | **Yes.** ~$1,800/year total vs $50K–$200K for vendor alternatives. |
 | Does it meet the <5 second response target? | **Yes.** Quick Check: ~2s. AI Extract: ~3–5s. Flatten: ~2–5s. |
+| Do agents ever wait for processing? | **No.** Processing happens at submission time. Agents see pre-processed results. |
 | What's missing for production? | Database, file storage, auth, batch queue, audit logging, FedRAMP. |
 | How long to production-ready? | ~12 weeks of engineering + FedRAMP process (6–18 months). |
 | Does the architecture need to change? | **No.** Same patterns, swap backing services. |

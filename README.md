@@ -239,7 +239,7 @@ flowchart TB
     style Unchanged fill:#eff6ff,stroke:#3b82f6
 ```
 
-**Key capacity finding:** At 605 labels/business day with 47 agents, our Lambda compute uses **<5% of default capacity**. The entire annual infrastructure cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md).
+**Key capacity finding:** The system serves two audiences — **submitters** (thousands of industry companies) who do client-side image correction and trigger server-side OCR at submission time, and **agents** (47 TTB reviewers) who see pre-processed results instantly. At 605 submissions/business day, Lambda compute uses **<5% of default capacity** and total annual infrastructure cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md).
 
 ### Two-Tier OCR Strategy
 
