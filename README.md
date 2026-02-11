@@ -322,12 +322,19 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Result banner** — shows mode, focal length, output dimensions; error state with red styling
 - **API route** — `POST /api/flatten` with `{ imageBase64, mode, mimeType, focalMultiplier? }`
 
-### Review Queue
-- **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed)
-- **`/queue/[id]` review page** — full review workspace with label checklists, OCR extracted fields, review history, findings editor, notes, and decision buttons (Approve / Reject / Needs Revision / Escalate)
+### Review Queue (Agent View)
+- **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed). Labeled "Agent View" with cross-navigation to Submission Simulator.
+- **`/queue/[id]` review page** — full agent review workspace with 4-tab layout:
+  - **Label + Data** (side-by-side) — label artwork on the left, OCR-extracted fields with match indicators + checklist on the right. Multi-label selector for front/back labels.
+  - **Checklist** — per-label compliance checklist with auto_pass/auto_fail/manual status
+  - **Form Comparison** — auto-computed fuzzy matching of COLA application form fields vs. label OCR, with field-by-field verdicts (exact/match/close/mismatch/missing), percentage scores, and summary bar
+  - **History** — full audit trail of previous reviews with findings
+- **Header stats bar** — at-a-glance pass/fail/manual counts + mismatch alerts
+- **Decision panel** — sticky sidebar with reviewer name, decision buttons (Approve / Reject / Needs Revision / Escalate), findings editor, and notes
 - **Live timer** — tracks active review time per session
-- **Review history** — full audit trail showing reviewer, decision, findings, time spent
-- **Mock seed data** — 8 realistic submissions across beer/wine/spirits with various statuses
+- **Label images** — displayed on the review page from submission data (corrected images from the Submission Simulator flow through)
+- **End-to-end flow** — "Submit to Agent Queue" button on the Submission Simulator sends processed images, checklists, and OCR-extracted fields to the agent review queue. Agent sees the actual corrected label artwork.
+- **Mock seed data** — 8 realistic submissions across beer/wine/spirits with various statuses, pre-populated form fields, and label images
 - **REST API** — `GET /api/queue`, `POST /api/queue`, `GET /api/queue/[id]`, `PATCH /api/queue/[id]`, `POST /api/queue/[id]` (submit review)
 
 ## Technical Stack

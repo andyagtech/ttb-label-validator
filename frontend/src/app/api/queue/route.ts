@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { beverageCategory, productName, submitterId, labels } = body;
+    const { beverageCategory, productName, submitterId, labels, serverValidation, formFields } = body;
 
     if (!beverageCategory || !productName) {
       return NextResponse.json(
@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
       productName,
       submitterId: submitterId || "anonymous",
       labels: labels || [],
+      serverValidation,
+      formFields,
     });
 
     return NextResponse.json({ submission }, { status: 201 });

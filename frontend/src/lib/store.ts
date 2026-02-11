@@ -47,6 +47,8 @@ export function createSubmission(data: {
   productName: string;
   submitterId: string;
   labels: SubmissionLabel[];
+  serverValidation?: Submission["serverValidation"];
+  formFields?: Record<string, string>;
 }): Submission {
   ensureSeeded();
   const now = new Date().toISOString();
@@ -60,6 +62,8 @@ export function createSubmission(data: {
     productName: data.productName,
     labels: data.labels,
     reviews: [],
+    serverValidation: data.serverValidation,
+    formFields: data.formFields,
   };
   submissions.unshift(submission);
   return submission;

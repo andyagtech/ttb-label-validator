@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   RotateCcw,
   Download,
@@ -21,6 +22,8 @@ import {
   ClipboardCheck,
   FlaskConical,
   Zap,
+  Send,
+  ArrowRight,
 } from "lucide-react";
 import ImageInput from "@/components/ImageInput";
 import CornerEditor from "@/components/CornerEditor";
@@ -125,9 +128,12 @@ const DEFAULT_SLOTS: LabelSlot[] = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [slots, setSlots] = useState<LabelSlot[]>(DEFAULT_SLOTS);
   const [activeSlotId, setActiveSlotId] = useState("front");
   const [beverageCategory, setBeverageCategory] = useState<BeverageCategory>("wine");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [exportQuality, setExportQuality] = useState(100);
   const [exportFormat, setExportFormat] = useState<"png" | "jpeg">("png");
   const [isAutoFitting, setIsAutoFitting] = useState(false);
@@ -766,6 +772,70 @@ export default function Home() {
   // Count how many slots have images
   const filledSlots = slots.filter((s) => s.imageSrc !== null).length;
   const totalSlots = slots.length;
+
+  // Submit processed labels to the Agent Review Queue
+  const submitToQueue = useCallback(async () => {
+    const filledSlotData = slots.filter((s) => s.imageSrc !== null);
+    if (filledSlotData.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      // Build SubmissionLabel objects from slot data
+      const labels = filledSlotData.map((s) => ({
+        slotId: s.id,
+        slotName: s.name,
+        originalImageUrl: s.imageSrc || "",
+        correctedImageUrl: s.correctedImage || s.imageSrc || "",
+        checklist: s.checklist,
+      }));
+
+      // Collect OCR results from all slots into a single record
+      const ocrResults: Record<string, string> = {};
+      for (const s of filledSlotData) {
+        if (s.extractedFields) {
+          for (const [key, val] of Object.entries(s.extractedFields)) {
+            if (key !== "rawText" && val) {
+              ocrResults[key] = val as string;
+            }
+          }
+        }
+      }
+
+      // Derive a product name from extracted brand name or first slot name
+      const productName =
+        ocrResults.brandName ||
+        filledSlotData[0]?.name ||
+        "Unnamed Product";
+
+      const body = {
+        beverageCategory,
+        productName,
+        submitterId: "Submission Simulator",
+        labels,
+        serverValidation: Object.keys(ocrResults).length > 0
+          ? {
+              completedAt: new Date().toISOString(),
+              findings: [],
+              ocrResults,
+            }
+          : undefined,
+      };
+
+      const res = await fetch("/api/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSubmittedId(data.submission.id);
+      }
+    } catch (err) {
+      console.error("Failed to submit to queue:", err);
+    }
+    setIsSubmitting(false);
+  }, [slots, beverageCategory]);
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -1945,6 +2015,55 @@ export default function Home() {
                       Exports the current label with perspective correction at full
                       resolution.
                     </p>
+
+                    {/* Submit to Agent Queue */}
+                    <div className="border-t border-gray-200 pt-4 mt-2">
+                      {submittedId ? (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-center space-y-2">
+                          <CheckCircle2 size={24} className="text-emerald-500 mx-auto" />
+                          <p className="text-xs font-semibold text-emerald-800">
+                            Submitted to Agent Queue
+                          </p>
+                          <p className="text-[11px] text-emerald-600 font-mono">
+                            {submittedId}
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => router.push(`/queue/${submittedId}`)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
+                            >
+                              Review Now
+                              <ArrowRight size={12} />
+                            </button>
+                            <button
+                              onClick={() => router.push("/queue")}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
+                            >
+                              View Queue
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={submitToQueue}
+                            disabled={filledSlots === 0 || isSubmitting}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                            data-walkthrough="submit"
+                          >
+                            {isSubmitting ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Send size={16} />
+                            )}
+                            {isSubmitting ? "Submitting..." : "Submit to Agent Queue"}
+                          </button>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Sends processed labels, checklist, and extracted data to the agent review queue.
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
                     </>
                   )}
