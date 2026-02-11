@@ -111,16 +111,21 @@ const STEPS: WalkthroughStep[] = [
 
 interface WalkthroughPanelProps {
   onClose: () => void;
+  steps?: WalkthroughStep[];
+  title?: string;
 }
 
-export default function WalkthroughPanel({ onClose }: WalkthroughPanelProps) {
+export { STEPS as SUBMITTER_STEPS };
+
+export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughPanelProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]));
 
-  const step = STEPS[currentStep];
+  const activeSteps = steps || STEPS;
+  const step = activeSteps[currentStep];
   const isFirst = currentStep === 0;
-  const isLast = currentStep === STEPS.length - 1;
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
+  const isLast = currentStep === activeSteps.length - 1;
+  const progress = ((currentStep + 1) / activeSteps.length) * 100;
 
   const goNext = useCallback(() => {
     if (!isLast) {
@@ -185,9 +190,9 @@ export default function WalkthroughPanel({ onClose }: WalkthroughPanelProps) {
         <div className="px-5 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-gray-800">Walkthrough</h2>
+              <h2 className="text-base font-semibold text-gray-800">{title || "Walkthrough"}</h2>
               <p className="text-[11px] text-gray-500 mt-0.5">
-                Step {currentStep + 1} of {STEPS.length}
+                Step {currentStep + 1} of {activeSteps.length}
               </p>
             </div>
             <button
@@ -210,7 +215,7 @@ export default function WalkthroughPanel({ onClose }: WalkthroughPanelProps) {
         {/* Step Navigation (vertical step indicators) */}
         <div className="px-5 py-3 border-b border-gray-100 flex-shrink-0 overflow-x-auto">
           <div className="flex gap-1">
-            {STEPS.map((s, idx) => (
+            {activeSteps.map((s, idx) => (
               <button
                 key={s.id}
                 onClick={() => goTo(idx)}

@@ -30,6 +30,8 @@ import {
   ReviewFinding,
 } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
+import WalkthroughPanel from "@/components/WalkthroughPanel";
+import { AGENT_REVIEW_STEPS } from "@/components/AgentWalkthroughSteps";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -157,6 +159,7 @@ export default function ReviewPage() {
   // UI state
   const [leftTab, setLeftTab] = useState<LeftTab>("side-by-side");
   const [selectedLabelIdx, setSelectedLabelIdx] = useState(0);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
 
   // Timer tick
   useEffect(() => {
@@ -334,7 +337,7 @@ export default function ReviewPage() {
           </div>
 
           {/* Stats badges */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4" data-walkthrough="stats-bar">
             <div className="flex items-center gap-3 text-[11px]">
               <span className="flex items-center gap-1 text-emerald-600">
                 <CheckCircle2 size={12} /> {passCount} pass
@@ -368,14 +371,15 @@ export default function ReviewPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-[1400px] mx-auto px-6 flex gap-1">
           {([
-            { key: "side-by-side" as LeftTab, label: "Label + Data", icon: <SplitSquareHorizontal size={13} /> },
-            { key: "checklist" as LeftTab, label: "Checklist", icon: <ClipboardCheck size={13} /> },
-            { key: "comparison" as LeftTab, label: "Form Comparison", icon: <Scale size={13} /> },
-            { key: "history" as LeftTab, label: "History", icon: <History size={13} /> },
+            { key: "side-by-side" as LeftTab, label: "Label + Data", icon: <SplitSquareHorizontal size={13} />, wt: "tab-label-data" },
+            { key: "checklist" as LeftTab, label: "Checklist", icon: <ClipboardCheck size={13} />, wt: "tab-checklist" },
+            { key: "comparison" as LeftTab, label: "Form Comparison", icon: <Scale size={13} />, wt: "tab-form-comparison" },
+            { key: "history" as LeftTab, label: "History", icon: <History size={13} />, wt: "tab-history" },
           ]).map((tab) => (
             <button
               key={tab.key}
               onClick={() => setLeftTab(tab.key)}
+              data-walkthrough={tab.wt}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition ${
                 leftTab === tab.key
                   ? "border-blue-600 text-blue-600"
@@ -763,7 +767,7 @@ export default function ReviewPage() {
         {/* ============================================================== */}
         {/* RIGHT: Review Decision Panel (fixed width) */}
         {/* ============================================================== */}
-        <div className="w-[320px] shrink-0 space-y-4">
+        <div className="w-[320px] shrink-0 space-y-4" data-walkthrough="decision-panel">
           {submitted ? (
             <div className="bg-white rounded-xl border border-emerald-200 p-6 text-center sticky top-20">
               <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3" />
@@ -908,6 +912,29 @@ export default function ReviewPage() {
           )}
         </div>
       </div>
+      {/* Walkthrough Panel */}
+      {showWalkthrough && (
+        <WalkthroughPanel
+          onClose={() => setShowWalkthrough(false)}
+          steps={AGENT_REVIEW_STEPS}
+          title="Review Page Guide"
+        />
+      )}
+
+      {/* Walkthrough FAB */}
+      {!showWalkthrough && (
+        <button
+          onClick={() => setShowWalkthrough(true)}
+          className="fixed bottom-5 left-5 w-12 h-12 rounded-full bg-white border-2 border-gray-200 shadow-lg hover:shadow-xl hover:scale-110 transition-all z-30 flex items-center justify-center group"
+          title="Review page walkthrough"
+        >
+          <img
+            src="/question-mark.svg"
+            alt="Help"
+            className="w-6 h-6 text-gray-600 group-hover:text-blue-600 transition"
+          />
+        </button>
+      )}
     </div>
   );
 }

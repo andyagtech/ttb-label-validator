@@ -14,6 +14,8 @@ import {
   Beer,
   GlassWater,
 } from "lucide-react";
+import WalkthroughPanel from "@/components/WalkthroughPanel";
+import { AGENT_QUEUE_STEPS, AGENT_REVIEW_STEPS } from "@/components/AgentWalkthroughSteps";
 
 // ---------------------------------------------------------------------------
 // Types (matches API response)
@@ -140,6 +142,9 @@ export default function QueuePage() {
   ).length;
   const approvedCount = items.filter((i) => i.status === "approved").length;
   const rejectedCount = items.filter((i) => i.status === "rejected").length;
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+
+  const agentSteps = [...AGENT_QUEUE_STEPS, ...AGENT_REVIEW_STEPS];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -201,7 +206,7 @@ export default function QueuePage() {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 mb-4">
+        <div className="flex gap-1 mb-4" data-walkthrough="queue-filters">
           {(
             [
               ["all", "All"],
@@ -224,7 +229,7 @@ export default function QueuePage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" data-walkthrough="queue-table">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
@@ -328,6 +333,30 @@ export default function QueuePage() {
           </table>
         </div>
       </div>
+
+      {/* Walkthrough Panel */}
+      {showWalkthrough && (
+        <WalkthroughPanel
+          onClose={() => setShowWalkthrough(false)}
+          steps={agentSteps}
+          title="Agent Review Guide"
+        />
+      )}
+
+      {/* Walkthrough FAB */}
+      {!showWalkthrough && (
+        <button
+          onClick={() => setShowWalkthrough(true)}
+          className="fixed bottom-5 left-5 w-12 h-12 rounded-full bg-white border-2 border-gray-200 shadow-lg hover:shadow-xl hover:scale-110 transition-all z-30 flex items-center justify-center group"
+          title="Agent review walkthrough"
+        >
+          <img
+            src="/question-mark.svg"
+            alt="Help"
+            className="w-6 h-6 text-gray-600 group-hover:text-blue-600 transition"
+          />
+        </button>
+      )}
     </div>
   );
 }
