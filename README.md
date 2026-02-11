@@ -239,7 +239,7 @@ flowchart TB
     style Unchanged fill:#eff6ff,stroke:#3b82f6
 ```
 
-**Key capacity finding:** The system serves two audiences — **submitters** (thousands of industry companies) who do client-side image correction and trigger server-side OCR at submission time, and **agents** (47 TTB reviewers) who see pre-processed results instantly. At 605 submissions/business day, Lambda compute uses **<5% of default capacity** and total annual infrastructure cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md).
+**This is an agent-facing tool.** The primary users are 47 TTB compliance agents reviewing ~605 label applications per business day. The prototype has two views: an **Agent Review View** (review queue, pre-processed fields, validation, checklist, approve/reject) and a **Submission Simulator** (image upload, correction, OCR — simulating what a backend ingestion pipeline would produce from COLA). At production scale, Lambda compute uses **<5% of default capacity** and total annual cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md).
 
 ### Two-Tier OCR Strategy
 
