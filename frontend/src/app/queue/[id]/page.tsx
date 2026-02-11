@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   CheckCircle2,
   XCircle,
@@ -17,12 +17,19 @@ import {
   Wine,
   Beer,
   GlassWater,
+  Image as ImageIcon,
+  Minus,
+  Scale,
+  History,
+  ClipboardCheck,
+  SplitSquareHorizontal,
 } from "lucide-react";
 import {
   Submission,
   ReviewDecision,
   ReviewFinding,
 } from "@/lib/types";
+import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,41 +59,27 @@ const DECISION_OPTIONS: Array<{
   icon: React.ReactNode;
   color: string;
   bg: string;
-  hoverBg: string;
 }> = [
-  {
-    value: "approve",
-    label: "Approve",
-    icon: <CheckCircle2 size={15} />,
-    color: "text-white",
-    bg: "bg-emerald-500",
-    hoverBg: "hover:bg-emerald-600",
-  },
-  {
-    value: "reject",
-    label: "Reject",
-    icon: <XCircle size={15} />,
-    color: "text-white",
-    bg: "bg-red-500",
-    hoverBg: "hover:bg-red-600",
-  },
-  {
-    value: "needs_revision",
-    label: "Needs Revision",
-    icon: <AlertTriangle size={15} />,
-    color: "text-white",
-    bg: "bg-orange-500",
-    hoverBg: "hover:bg-orange-600",
-  },
-  {
-    value: "escalate",
-    label: "Escalate",
-    icon: <User size={15} />,
-    color: "text-white",
-    bg: "bg-indigo-500",
-    hoverBg: "hover:bg-indigo-600",
-  },
+  { value: "approve", label: "Approve", icon: <CheckCircle2 size={15} />, color: "text-white", bg: "bg-emerald-500" },
+  { value: "reject", label: "Reject", icon: <XCircle size={15} />, color: "text-white", bg: "bg-red-500" },
+  { value: "needs_revision", label: "Needs Revision", icon: <AlertTriangle size={15} />, color: "text-white", bg: "bg-orange-500" },
+  { value: "escalate", label: "Escalate", icon: <User size={15} />, color: "text-white", bg: "bg-indigo-500" },
 ];
+
+const FIELD_LABELS: Record<string, string> = {
+  brandName: "Brand Name",
+  classType: "Class / Type",
+  alcoholContent: "Alcohol Content",
+  netContents: "Net Contents",
+  healthWarning: "Health Warning",
+  nameAddress: "Name & Address",
+  countryOfOrigin: "Country of Origin",
+  sulfiteDeclaration: "Sulfite Declaration",
+  appellation: "Appellation",
+  vintageDate: "Vintage",
+  varietal: "Varietal",
+  ageStatement: "Age Statement",
+};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
@@ -104,24 +97,38 @@ function formatSeconds(s: number): string {
   return `${m}m ${sec}s`;
 }
 
-// ---------------------------------------------------------------------------
-// OCR Fields Display
-// ---------------------------------------------------------------------------
+function verdictIcon(verdict: MatchResult["verdict"]) {
+  switch (verdict) {
+    case "exact":
+    case "match":
+      return <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />;
+    case "close":
+      return <AlertTriangle size={13} className="text-amber-500 shrink-0" />;
+    case "mismatch":
+      return <XCircle size={13} className="text-red-500 shrink-0" />;
+    case "missing":
+      return <Minus size={13} className="text-gray-400 shrink-0" />;
+  }
+}
 
-const FIELD_LABELS: Record<string, string> = {
-  brandName: "Brand Name",
-  classType: "Class / Type",
-  alcoholContent: "Alcohol Content",
-  netContents: "Net Contents",
-  healthWarning: "Health Warning",
-  nameAddress: "Name & Address",
-  countryOfOrigin: "Country of Origin",
-  sulfiteDeclaration: "Sulfite Declaration",
-  appellation: "Appellation",
-  vintageDate: "Vintage",
-  varietal: "Varietal",
-  ageStatement: "Age Statement",
-};
+function verdictBg(verdict: MatchResult["verdict"]) {
+  switch (verdict) {
+    case "exact":
+    case "match":
+      return "bg-emerald-50 border-emerald-200";
+    case "close":
+      return "bg-amber-50 border-amber-200";
+    case "mismatch":
+      return "bg-red-50 border-red-200";
+    case "missing":
+      return "bg-gray-50 border-gray-100";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tabs for left panel
+// ---------------------------------------------------------------------------
+type LeftTab = "side-by-side" | "checklist" | "comparison" | "history";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -129,7 +136,6 @@ const FIELD_LABELS: Record<string, string> = {
 
 export default function ReviewPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
 
   const [submission, setSubmission] = useState<Submission | null>(null);
@@ -148,10 +154,9 @@ export default function ReviewPage() {
   const [startedAt] = useState(new Date().toISOString());
   const [elapsed, setElapsed] = useState(0);
 
-  // Expand/collapse
-  const [expandedLabel, setExpandedLabel] = useState<number>(0);
-  const [showOcr, setShowOcr] = useState(true);
-  const [showHistory, setShowHistory] = useState(true);
+  // UI state
+  const [leftTab, setLeftTab] = useState<LeftTab>("side-by-side");
+  const [selectedLabelIdx, setSelectedLabelIdx] = useState(0);
 
   // Timer tick
   useEffect(() => {
@@ -182,7 +187,32 @@ export default function ReviewPage() {
     fetchSubmission();
   }, [fetchSubmission]);
 
-  // Add finding
+  // Auto-run form comparison
+  const comparisonResults = useMemo(() => {
+    if (!submission?.formFields || !submission?.serverValidation?.ocrResults) return null;
+    const results: Record<string, MatchResult> = {};
+    const formFields = submission.formFields;
+    const ocrResults = submission.serverValidation.ocrResults;
+    for (const key of Object.keys(FIELD_LABELS)) {
+      const formVal = formFields[key];
+      const labelVal = ocrResults[key];
+      if (formVal || labelVal) {
+        results[key] = compareFields(formVal, labelVal);
+      }
+    }
+    return results;
+  }, [submission]);
+
+  const comparisonSummary = useMemo(() => {
+    if (!comparisonResults) return null;
+    const items = Object.values(comparisonResults);
+    const matches = items.filter((r) => r.verdict === "exact" || r.verdict === "match").length;
+    const issues = items.filter((r) => r.verdict === "close" || r.verdict === "mismatch").length;
+    const missing = items.filter((r) => r.verdict === "missing").length;
+    return { matches, issues, missing, total: items.length };
+  }, [comparisonResults]);
+
+  // Finding helpers
   const addFinding = useCallback(() => {
     setFindings((prev) => [
       ...prev,
@@ -263,12 +293,19 @@ export default function ReviewPage() {
   const sb = STATUS_BADGE[submission.status] || STATUS_BADGE.draft;
   const isPending = submission.status === "submitted" || submission.status === "in_review";
   const ocrResults = submission.serverValidation?.ocrResults;
+  const selectedLabel = submission.labels[selectedLabelIdx];
+
+  // Count checklist stats
+  const allCheckItems = submission.labels.flatMap((l) => l.checklist);
+  const passCount = allCheckItems.filter((c) => c.status === "auto_pass").length;
+  const failCount = allCheckItems.filter((c) => c.status === "auto_fail").length;
+  const uncheckedCount = allCheckItems.filter((c) => c.status === "unchecked").length;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/queue"
@@ -295,193 +332,440 @@ export default function ReviewPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Clock size={13} />
-            <span className="font-mono">{formatSeconds(elapsed)}</span>
+
+          {/* Stats badges */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="flex items-center gap-1 text-emerald-600">
+                <CheckCircle2 size={12} /> {passCount} pass
+              </span>
+              {failCount > 0 && (
+                <span className="flex items-center gap-1 text-red-600">
+                  <XCircle size={12} /> {failCount} fail
+                </span>
+              )}
+              {uncheckedCount > 0 && (
+                <span className="flex items-center gap-1 text-gray-400">
+                  {uncheckedCount} manual
+                </span>
+              )}
+              {comparisonSummary && comparisonSummary.issues > 0 && (
+                <span className="flex items-center gap-1 text-amber-600">
+                  <AlertTriangle size={12} /> {comparisonSummary.issues} mismatch{comparisonSummary.issues > 1 ? "es" : ""}
+                </span>
+              )}
+            </div>
+            <div className="h-4 w-px bg-gray-200" />
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Clock size={13} />
+              <span className="font-mono">{formatSeconds(elapsed)}</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-3 gap-6">
-        {/* Left: Labels + OCR data */}
-        <div className="col-span-2 space-y-4">
-          {/* Label checklists */}
-          {submission.labels.map((label, li) => (
-            <div
-              key={label.slotId}
-              className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+      {/* Tab bar */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-[1400px] mx-auto px-6 flex gap-1">
+          {([
+            { key: "side-by-side" as LeftTab, label: "Label + Data", icon: <SplitSquareHorizontal size={13} /> },
+            { key: "checklist" as LeftTab, label: "Checklist", icon: <ClipboardCheck size={13} /> },
+            { key: "comparison" as LeftTab, label: "Form Comparison", icon: <Scale size={13} /> },
+            { key: "history" as LeftTab, label: "History", icon: <History size={13} /> },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setLeftTab(tab.key)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition ${
+                leftTab === tab.key
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
             >
-              <button
-                onClick={() => setExpandedLabel(expandedLabel === li ? -1 : li)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
-              >
-                <div className="flex items-center gap-2">
-                  <FileText size={14} className="text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {label.slotName}
-                  </span>
-                  <span className="text-[10px] text-gray-400">
-                    {label.checklist.length} items
-                  </span>
-                </div>
-                {expandedLabel === li ? (
-                  <ChevronUp size={14} className="text-gray-400" />
-                ) : (
-                  <ChevronDown size={14} className="text-gray-400" />
-                )}
-              </button>
+              {tab.icon}
+              {tab.label}
+              {tab.key === "comparison" && comparisonSummary && comparisonSummary.issues > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700">
+                  {comparisonSummary.issues}
+                </span>
+              )}
+              {tab.key === "history" && submission.reviews.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-600">
+                  {submission.reviews.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
-              {expandedLabel === li && (
-                <div className="px-4 pb-4 space-y-1.5">
-                  {label.checklist.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-3 px-3 py-2 rounded-lg bg-gray-50"
+      <div className="max-w-[1400px] mx-auto px-6 py-6 flex gap-6">
+        {/* ============================================================== */}
+        {/* LEFT: Content area (flex-1) */}
+        {/* ============================================================== */}
+        <div className="flex-1 min-w-0">
+
+          {/* ---- SIDE-BY-SIDE TAB ---- */}
+          {leftTab === "side-by-side" && (
+            <div className="space-y-4">
+              {/* Label selector (if multiple) */}
+              {submission.labels.length > 1 && (
+                <div className="flex gap-2">
+                  {submission.labels.map((l, i) => (
+                    <button
+                      key={l.slotId}
+                      onClick={() => setSelectedLabelIdx(i)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                        selectedLabelIdx === i
+                          ? "bg-gray-800 text-white"
+                          : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+                      }`}
                     >
-                      <div className="mt-0.5">
-                        {item.status === "auto_pass" ? (
-                          <CheckCircle2
-                            size={15}
-                            className="text-emerald-500"
-                          />
-                        ) : item.status === "auto_fail" ? (
-                          <XCircle size={15} className="text-red-500" />
-                        ) : (
-                          <div className="w-[15px] h-[15px] rounded-full border-2 border-gray-300" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-700">
-                          {item.label}
-                        </p>
-                        {item.detectedValue && (
-                          <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                            Detected: &ldquo;{item.detectedValue}&rdquo;
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                      <ImageIcon size={12} />
+                      {l.slotName}
+                    </button>
                   ))}
                 </div>
               )}
-            </div>
-          ))}
 
-          {/* OCR Extracted Fields */}
-          {ocrResults && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <button
-                onClick={() => setShowOcr(!showOcr)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
-              >
-                <span className="text-sm font-medium text-gray-700">
-                  OCR Extracted Fields
-                </span>
-                {showOcr ? (
-                  <ChevronUp size={14} className="text-gray-400" />
-                ) : (
-                  <ChevronDown size={14} className="text-gray-400" />
-                )}
-              </button>
-              {showOcr && (
-                <div className="px-4 pb-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(ocrResults)
-                      .filter(([k]) => k !== "rawText")
-                      .map(([key, value]) => (
-                        <div key={key} className="bg-gray-50 rounded-lg px-3 py-2">
-                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
-                            {FIELD_LABELS[key] || key}
-                          </p>
-                          <p className="text-xs text-gray-700 mt-0.5 break-words">
-                            {value || <span className="text-gray-400 italic">Not detected</span>}
-                          </p>
-                        </div>
-                      ))}
+              {/* Side-by-side layout */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left: Label Image */}
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
+                    <ImageIcon size={13} className="text-gray-400" />
+                    <span className="text-xs font-medium text-gray-700">
+                      {selectedLabel?.slotName || "Label"} — Artwork
+                    </span>
                   </div>
+                  <div className="p-4 flex items-center justify-center bg-gray-50/50 min-h-[300px]">
+                    {selectedLabel?.correctedImageUrl ? (
+                      <img
+                        src={selectedLabel.correctedImageUrl}
+                        alt={`${selectedLabel.slotName} artwork`}
+                        className="max-w-full max-h-[400px] rounded-lg shadow-sm"
+                      />
+                    ) : selectedLabel?.originalImageUrl ? (
+                      <img
+                        src={selectedLabel.originalImageUrl}
+                        alt={`${selectedLabel.slotName} artwork`}
+                        className="max-w-full max-h-[400px] rounded-lg shadow-sm"
+                      />
+                    ) : (
+                      <div className="text-center py-12">
+                        <ImageIcon size={32} className="text-gray-300 mx-auto mb-2" />
+                        <p className="text-xs text-gray-400">No label image available</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Extracted Data + Checklist */}
+                <div className="space-y-4">
+                  {/* OCR Extracted Fields */}
+                  {ocrResults && (
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
+                        <FileText size={13} className="text-gray-400" />
+                        <span className="text-xs font-medium text-gray-700">
+                          Extracted Fields
+                        </span>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        {Object.entries(ocrResults)
+                          .filter(([k]) => k !== "rawText")
+                          .map(([key, value]) => {
+                            const matchResult = comparisonResults?.[key];
+                            return (
+                              <div
+                                key={key}
+                                className={`rounded-lg px-3 py-2 border ${
+                                  matchResult ? verdictBg(matchResult.verdict) : "bg-gray-50 border-gray-100"
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  {matchResult && verdictIcon(matchResult.verdict)}
+                                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                                    {FIELD_LABELS[key] || key}
+                                  </p>
+                                </div>
+                                <p className="text-xs text-gray-700 mt-0.5 break-words">
+                                  {value || <span className="text-gray-400 italic">Not detected</span>}
+                                </p>
+                                {matchResult && submission.formFields?.[key] && (
+                                  <p className="text-[10px] text-gray-500 mt-0.5">
+                                    Form: &ldquo;{submission.formFields[key]}&rdquo;
+                                    {matchResult.verdict !== "exact" && matchResult.verdict !== "missing" && (
+                                      <span className="ml-1 text-gray-400">({matchResult.score}% match)</span>
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Label Checklist (inline) */}
+                  {selectedLabel && (
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
+                        <ClipboardCheck size={13} className="text-gray-400" />
+                        <span className="text-xs font-medium text-gray-700">
+                          {selectedLabel.slotName} Checklist
+                        </span>
+                      </div>
+                      <div className="p-3 space-y-1">
+                        {selectedLabel.checklist.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50"
+                          >
+                            {item.status === "auto_pass" ? (
+                              <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                            ) : item.status === "auto_fail" ? (
+                              <XCircle size={14} className="text-red-500 shrink-0" />
+                            ) : (
+                              <div className="w-[14px] h-[14px] rounded-full border-2 border-gray-300 shrink-0" />
+                            )}
+                            <span className="text-xs text-gray-700">{item.label}</span>
+                            {item.detectedValue && (
+                              <span className="text-[10px] text-gray-400 ml-auto truncate max-w-[150px]">
+                                {item.detectedValue}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ---- CHECKLIST TAB ---- */}
+          {leftTab === "checklist" && (
+            <div className="space-y-4">
+              {submission.labels.map((label) => (
+                <div
+                  key={label.slotId}
+                  className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+                >
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                    <FileText size={14} className="text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700">
+                      {label.slotName}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      {label.checklist.length} items
+                    </span>
+                  </div>
+                  <div className="p-4 space-y-1.5">
+                    {label.checklist.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-3 px-3 py-2 rounded-lg bg-gray-50"
+                      >
+                        <div className="mt-0.5">
+                          {item.status === "auto_pass" ? (
+                            <CheckCircle2 size={15} className="text-emerald-500" />
+                          ) : item.status === "auto_fail" ? (
+                            <XCircle size={15} className="text-red-500" />
+                          ) : (
+                            <div className="w-[15px] h-[15px] rounded-full border-2 border-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-700">
+                            {item.label}
+                          </p>
+                          {item.detectedValue && (
+                            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                              Detected: &ldquo;{item.detectedValue}&rdquo;
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ---- FORM COMPARISON TAB ---- */}
+          {leftTab === "comparison" && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <h3 className="text-sm font-medium text-gray-700">
+                  COLA Application Form vs. Label OCR
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Comparing what the applicant entered on TTB Form 5100.31 against what was extracted from the label artwork.
+                </p>
+              </div>
+
+              {comparisonResults ? (
+                <div className="p-4 space-y-3">
+                  {/* Summary bar */}
+                  {comparisonSummary && (
+                    <div className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-3 ${
+                      comparisonSummary.issues === 0
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border border-amber-200"
+                    }`}>
+                      <span>{comparisonSummary.matches} match{comparisonSummary.matches !== 1 ? "es" : ""}</span>
+                      <span className="text-gray-300">·</span>
+                      <span>{comparisonSummary.issues} issue{comparisonSummary.issues !== 1 ? "s" : ""}</span>
+                      {comparisonSummary.missing > 0 && (
+                        <>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-gray-500">{comparisonSummary.missing} not compared</span>
+                        </>
+                      )}
+                      {comparisonSummary.issues === 0 && (
+                        <span className="ml-auto">All compared fields agree</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Field-by-field comparison */}
+                  <div className="space-y-2">
+                    {Object.entries(comparisonResults).map(([key, result]) => (
+                      <div
+                        key={key}
+                        className={`rounded-lg border p-3 ${verdictBg(result.verdict)}`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          {verdictIcon(result.verdict)}
+                          <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                            {FIELD_LABELS[key] || key}
+                          </span>
+                          <span className="text-[10px] text-gray-400 ml-auto">
+                            {result.score}%
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-[9px] font-medium text-gray-400 uppercase mb-0.5">Application Form</p>
+                            <p className="text-xs text-gray-700">
+                              {submission.formFields?.[key] || <span className="text-gray-400 italic">Not provided</span>}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-medium text-gray-400 uppercase mb-0.5">Label (OCR)</p>
+                            <p className="text-xs text-gray-700">
+                              {ocrResults?.[key] || <span className="text-gray-400 italic">Not detected</span>}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1.5">{result.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <Scale size={32} className="text-gray-300 mx-auto mb-2" />
+                  <p className="text-xs text-gray-500">
+                    No form data available for this submission.
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    In production, form fields would be imported from the COLA application.
+                  </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Review History */}
-          {submission.reviews.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
-              >
-                <span className="text-sm font-medium text-gray-700">
-                  Review History ({submission.reviews.length})
-                </span>
-                {showHistory ? (
-                  <ChevronUp size={14} className="text-gray-400" />
-                ) : (
-                  <ChevronDown size={14} className="text-gray-400" />
-                )}
-              </button>
-              {showHistory && (
-                <div className="px-4 pb-4 space-y-3">
-                  {submission.reviews.map((rev) => {
-                    const db = STATUS_BADGE[rev.decision === "needs_revision" ? "needs_revision" : rev.decision === "approve" ? "approved" : rev.decision === "reject" ? "rejected" : "in_review"];
-                    return (
-                      <div
-                        key={rev.id}
-                        className="border border-gray-100 rounded-lg p-3"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <User size={13} className="text-gray-400" />
-                            <span className="text-xs font-medium text-gray-700">
-                              {rev.reviewerId}
-                            </span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${db.color} ${db.bg}`}>
-                              {rev.decision === "needs_revision" ? "Needs Revision" : rev.decision.charAt(0).toUpperCase() + rev.decision.slice(1)}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-gray-400">
-                            {formatDate(rev.completedAt)} · {formatSeconds(rev.activeSeconds)}
+          {/* ---- HISTORY TAB ---- */}
+          {leftTab === "history" && (
+            <div className="space-y-4">
+              {submission.reviews.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                  <History size={32} className="text-gray-300 mx-auto mb-2" />
+                  <p className="text-xs text-gray-500">No previous reviews for this submission.</p>
+                </div>
+              ) : (
+                submission.reviews.map((rev) => {
+                  const db = STATUS_BADGE[
+                    rev.decision === "needs_revision" ? "needs_revision"
+                    : rev.decision === "approve" ? "approved"
+                    : rev.decision === "reject" ? "rejected"
+                    : "in_review"
+                  ];
+                  return (
+                    <div
+                      key={rev.id}
+                      className="bg-white rounded-xl border border-gray-200 p-4"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <User size={14} className="text-gray-400" />
+                          <span className="text-sm font-medium text-gray-700">
+                            {rev.reviewerId}
+                          </span>
+                          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${db.color} ${db.bg}`}>
+                            {rev.decision === "needs_revision"
+                              ? "Needs Revision"
+                              : rev.decision.charAt(0).toUpperCase() + rev.decision.slice(1)}
                           </span>
                         </div>
-                        {rev.notes && (
-                          <p className="text-xs text-gray-600 mb-2">{rev.notes}</p>
-                        )}
-                        {rev.findings.length > 0 && (
-                          <div className="space-y-1">
-                            {rev.findings.map((f, fi) => (
-                              <div
-                                key={fi}
-                                className={`flex items-start gap-2 text-[11px] px-2 py-1 rounded ${
-                                  f.severity === "error"
-                                    ? "bg-red-50 text-red-700"
-                                    : f.severity === "warning"
-                                    ? "bg-amber-50 text-amber-700"
-                                    : "bg-blue-50 text-blue-700"
-                                }`}
-                              >
-                                {f.severity === "error" ? (
-                                  <XCircle size={11} className="mt-0.5 shrink-0" />
-                                ) : (
-                                  <AlertTriangle size={11} className="mt-0.5 shrink-0" />
-                                )}
-                                <span>{f.message}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <span className="text-[11px] text-gray-400">
+                          {formatDate(rev.completedAt)} · {formatSeconds(rev.activeSeconds)}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
+                      {rev.notes && (
+                        <p className="text-xs text-gray-600 mb-3 bg-gray-50 rounded-lg px-3 py-2">
+                          {rev.notes}
+                        </p>
+                      )}
+                      {rev.findings.length > 0 && (
+                        <div className="space-y-1.5">
+                          {rev.findings.map((f, fi) => (
+                            <div
+                              key={fi}
+                              className={`flex items-start gap-2 text-xs px-3 py-2 rounded-lg ${
+                                f.severity === "error"
+                                  ? "bg-red-50 text-red-700"
+                                  : f.severity === "warning"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-blue-50 text-blue-700"
+                              }`}
+                            >
+                              {f.severity === "error" ? (
+                                <XCircle size={13} className="mt-0.5 shrink-0" />
+                              ) : (
+                                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                              )}
+                              <div>
+                                <span className="font-medium">{f.message}</span>
+                                {f.checklistItemId && (
+                                  <span className="text-[10px] opacity-70 ml-1">
+                                    ({f.checklistItemId})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
         </div>
 
-        {/* Right: Review Panel */}
-        <div className="space-y-4">
+        {/* ============================================================== */}
+        {/* RIGHT: Review Decision Panel (fixed width) */}
+        {/* ============================================================== */}
+        <div className="w-[320px] shrink-0 space-y-4">
           {submitted ? (
-            <div className="bg-white rounded-xl border border-emerald-200 p-6 text-center">
+            <div className="bg-white rounded-xl border border-emerald-200 p-6 text-center sticky top-20">
               <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3" />
               <h3 className="text-sm font-semibold text-gray-800 mb-1">
                 Review Submitted
@@ -489,17 +773,15 @@ export default function ReviewPage() {
               <p className="text-xs text-gray-500 mb-4">
                 Decision: {decision} · Time: {formatSeconds(elapsed)}
               </p>
-              <div className="space-y-2">
-                <Link
-                  href="/queue"
-                  className="block w-full px-4 py-2 text-xs font-medium rounded-lg bg-gray-800 text-white hover:bg-gray-900 transition text-center"
-                >
-                  Back to Queue
-                </Link>
-              </div>
+              <Link
+                href="/queue"
+                className="block w-full px-4 py-2 text-xs font-medium rounded-lg bg-gray-800 text-white hover:bg-gray-900 transition text-center"
+              >
+                Back to Queue
+              </Link>
             </div>
           ) : (
-            <>
+            <div className="sticky top-20 space-y-4">
               {/* Reviewer name */}
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider block mb-2">
@@ -511,88 +793,6 @@ export default function ReviewPage() {
                   onChange={(e) => setReviewerName(e.target.value)}
                   placeholder="e.g. Jenny Park"
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                />
-              </div>
-
-              {/* Findings */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                    Findings
-                  </label>
-                  <button
-                    onClick={addFinding}
-                    className="text-[11px] text-blue-500 hover:text-blue-600 font-medium"
-                  >
-                    + Add Finding
-                  </button>
-                </div>
-
-                {findings.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic">
-                    No findings yet. Add one if there are issues.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {findings.map((f, fi) => (
-                      <div
-                        key={fi}
-                        className="border border-gray-100 rounded-lg p-3 space-y-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={f.severity}
-                            onChange={(e) =>
-                              updateFinding(fi, "severity", e.target.value)
-                            }
-                            className="text-[11px] border border-gray-200 rounded px-2 py-1"
-                          >
-                            <option value="error">Error</option>
-                            <option value="warning">Warning</option>
-                            <option value="info">Info</option>
-                          </select>
-                          <input
-                            type="text"
-                            value={f.checklistItemId}
-                            onChange={(e) =>
-                              updateFinding(fi, "checklistItemId", e.target.value)
-                            }
-                            placeholder="Checklist item (e.g. alcohol_content)"
-                            className="flex-1 text-[11px] border border-gray-200 rounded px-2 py-1"
-                          />
-                          <button
-                            onClick={() => removeFinding(fi)}
-                            className="text-gray-400 hover:text-red-500"
-                          >
-                            <XCircle size={13} />
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={f.message}
-                          onChange={(e) =>
-                            updateFinding(fi, "message", e.target.value)
-                          }
-                          placeholder="Describe the issue..."
-                          className="w-full text-xs border border-gray-200 rounded px-2 py-1.5"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider block mb-2">
-                  Notes
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Optional notes about this review..."
-                  rows={3}
-                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                 />
               </div>
 
@@ -619,22 +819,92 @@ export default function ReviewPage() {
                 </div>
               </div>
 
+              {/* Findings */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                    Findings
+                  </label>
+                  <button
+                    onClick={addFinding}
+                    className="text-[11px] text-blue-500 hover:text-blue-600 font-medium"
+                  >
+                    + Add
+                  </button>
+                </div>
+
+                {findings.length === 0 ? (
+                  <p className="text-[11px] text-gray-400 italic">
+                    No findings yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {findings.map((f, fi) => (
+                      <div
+                        key={fi}
+                        className="border border-gray-100 rounded-lg p-2 space-y-1.5"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={f.severity}
+                            onChange={(e) => updateFinding(fi, "severity", e.target.value)}
+                            className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5"
+                          >
+                            <option value="error">Error</option>
+                            <option value="warning">Warning</option>
+                            <option value="info">Info</option>
+                          </select>
+                          <input
+                            type="text"
+                            value={f.checklistItemId}
+                            onChange={(e) => updateFinding(fi, "checklistItemId", e.target.value)}
+                            placeholder="Field..."
+                            className="flex-1 text-[10px] border border-gray-200 rounded px-1.5 py-0.5"
+                          />
+                          <button
+                            onClick={() => removeFinding(fi)}
+                            className="text-gray-400 hover:text-red-500"
+                          >
+                            <XCircle size={12} />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={f.message}
+                          onChange={(e) => updateFinding(fi, "message", e.target.value)}
+                          placeholder="Describe the issue..."
+                          className="w-full text-[11px] border border-gray-200 rounded px-2 py-1"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Notes */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider block mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Optional notes..."
+                  rows={2}
+                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                />
+              </div>
+
               {/* Submit */}
               <button
                 onClick={submitReview}
-                disabled={
-                  !decision || !reviewerName.trim() || submitting || !isPending
-                }
+                disabled={!decision || !reviewerName.trim() || submitting || !isPending}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
               >
                 <Send size={14} />
-                {submitting
-                  ? "Submitting..."
-                  : !isPending
-                  ? "Already Reviewed"
-                  : "Submit Review"}
+                {submitting ? "Submitting..." : !isPending ? "Already Reviewed" : "Submit Review"}
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>

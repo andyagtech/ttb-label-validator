@@ -148,27 +148,32 @@ export default function QueuePage() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <Link
-                href="/"
-                className="text-sm text-gray-400 hover:text-gray-600 transition"
-              >
-                ← Validator
-              </Link>
               <h1 className="text-lg font-semibold text-gray-800">
                 Review Queue
               </h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">
+                Agent View
+              </span>
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
               {items.length} total submissions · {pendingCount} pending review
             </p>
           </div>
-          <button
-            onClick={fetchQueue}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
+            >
+              Submission Simulator →
+            </Link>
+            <button
+              onClick={fetchQueue}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          </div>
         </div>
       </header>
 

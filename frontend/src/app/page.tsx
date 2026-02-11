@@ -773,9 +773,14 @@ export default function Home() {
       <header className="border-b border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              TTB Label Validator
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-900">
+                TTB Label Validator
+              </h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-violet-100 text-violet-700">
+                Submission Simulator
+              </span>
+            </div>
             <p className="text-sm text-gray-500">
               Upload label images, correct perspective, and validate TTB compliance
             </p>
@@ -825,7 +830,7 @@ export default function Home() {
               title="View the review queue"
             >
               <ClipboardCheck size={13} />
-              Queue
+              Agent Queue
             </Link>
             <Link
               href="/api-test"

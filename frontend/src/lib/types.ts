@@ -336,4 +336,6 @@ export interface Submission {
     findings: ReviewFinding[];
     ocrResults?: Record<string, string>; // checklistItemId -> extracted text
   };
+  /** COLA application form data (from the submitter's application) */
+  formFields?: Record<string, string>;
 }

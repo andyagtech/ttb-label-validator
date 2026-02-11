@@ -105,6 +105,31 @@ function daysAgo(n: number): string {
   return d.toISOString();
 }
 
+// Generate a simple SVG label placeholder with product-specific colors and text
+function makeLabelSvg(
+  bgColor: string,
+  textColor: string,
+  productName: string,
+  labelType: string,
+  fields: string[]
+): string {
+  const lines = fields
+    .map(
+      (f, i) =>
+        `<text x="200" y="${130 + i * 24}" text-anchor="middle" font-size="13" fill="${textColor}" opacity="0.8">${f}</text>`
+    )
+    .join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+    <rect width="400" height="300" rx="12" fill="${bgColor}"/>
+    <rect x="10" y="10" width="380" height="280" rx="8" fill="none" stroke="${textColor}" stroke-width="1" opacity="0.3"/>
+    <text x="200" y="50" text-anchor="middle" font-size="22" font-weight="bold" fill="${textColor}">${productName}</text>
+    <text x="200" y="80" text-anchor="middle" font-size="11" fill="${textColor}" opacity="0.5">${labelType}</text>
+    <line x1="80" y1="95" x2="320" y2="95" stroke="${textColor}" opacity="0.2"/>
+    ${lines}
+  </svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
 function generateMockSubmissions(): Submission[] {
   const mockData: Array<{
     productName: string;
@@ -117,6 +142,7 @@ function generateMockSubmissions(): Submission[] {
       checklistSnapshot: Array<{ id: string; label: string; status: string }>;
     }>;
     ocrFields?: Record<string, string>;
+    formFields?: Record<string, string>;
     review?: {
       decision: string;
       reviewer: string;
@@ -156,6 +182,13 @@ function generateMockSubmissions(): Submission[] {
         healthWarning: "GOVERNMENT WARNING: (1) According to the Surgeon General...",
         nameAddress: "Old Tom Distillery, Louisville, KY 40202",
       },
+      formFields: {
+        brandName: "Old Tom",
+        classType: "Kentucky Straight Bourbon Whiskey",
+        alcoholContent: "45% Alc./Vol.",
+        netContents: "750 mL",
+        nameAddress: "Old Tom Distillery, Louisville, KY 40202",
+      },
     },
     {
       productName: "Stone's Throw Pale Ale",
@@ -177,6 +210,11 @@ function generateMockSubmissions(): Submission[] {
         brandName: "STONE'S THROW",
         classType: "Pale Ale",
         netContents: "12 FL OZ (355 mL)",
+      },
+      formFields: {
+        brandName: "Stone's Throw",
+        classType: "Pale Ale",
+        netContents: "12 FL. OZ.",
       },
     },
     {
@@ -214,6 +252,14 @@ function generateMockSubmissions(): Submission[] {
         nameAddress: "Margaux Imports LLC, New York, NY 10001",
         countryOfOrigin: "Product of France",
         sulfiteDeclaration: "Contains Sulfites",
+      },
+      formFields: {
+        brandName: "Chateau Margaux",
+        classType: "Red Wine",
+        alcoholContent: "13.5% Alc. by Vol.",
+        netContents: "750 mL",
+        nameAddress: "Margaux Imports LLC, New York, NY 10001",
+        countryOfOrigin: "Product of France",
       },
     },
     {
@@ -284,6 +330,12 @@ function generateMockSubmissions(): Submission[] {
         brandName: "BLUE AGAVE",
         classType: "Tequila",
         alcoholContent: "40% ABV",
+        netContents: "750 mL",
+      },
+      formFields: {
+        brandName: "Blue Agave",
+        classType: "Tequila",
+        alcoholContent: "40% Alc./Vol.",
         netContents: "750 mL",
       },
       review: {
@@ -362,6 +414,13 @@ function generateMockSubmissions(): Submission[] {
 
   return mockData.map((m, idx) => {
     const created = daysAgo(m.daysAgo);
+    // Color schemes per category
+    const colorMap: Record<BeverageCategory, [string, string]> = {
+      spirits: ["#2d1b0e", "#d4a76a"],
+      beer: ["#f5e6c8", "#5c3d1e"],
+      wine: ["#3b0a1e", "#e8c4d0"],
+    };
+    const [bgC, txtC] = colorMap[m.category];
     const sub: Submission = {
       id: `SUB-${(1000 + idx).toString(36).toUpperCase()}`,
       submitterId: m.submitter,
@@ -370,11 +429,27 @@ function generateMockSubmissions(): Submission[] {
       status: m.status,
       beverageCategory: m.category,
       productName: m.productName,
-      labels: m.labels.map((l, li) => ({
+      labels: m.labels.map((l, li) => {
+        const fieldTexts = l.checklistSnapshot.map((c) => {
+          const val = m.ocrFields?.[
+            c.id === "health_warning" ? "healthWarning" :
+            c.id === "name_address" ? "nameAddress" :
+            c.id === "country_origin" ? "countryOfOrigin" :
+            c.id === "sulfite_declaration" ? "sulfiteDeclaration" :
+            c.id === "alcohol_content" ? "alcoholContent" :
+            c.id === "net_contents" ? "netContents" :
+            c.id === "brand_name" ? "brandName" :
+            c.id === "class_type" ? "classType" :
+            c.id
+          ];
+          return val ? `${c.label}: ${val}` : c.label;
+        });
+        const imgUrl = makeLabelSvg(bgC, txtC, m.productName, l.slotName, fieldTexts);
+        return {
         slotId: `slot-${idx}-${li}`,
         slotName: l.slotName,
-        originalImageUrl: "",
-        correctedImageUrl: "",
+        originalImageUrl: imgUrl,
+        correctedImageUrl: imgUrl,
         checklist: l.checklistSnapshot.map((c) => ({
           id: c.id,
           label: c.label,
@@ -397,7 +472,8 @@ function generateMockSubmissions(): Submission[] {
             c.id
           ],
         })),
-      })),
+      };
+      }),
       reviews: [],
       serverValidation: m.ocrFields
         ? {
@@ -406,6 +482,7 @@ function generateMockSubmissions(): Submission[] {
             ocrResults: m.ocrFields,
           }
         : undefined,
+      formFields: m.formFields,
     };
 
     if (m.review) {
