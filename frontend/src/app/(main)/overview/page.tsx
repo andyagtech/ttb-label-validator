@@ -259,7 +259,7 @@ export default function OverviewPage() {
 
         {/* Quick stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 40 }}>
-          <StatCard value="12" label="Pages" icon={<LayoutGrid size={20} />} />
+          <StatCard value="13" label="Pages" icon={<LayoutGrid size={20} />} />
           <StatCard value="10" label="API Endpoints" icon={<Server size={20} />} />
           <StatCard value="107" label="Unit Tests" icon={<TestTube2 size={20} />} />
           <StatCard value="15+" label="Components" icon={<Layers size={20} />} />
@@ -284,7 +284,7 @@ export default function OverviewPage() {
               accent={C.navy}
             />
             <PageCard
-              href="/legacy"
+              href="/editor"
               icon={<Camera size={20} />}
               title="Full Label Editor"
               description="Advanced label processing workspace with perspective correction (4-point & mesh warp), cylindrical unwrap, surface curvature controls, OCR text extraction (Tesseract + AI), auto-flatten, sharpen, multi-label split, and export."
