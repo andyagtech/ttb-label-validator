@@ -39,6 +39,8 @@ export interface ChecklistItem {
   userValue?: string;
   /** Does this item expect a text value to be extracted? */
   extractable: boolean;
+  /** Full validation results (with citations) for this checklist item */
+  validationResults?: import("./validation").ValidationResult[];
 }
 
 // ---------------------------------------------------------------------------
@@ -168,7 +170,7 @@ export function getChecklistTemplate(
       id: "health_warning",
       label: "Government health warning",
       description:
-        '"GOVERNMENT WARNING:" must appear in all caps and bold. The rest of the warning must NOT be bold.',
+        '⚠ NOTE: "GOVERNMENT WARNING:" MUST be in ALL CAPS — title case like "Government Warning:" will be REJECTED. The header must also be bold; the rest of the warning must NOT be bold. Both prescribed statements are required word-for-word.',
       appliesTo: ["back"],
       categories: "all",
       autoDetectable: "both",

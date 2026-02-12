@@ -32,6 +32,12 @@ function ensureSeeded() {
 // Public API
 // ---------------------------------------------------------------------------
 
+export function reseedSubmissions(): Submission[] {
+  seeded = true;
+  submissions = generateMockSubmissions();
+  return submissions;
+}
+
 export function getAllSubmissions(): Submission[] {
   ensureSeeded();
   return submissions;

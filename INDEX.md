@@ -8,11 +8,8 @@ Quick reference to every file and directory in the TTB Label Validator repo, wha
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Setup instructions, architecture diagrams (Mermaid), feature list, testing, deployment |
+| `README.md` | Setup instructions, architecture, features, API docs, error handling, deployment |
 | `INDEX.md` | This file — repo structure guide |
-| `PLAN.md` | Original build plan with phased milestones |
-| `project_description.md` | Take-home project brief with stakeholder interviews and requirements |
-| `question-mark.svg` | Icon used by the guided walkthrough FAB button |
 
 ## `frontend/` — Next.js 14 Application
 
@@ -38,10 +35,12 @@ The entire user-facing application. Deployed to Vercel.
 | `globals.css` | Tailwind directives + walkthrough animation keyframes |
 | **`page.tsx`** | **Main application** (~1900 lines) — image upload, corner/mesh editor, perspective correction, cylindrical unwrap, OCR (Quick Check + AI Extract), validation checklist, data tab, compare tab, batch upload, sharpen, AI flatten. Single-page app with all state managed via `useState`. |
 | `api-test/page.tsx` | Interactive API endpoint tester with sample images, JSON body editor, response viewer |
+| `generate/page.tsx` | Test label generator — Gemini AI presets, custom prompts, history, download, send to simulator |
 | `queue/page.tsx` | Review queue dashboard — submission list, status badges, filter tabs |
 | `queue/[id]/page.tsx` | Individual submission review — label images, checklist, findings editor, review decisions, timer |
 | `api/ocr/route.ts` | `POST /api/ocr` — proxies to OpenRouter for vision-model OCR extraction |
 | `api/flatten/route.ts` | `POST /api/flatten` — proxies to Python Lambda for OpenCV image flattening; includes per-IP rate limiter (5 req/min) |
+| `api/generate-label/route.ts` | `GET` (list presets) + `POST` (generate label image via Gemini Nano Banana) |
 | `api/queue/route.ts` | `GET /api/queue` (list submissions) + `POST /api/queue` (create submission) |
 | `api/queue/[id]/route.ts` | `GET` (detail) + `PATCH` (update status) + `POST` (submit review decision) |
 
@@ -55,7 +54,8 @@ The entire user-facing application. Deployed to Vercel.
 | `LabelChecklist.tsx` | TTB compliance checklist with auto/manual status badges, inline value editing, confidence scores |
 | `FormComparison.tsx` | Side-by-side COLA form vs. label comparison with Levenshtein fuzzy matching and similarity bars |
 | `BatchUpload.tsx` | Multi-file drag-and-drop upload modal with sequential OCR processing, progress bar, CSV export |
-| `WalkthroughPanel.tsx` | 8-step guided tutorial panel with element highlighting, keyboard nav, contextual tips |
+| `WalkthroughPanel.tsx` | Guided tutorial panel with element highlighting, keyboard nav, contextual tips (accepts custom steps) |
+| `AgentWalkthroughSteps.tsx` | Step definitions for the agent queue and review page walkthroughs |
 
 ### `frontend/src/lib/` — Core Logic (No UI)
 
@@ -70,6 +70,7 @@ The entire user-facing application. Deployed to Vercel.
 | `validation.ts` | TTB validation rules engine — 3 rule types (presence, format, cross-field), category-aware (wine/beer/spirits), class/type designation lookup (~150 entries), government warning regex, ABV format validation |
 | `fuzzyMatch.ts` | Levenshtein distance with Unicode normalization, case folding, punctuation stripping. Used by FormComparison for "STONE'S THROW" ↔ "Stone's Throw" matching |
 | `types.ts` | TypeScript types — `LabelSlot`, `ChecklistItem`, `BeverageCategory`, `Submission`, `ReviewRecord`, `ReviewFinding`, `ReviewDecision`, `ExtractedFields` |
+| `styles.ts` | Centralized design tokens, color maps (category, status, verdict), shared Tailwind class strings, utility formatters (`timeAgo`, `formatDate`, `formatSeconds`) |
 | `store.ts` | In-memory submission store with 8 realistic mock seed submissions. CRUD operations + review workflow state machine |
 
 ### `frontend/src/lib/__tests__/` — Unit Tests (77 total)
@@ -120,9 +121,15 @@ Standalone Python Lambda for image flattening. Deployed separately from the Node
 
 | File | Purpose |
 |------|---------|
+| `TESTING_GUIDE.md` | Exact instructions for testing every feature — unit tests, manual flows, infrastructure, env permutations, smoke test checklist |
+| `COVERAGE.md` | Comprehensive coverage matrix — features, tests, walkthroughs, APIs, components, documentation inventory |
+| `PLAN.md` | Original build plan with phased milestones |
+| `project_description.md` | Take-home project brief with stakeholder interviews and requirements |
 | `openapi.yaml` | OpenAPI 3.1 spec covering all API endpoints — Lambda (`/health`, `/ocr`, `/openrouter`) and Next.js (`/api/ocr`, `/api/flatten`, `/api/queue`, `/api/queue/{id}`) with full request/response schemas |
 | `validation-and-review-architecture.md` | Design doc — two-tier validation pipeline, review queue assignment logic, multi-reviewer workflow, QA (gold standard audits, re-review sampling), reviewer metrics, data flow diagram |
 | `infrastructure-justification.md` | Capacity analysis against real TTB volume (605 labels/day, 47 agents, 150K/year), cost estimates, serverless scaling rationale, production roadmap with 5 phases, honest gap assessment of POC-only components |
+| `STYLE_GUIDE.md` | Design tokens, color palette, typography, component patterns, shared imports cheat sheet, citation pattern docs |
+| `TTB_VISUAL_MATCH_ESTIMATE.md` | Analysis of TTB.gov visual identity (USWDS), gap analysis vs current app, 4-phase plan with ~22hr estimate (NOT IMPLEMENTED) |
 
 ---
 
@@ -176,4 +183,5 @@ User opens browser
   → Compare → components/FormComparison.tsx + lib/fuzzyMatch.ts
   → Review Queue → /queue → lib/store.ts (in-memory)
   → Batch → components/BatchUpload.tsx (sequential OCR + CSV)
+  → Generate test labels → /generate → /api/generate-label → Gemini AI
 ```

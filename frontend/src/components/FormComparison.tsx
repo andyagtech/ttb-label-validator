@@ -4,6 +4,7 @@ import React, { useState, useCallback } from "react";
 import { CheckCircle2, AlertTriangle, XCircle, Minus } from "lucide-react";
 import { ExtractedFields } from "@/lib/ocr";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
+import { FIELD_LABELS as SHARED_FIELD_LABELS, VERDICT_COLORS } from "@/lib/styles";
 
 /**
  * COLA Application Form fields that an agent would enter from the application.
@@ -34,15 +35,15 @@ const EMPTY_FORM: FormFields = {
 };
 
 const FIELD_LABELS: Record<keyof FormFields, string> = {
-  brandName: "Brand Name",
-  classType: "Class / Type",
-  alcoholContent: "Alcohol Content",
-  netContents: "Net Contents",
-  nameAddress: "Name & Address",
-  appellation: "Appellation",
-  vintageDate: "Vintage Date",
-  varietal: "Varietal",
-  countryOfOrigin: "Country of Origin",
+  brandName: SHARED_FIELD_LABELS.brandName,
+  classType: SHARED_FIELD_LABELS.classType,
+  alcoholContent: SHARED_FIELD_LABELS.alcoholContent,
+  netContents: SHARED_FIELD_LABELS.netContents,
+  nameAddress: SHARED_FIELD_LABELS.nameAddress,
+  appellation: SHARED_FIELD_LABELS.appellation,
+  vintageDate: SHARED_FIELD_LABELS.vintageDate,
+  varietal: SHARED_FIELD_LABELS.varietal,
+  countryOfOrigin: SHARED_FIELD_LABELS.countryOfOrigin,
 };
 
 function verdictIcon(verdict: MatchResult["verdict"]) {
@@ -60,17 +61,7 @@ function verdictIcon(verdict: MatchResult["verdict"]) {
 }
 
 function verdictColor(verdict: MatchResult["verdict"]) {
-  switch (verdict) {
-    case "exact":
-    case "match":
-      return "bg-emerald-50 border-emerald-200";
-    case "close":
-      return "bg-amber-50 border-amber-200";
-    case "mismatch":
-      return "bg-red-50 border-red-200";
-    case "missing":
-      return "bg-gray-50 border-gray-200";
-  }
+  return VERDICT_COLORS[verdict] || "bg-gray-50 border-gray-200";
 }
 
 interface FormComparisonProps {

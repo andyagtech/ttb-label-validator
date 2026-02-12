@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { validateExtractedFields } from "../validation";
+import { validateExtractedFields, applyValidationResults, RULE_CITATIONS } from "../validation";
 import { ExtractedFields } from "../ocr";
+import { getChecklistTemplate } from "../types";
 
 // ---------------------------------------------------------------------------
 // Helper to find a specific rule result by ruleId
@@ -332,5 +333,107 @@ describe("Sample label from project_description.md", () => {
 
     const nameRule = findRule(results, "name_address_present");
     expect(nameRule!.pass).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Citations
+// ---------------------------------------------------------------------------
+
+describe("Citations", () => {
+  it("every validation result has a citation", () => {
+    // Run a comprehensive validation to produce many rules
+    const fields: ExtractedFields = {
+      brandName: "Test Brand",
+      classType: "Lager",
+      alcoholContent: "5% Alc. By Vol.",
+      netContents: "12 FL OZ",
+      healthWarning:
+        'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.',
+      nameAddress: "Test Brewery, Portland, OR",
+      sulfiteDeclaration: "Contains Sulfites",
+    };
+
+    const frontResults = validateExtractedFields(fields, "beer", "front");
+    const backResults = validateExtractedFields(fields, "beer", "back");
+    const allResults = [...frontResults, ...backResults];
+
+    for (const result of allResults) {
+      expect(result.citation).toBeDefined();
+      expect(result.citation!.chapter).toBeTruthy();
+      expect(result.citation!.section).toBeTruthy();
+      expect(result.citation!.summary).toBeTruthy();
+    }
+  });
+
+  it("RULE_CITATIONS covers all common ruleIds", () => {
+    const expectedRuleIds = [
+      "health_warning_present",
+      "health_warning_caps",
+      "health_warning_part1",
+      "health_warning_part2",
+      "health_warning_complete",
+      "abv_present",
+      "abv_no_abbreviation",
+      "abv_format_valid",
+      "abv_format_unclear",
+      "abv_no_percentage",
+      "net_contents_present",
+      "net_contents_valid",
+      "net_contents_metric_only",
+      "net_contents_no_unit",
+      "brand_name_present",
+      "brand_name_missing",
+      "class_type_present",
+      "class_type_missing",
+      "class_type_recognized",
+      "class_type_unrecognized",
+      "class_type_wrong_category",
+      "name_address_present",
+      "name_address_missing",
+      "sulfite_present",
+      "age_statement_present",
+      "varietal_requires_appellation",
+      "vintage_requires_appellation",
+    ];
+
+    for (const ruleId of expectedRuleIds) {
+      expect(RULE_CITATIONS[ruleId]).toBeDefined();
+    }
+  });
+
+  it("citation has referenceUrl when present", () => {
+    const citation = RULE_CITATIONS["health_warning_present"];
+    expect(citation.referenceUrl).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyValidationResults populates validationResults
+// ---------------------------------------------------------------------------
+
+describe("applyValidationResults", () => {
+  it("populates item.validationResults with matching results", () => {
+    const checklist = getChecklistTemplate("front", "beer");
+    const fields: ExtractedFields = { brandName: "Test Brand" };
+    const results = validateExtractedFields(fields, "beer", "front");
+    const updated = applyValidationResults(checklist, results);
+
+    const brandItem = updated.find((i) => i.id === "brand_name");
+    expect(brandItem).toBeDefined();
+    expect(brandItem!.validationResults).toBeDefined();
+    expect(brandItem!.validationResults!.length).toBeGreaterThan(0);
+    expect(brandItem!.validationResults![0].citation).toBeDefined();
+  });
+
+  it("does not add validationResults to items with no matching rules", () => {
+    const checklist = getChecklistTemplate("front", "beer");
+    const results = validateExtractedFields({}, "beer", "front");
+    const updated = applyValidationResults(checklist, results);
+
+    // Image quality items have no validation rules
+    const imageItem = updated.find((i) => i.id === "image_sharp");
+    expect(imageItem).toBeDefined();
+    expect(imageItem!.validationResults).toBeUndefined();
   });
 });

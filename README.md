@@ -322,6 +322,20 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Result banner** — shows mode, focal length, output dimensions; error state with red styling
 - **API route** — `POST /api/flatten` with `{ imageBase64, mode, mimeType, focalMultiplier? }`
 
+### Test Label Generator (Gemini AI)
+- **`/generate` page** — AI-powered test label image generator using Google Gemini 2.5 Flash Image (Nano Banana)
+- **10 presets** — bourbon front/back, craft IPA front/back, cabernet front/back, imported vodka front/back, malt beverage front, rosé wine front — inspired by `sample_labels/`
+- **Prompt builder** — automatically constructs detailed prompts from label fields (brand name, class/type, ABV, net contents, appellation, vintage, name & address, country of origin)
+- **Front vs. back labels** — front labels generate photorealistic product photos; back labels include the exact government warning text with ALL CAPS requirement
+- **Custom prompt mode** — switch from structured fields to freeform text-to-image prompts
+- **Generation history** — last 20 generated images shown as clickable thumbnail grid
+- **Send to Simulator** — one-click transfer of generated image to the Submission Simulator via `sessionStorage`
+- **Download** — save generated PNG directly to disk
+- **Prompt viewer** — collapsible panel showing the exact prompt sent to Gemini, with copy-to-clipboard
+- **API route** — `GET /api/generate-label` (list presets) + `POST /api/generate-label` (generate image)
+- **Model** — `gemini-2.5-flash-image` (Nano Banana) via REST API, optimized for speed (1024px output)
+- **Auth** — `GEMINI_API_KEY` env var, never exposed to the browser
+
 ### Review Queue (Agent View)
 - **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed). Labeled "Agent View" with cross-navigation to Submission Simulator.
 - **`/queue/[id]` review page** — full agent review workspace with 4-tab layout:
@@ -347,6 +361,7 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 | Image Processing | HTML5 Canvas API |
 | Browser OCR | Tesseract.js |
 | Server OCR | OpenRouter → Claude 3.5 Sonnet (vision) |
+| Image Generation | Google Gemini 2.5 Flash Image (Nano Banana) |
 | Backend Proxy | AWS Lambda (Node.js 20, Function URL) |
 | Image Flatten | AWS Lambda (Python 3.11, OpenCV, Function URL) |
 | Hosting | Vercel |
@@ -361,12 +376,14 @@ ttb_cola_project/
 │   │   ├── app/
 │   │   │   ├── page.tsx         # Main app — upload, editor, OCR, checklist, flatten
 │   │   │   ├── api-test/page.tsx # Interactive API endpoint tester
+│   │   │   ├── generate/page.tsx # Test label generator (Gemini AI)
 │   │   │   ├── queue/
 │   │   │   │   ├── page.tsx     # Review queue dashboard
 │   │   │   │   └── [id]/page.tsx # Submission review page
 │   │   │   ├── api/
 │   │   │   │   ├── ocr/route.ts # POST — OpenRouter OCR proxy
 │   │   │   │   ├── flatten/route.ts # POST — OpenCV flatten proxy + rate limiter
+│   │   │   │   ├── generate-label/route.ts # GET (presets) + POST (Gemini image gen)
 │   │   │   │   └── queue/       # Queue REST API
 │   │   │   │       ├── route.ts # GET (list) + POST (create)
 │   │   │   │       └── [id]/route.ts # GET + PATCH + POST (review)
@@ -411,13 +428,17 @@ ttb_cola_project/
 │   ├── lambda_function.py       # Cylindrical unroll + perspective rectify
 │   ├── requirements.txt         # opencv-python-headless, numpy
 │   └── template.yaml            # SAM deployment template
-├── docs/
+├── docs/                        # All documentation
+│   ├── TESTING_GUIDE.md         # Exact testing instructions for every feature
+│   ├── COVERAGE.md              # Feature/test/walkthrough coverage matrix
+│   ├── PLAN.md                  # Original build plan with phased milestones
+│   ├── project_description.md   # Take-home project brief
 │   ├── openapi.yaml             # OpenAPI 3.1 spec for all API endpoints
-│   └── validation-and-review-architecture.md # Two-tier validation + review queue design
+│   ├── validation-and-review-architecture.md # Two-tier validation + review queue design
+│   └── infrastructure-justification.md # Capacity analysis, cost projections, roadmap
 ├── references/                  # TTB reference documents (PDFs, markdown)
 ├── sample_labels/               # Test label images (PNG, JPG, HEIC)
-├── INDEX.md                     # This repo structure guide
-└── project_description.md       # Original project brief
+└── INDEX.md                     # Repo structure guide
 ```
 
 ## Testing
@@ -449,10 +470,13 @@ Full OpenAPI 3.1 specification: [`docs/openapi.yaml`](docs/openapi.yaml)
 | `/api/queue/{id}` | GET | Next.js | Get submission detail |
 | `/api/queue/{id}` | PATCH | Next.js | Update submission status |
 | `/api/queue/{id}` | POST | Next.js | Submit a review decision |
+| `/api/generate-label` | GET | Next.js | List available label generation presets |
+| `/api/generate-label` | POST | Next.js | Generate test label image via Gemini AI |
 | Lambda URL | POST | Lambda (Python) | Direct OpenCV flatten (cylindrical or perspective) |
 
 - **OCR endpoints** accept `{ imageBase64, mimeType }` and return `{ success, fields, model }` with 12 TTB field keys.
 - **Flatten endpoint** accepts `{ imageBase64, mode, mimeType }` and returns `{ success, imageBase64, mode, details }`.
+- **Generate-label endpoint** accepts `{ preset?, labelType?, category?, brandName?, classType?, ... }` and returns `{ success, imageBase64, mimeType, prompt }`.
 
 ## Approach & Design Decisions
 
@@ -472,6 +496,35 @@ All perspective correction, mesh warping, and curvature compensation run in the 
 Different use cases need different trade-offs:
 - **Submitters** need fast feedback to catch obvious issues — Tesseract.js is free, instant, and runs locally
 - **Reviewers** need accurate structured extraction — a vision model is slower but far more reliable for field-level extraction
+
+### Error Handling Strategy
+
+Every layer of the application has structured error handling with user-friendly feedback:
+
+| Layer | Strategy | User Experience |
+|-------|----------|----------------|
+| **API routes** | `try/catch` around all external calls; typed error responses with HTTP status codes (400, 404, 422, 429, 500, 502, 503) | Errors returned as `{ success: false, error: "..." }` with actionable messages |
+| **OCR (Quick Check)** | `try/catch` with fallback to server OCR if Tesseract disabled | Status bar: "Quick Check failed. Try AI Extract instead." |
+| **OCR (AI Extract)** | `try/catch`; checks `res.ok`; JSON parse with regex fallback | Status bar: "AI extraction failed. Check your connection and try again." |
+| **AI Flatten** | `try/catch`; error result shown in banner with red styling; shorter cooldown (5s vs 10s) on error | Error banner with details; automatic retry available after cooldown |
+| **Rate limiting** | In-memory token bucket (5 req/min/IP); `X-RateLimit-*` response headers | "Rate limit exceeded. Try again in N seconds." (HTTP 429) |
+| **Label generation** | Missing API key → 500; Gemini API failure → 502; no image in response → 422; network error → catch | Red error panel with icon + message; prompt still shown for debugging |
+| **Review queue** | Fetch failure → error state with "Not found" message + back link; submission failure → `console.error` | Full-page error state with XCircle icon; loading spinner while fetching |
+| **Batch upload** | Per-item `try/catch`; items marked `"error"` status individually; abort support via `abortRef` | Red XCircle per failed item; other items continue processing |
+| **Submit to queue** | `try/catch`; guards against empty slot list | Console error on failure; button disabled during submission |
+| **Image loading** | `img.onerror` handlers for Canvas operations; graceful fallback for thumbnails | Silent fallback (empty thumbnail) rather than crashing |
+| **JSON parsing** | OCR route: regex extraction `/{[\s\S]*}/` with fallback to `{ rawText: content }` | Partial results preferred over total failure |
+| **Env var guards** | Every API route checks required env vars before proceeding | Clear message: "X not configured. Set it in your environment variables." |
+| **Service unavailable** | Flatten returns 503 with hint when Lambda not configured | Includes deployment instructions in response body |
+
+**Design principles:**
+- **Graceful degradation** — if Tesseract.js is disabled, Quick Check falls back to server OCR; if server OCR fails, heuristic parsing is attempted
+- **Never crash silently** — all `catch` blocks either set user-visible error state or log to console
+- **Actionable messages** — error text tells the user what to do next ("Try AI Extract instead", "Check your connection", "Set X in environment")
+- **Partial success** — batch processing continues past individual failures; OCR returns partial fields rather than nothing
+- **Cooldown on error** — AI Flatten uses shorter cooldown (5s) on failure so users can retry faster
+- **Loading states everywhere** — spinners for fetch, processing, and generation; disabled buttons during async operations
+- **No data loss** — in-memory state is preserved across errors; only a full page refresh loses progress (documented trade-off)
 
 ### Trade-offs & Limitations
 - **Bold detection** — OCR can't reliably detect bold text, so the "GOVERNMENT WARNING:" bold requirement is flagged for manual review
@@ -497,6 +550,7 @@ Set these Vercel environment variables:
 - `OPENROUTER_MODEL` — `anthropic/claude-3.5-sonnet`
 - `FLATTEN_ENABLED` — `true` to enable the AI Flatten route
 - `FLATTEN_LAMBDA_URL` — Python Lambda Function URL for OpenCV flatten
+- `GEMINI_API_KEY` — Google Gemini API key for test label generation
 
 ### Backend — Node.js Lambda (OpenRouter Proxy)
 

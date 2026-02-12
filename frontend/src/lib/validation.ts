@@ -18,6 +18,13 @@ import { ExtractedFields } from "./ocr";
 
 export type Severity = "error" | "warning" | "info";
 
+export interface Citation {
+  chapter: string;
+  section: string;
+  summary: string;
+  referenceUrl?: string;
+}
+
 export interface ValidationResult {
   ruleId: string;
   checklistItemId: string;
@@ -26,6 +33,197 @@ export interface ValidationResult {
   suggestion?: string;
   /** true = field is present and valid */
   pass: boolean;
+  citation?: Citation;
+}
+
+// ---------------------------------------------------------------------------
+// Rule → Citation map
+// ---------------------------------------------------------------------------
+
+export const RULE_CITATIONS: Record<string, Citation> = {
+  // Health warning rules — 27 CFR Part 16
+  health_warning_present: {
+    chapter: "1",
+    section: "Item 10",
+    summary: "Health warning is mandatory on all alcohol beverages >= 0.5% ABV per 27 CFR Part 16.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-16",
+  },
+  health_warning_caps: {
+    chapter: "1",
+    section: "Item 10",
+    summary: '"GOVERNMENT WARNING:" must appear in ALL CAPS and bold type per 27 CFR Part 16.',
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-16",
+  },
+  health_warning_part1: {
+    chapter: "3",
+    section: "§16.21",
+    summary: "Statement (1) re: Surgeon General / pregnancy / birth defects is prescribed text.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-16",
+  },
+  health_warning_part2: {
+    chapter: "3",
+    section: "§16.21",
+    summary: "Statement (2) re: impaired driving / machinery / health problems is prescribed text.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-16",
+  },
+  health_warning_complete: {
+    chapter: "1",
+    section: "Item 10",
+    summary: "Both prescribed statements present per 27 CFR Part 16.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-16",
+  },
+
+  // ABV rules — 27 CFR 4.36 (wine), 7.71 (beer), 5.37 (spirits)
+  abv_present: {
+    chapter: "1",
+    section: "Item 5",
+    summary: "Alcohol content must be stated for wine and spirits; optional for malt beverages per 27 CFR 7.71.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  abv_no_abbreviation: {
+    chapter: "1",
+    section: "Item 5",
+    summary: '"ABV" is not an accepted abbreviation. Must use "Alcohol __% by volume" or "Alc. By Vol."',
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  abv_format_valid: {
+    chapter: "1",
+    section: "Item 5",
+    summary: "Alcohol content in an acceptable format per 27 CFR 7.71.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  abv_format_unclear: {
+    chapter: "1",
+    section: "Item 5",
+    summary: "Percentage found but format may not match acceptable TTB formats per 27 CFR 7.71.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  abv_no_percentage: {
+    chapter: "1",
+    section: "Item 5",
+    summary: "Alcohol content statement must include a percentage per 27 CFR 7.71.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+
+  // Net contents — 27 CFR 7.28
+  net_contents_present: {
+    chapter: "1",
+    section: "Item 4",
+    summary: "Net contents statement is mandatory per 27 CFR 7.28.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  net_contents_valid: {
+    chapter: "5",
+    section: "§7.28",
+    summary: "Net contents in acceptable format per 27 CFR 7.28.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  net_contents_metric_only: {
+    chapter: "5",
+    section: "§7.28",
+    summary: "Malt beverages must include American measure (FL OZ, PINT, QUART, GALLON). Metric alone is insufficient.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  net_contents_no_unit: {
+    chapter: "5",
+    section: "§7.28",
+    summary: "Net contents must include a recognized unit of measure per 27 CFR 7.28.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+
+  // Brand name — 27 CFR Part 7
+  brand_name_present: {
+    chapter: "1",
+    section: "Item 1",
+    summary: "Brand name must appear on the front of the container per 27 CFR Part 7.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+  brand_name_missing: {
+    chapter: "1",
+    section: "Item 1",
+    summary: "Brand name is mandatory on the front label per 27 CFR Part 7.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+
+  // Class/type — 27 CFR Part 7, Ch. 4
+  class_type_present: {
+    chapter: "1",
+    section: "Item 2",
+    summary: "Class/type designation must appear on the front of the container per 27 CFR Part 7.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+  class_type_missing: {
+    chapter: "1",
+    section: "Item 2",
+    summary: "Class/type designation is mandatory on the front label per 27 CFR Part 7.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+  class_type_recognized: {
+    chapter: "4",
+    section: "Class & Type",
+    summary: "Designation matches a recognized TTB class/type per Beverage Alcohol Manual.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+  class_type_unrecognized: {
+    chapter: "4",
+    section: "Class & Type",
+    summary: "Designation not in the standard TTB list — verify against TTB guidelines.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+  class_type_wrong_category: {
+    chapter: "4",
+    section: "Class & Type",
+    summary: "Designation appears to belong to a different beverage category.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+
+  // Name & address — 27 CFR Part 7
+  name_address_present: {
+    chapter: "1",
+    section: "Item 3",
+    summary: "Name and address of producer/bottler/importer is required per 27 CFR Part 7.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+  name_address_missing: {
+    chapter: "1",
+    section: "Item 3",
+    summary: "Name and address is mandatory per 27 CFR Part 7.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+
+  // Sulfite — 27 CFR Part 7
+  sulfite_present: {
+    chapter: "1",
+    section: "Item 8",
+    summary: "Sulfite declaration found. Required if product contains 10+ ppm sulfur dioxide.",
+    referenceUrl: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+  },
+
+  // Age statement — spirits
+  age_statement_present: {
+    chapter: "1",
+    section: "Spirits",
+    summary: "Age statement found. Required for certain spirits types.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5?toc=1",
+  },
+
+  // Cross-field rules — wine
+  varietal_requires_appellation: {
+    chapter: "1",
+    section: "Wine",
+    summary: "When a grape variety is stated, an appellation of origin must also appear per TTB regulations.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4",
+  },
+  vintage_requires_appellation: {
+    chapter: "1",
+    section: "Wine",
+    summary: "When a vintage year is stated, an appellation of origin must also appear per TTB regulations.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4",
+  },
+};
+
+export function citationFor(ruleId: string): Citation | undefined {
+  return RULE_CITATIONS[ruleId];
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +250,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
       message: "Government health warning not found on label.",
       suggestion: "The health warning is mandatory on all alcohol beverages per 27 CFR Part 16.",
       pass: false,
+      citation: citationFor("health_warning_present"),
     });
     return results;
   }
@@ -66,6 +265,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
         message: '"GOVERNMENT WARNING:" must appear in ALL CAPS.',
         suggestion: 'Found similar text but not in required format. Must be exactly "GOVERNMENT WARNING:" in capitals.',
         pass: false,
+        citation: citationFor("health_warning_caps"),
       });
     } else {
       results.push({
@@ -74,6 +274,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
         severity: "error",
         message: '"GOVERNMENT WARNING:" header not found.',
         pass: false,
+        citation: citationFor("health_warning_present"),
       });
     }
     return results;
@@ -93,6 +294,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
       message: "Missing or incomplete Statement (1) about pregnancy and birth defects.",
       suggestion: "Must include the Surgeon General's warning about women not drinking during pregnancy.",
       pass: false,
+      citation: citationFor("health_warning_part1"),
     });
   }
 
@@ -110,6 +312,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
       message: "Missing or incomplete Statement (2) about impaired driving and health problems.",
       suggestion: "Must state that consumption impairs ability to drive/operate machinery and may cause health problems.",
       pass: false,
+      citation: citationFor("health_warning_part2"),
     });
   }
 
@@ -120,6 +323,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
       severity: "info",
       message: "Government warning contains both required statements.",
       pass: true,
+      citation: citationFor("health_warning_complete"),
     });
   }
 
@@ -151,6 +355,7 @@ function validateAbvFormat(
         severity: "info",
         message: "Alcohol content not found — this is optional for malt beverages unless required by state law.",
         pass: true,
+        citation: citationFor("abv_present"),
       });
     } else {
       results.push({
@@ -160,6 +365,7 @@ function validateAbvFormat(
         message: "Alcohol content statement not found.",
         suggestion: 'Must state "Alcohol __% by volume" or "__% Alc. By Vol."',
         pass: false,
+        citation: citationFor("abv_present"),
       });
     }
     return results;
@@ -174,6 +380,7 @@ function validateAbvFormat(
       message: '"ABV" is not an allowed abbreviation for alcohol content.',
       suggestion: 'Use "Alcohol __% by volume" or "__% Alc. By Vol." instead.',
       pass: false,
+      citation: citationFor("abv_no_abbreviation"),
     });
     return results;
   }
@@ -197,6 +404,7 @@ function validateAbvFormat(
       severity: "info",
       message: "Alcohol content format is acceptable.",
       pass: true,
+      citation: citationFor("abv_format_valid"),
     });
   } else {
     // Has a percentage but not in an approved format
@@ -208,6 +416,7 @@ function validateAbvFormat(
         message: "Alcohol percentage found but format may not match TTB requirements.",
         suggestion: 'Acceptable formats: "Alcohol __% by volume", "__% Alc. By Vol.", or "__% Alc./Vol."',
         pass: false,
+        citation: citationFor("abv_format_unclear"),
       });
     } else {
       results.push({
@@ -216,6 +425,7 @@ function validateAbvFormat(
         severity: "error",
         message: "No alcohol percentage found in statement.",
         pass: false,
+        citation: citationFor("abv_no_percentage"),
       });
     }
   }
@@ -245,6 +455,7 @@ function validateNetContents(
           ? "Must include volume in American measure (e.g., 12 FL OZ, 1 PINT, 1 QUART). Metric may also be shown."
           : "Must include volume (e.g., 750 mL, 1 L, 12 FL OZ).",
       pass: false,
+      citation: citationFor("net_contents_present"),
     });
     return results;
   }
@@ -263,6 +474,7 @@ function validateNetContents(
         severity: "info",
         message: "Net contents found in American measure" + (hasMetricUnit ? " (with metric equivalent)." : "."),
         pass: true,
+        citation: citationFor("net_contents_valid"),
       });
     } else if (hasMetricUnit) {
       results.push({
@@ -272,6 +484,7 @@ function validateNetContents(
         message: "Net contents found in metric only — malt beverages must include American measure.",
         suggestion: "Per 27 CFR 7.28, malt beverages must state net contents in American measure (FL OZ, PINT, QUART, GALLON). Metric may also appear.",
         pass: false,
+        citation: citationFor("net_contents_metric_only"),
       });
     } else {
       results.push({
@@ -281,6 +494,7 @@ function validateNetContents(
         message: "Net contents found but unit may be missing or unclear.",
         suggestion: "Must include American measure: FL OZ, PINT, QUART, or GALLON.",
         pass: false,
+        citation: citationFor("net_contents_no_unit"),
       });
     }
   } else {
@@ -292,6 +506,7 @@ function validateNetContents(
         severity: "info",
         message: "Net contents statement found with valid unit.",
         pass: true,
+        citation: citationFor("net_contents_valid"),
       });
     } else {
       results.push({
@@ -301,6 +516,7 @@ function validateNetContents(
         message: "Net contents found but unit may be missing or unclear.",
         suggestion: "Must include standard metric units: mL, L, or cL.",
         pass: false,
+        citation: citationFor("net_contents_no_unit"),
       });
     }
   }
@@ -324,6 +540,7 @@ function validatePresence(
       severity: "info",
       message: `${fieldLabel} detected.`,
       pass: true,
+      citation: citationFor(`${checklistItemId}_present`),
     };
   }
   return {
@@ -332,6 +549,7 @@ function validatePresence(
     severity: "error",
     message: `${fieldLabel} not found on label.`,
     pass: false,
+    citation: citationFor(`${checklistItemId}_missing`),
   };
 }
 
@@ -409,6 +627,7 @@ function validateClassType(
       severity: "info",
       message: `"${text}" is a recognized TTB ${category} designation.`,
       pass: true,
+      citation: citationFor("class_type_recognized"),
     });
   } else {
     // Check if it matches a DIFFERENT category's designations
@@ -426,6 +645,7 @@ function validateClassType(
         severity: "warning",
         message: `"${text}" appears to be a designation for a different beverage category. Verify the selected category is correct.`,
         pass: false,
+        citation: citationFor("class_type_wrong_category"),
       });
     } else {
       results.push({
@@ -435,6 +655,7 @@ function validateClassType(
         message: `"${text}" is not in the standard TTB designation list for ${category}. This may still be valid — verify against TTB guidelines.`,
         suggestion: `Common ${category} designations include: ${designations.slice(0, 6).map(d => `"${d}"`).join(", ")}, etc.`,
         pass: false,
+        citation: citationFor("class_type_unrecognized"),
       });
     }
   }
@@ -462,6 +683,7 @@ function validateCrossFieldRules(
       message: "Grape varietal is stated — appellation of origin is required.",
       suggestion: "Per TTB regulations, when a grape variety is stated, an appellation of origin must also appear.",
       pass: false,
+      citation: citationFor("varietal_requires_appellation"),
     });
   }
 
@@ -474,6 +696,7 @@ function validateCrossFieldRules(
       message: "Vintage date is stated — appellation of origin is required.",
       suggestion: "Per TTB regulations, when a vintage year is stated, an appellation of origin must also appear.",
       pass: false,
+      citation: citationFor("vintage_requires_appellation"),
     });
   }
 
@@ -528,6 +751,7 @@ export function validateExtractedFields(
         severity: "info",
         message: "Sulfite declaration found.",
         pass: true,
+        citation: citationFor("sulfite_present"),
       });
     }
   }
@@ -540,6 +764,7 @@ export function validateExtractedFields(
         severity: "info",
         message: "Age statement found.",
         pass: true,
+        citation: citationFor("age_statement_present"),
       });
     }
   }
@@ -589,6 +814,7 @@ export function applyValidationResults(
       status: newStatus,
       note: notes || item.note,
       confidence: allPass ? 0.85 : hasError ? 0.8 : 0.6,
+      validationResults: itemResults,
     };
   });
 }

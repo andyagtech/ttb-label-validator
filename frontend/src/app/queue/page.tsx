@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import WalkthroughPanel from "@/components/WalkthroughPanel";
 import { AGENT_QUEUE_STEPS, AGENT_REVIEW_STEPS } from "@/components/AgentWalkthroughSteps";
+import { STATUS_STYLES, CATEGORY_TEXT, timeAgo, cls } from "@/lib/styles";
 
 // ---------------------------------------------------------------------------
 // Types (matches API response)
@@ -39,64 +40,20 @@ interface QueueItem {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; color: string; bg: string; icon: React.ReactNode }
-> = {
-  draft: {
-    label: "Draft",
-    color: "text-gray-500",
-    bg: "bg-gray-100",
-    icon: <FileText size={13} />,
-  },
-  submitted: {
-    label: "Pending Review",
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-    icon: <Clock size={13} />,
-  },
-  in_review: {
-    label: "In Review",
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    icon: <RefreshCw size={13} />,
-  },
-  approved: {
-    label: "Approved",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    icon: <CheckCircle2 size={13} />,
-  },
-  rejected: {
-    label: "Rejected",
-    color: "text-red-600",
-    bg: "bg-red-50",
-    icon: <XCircle size={13} />,
-  },
-  needs_revision: {
-    label: "Needs Revision",
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-    icon: <AlertTriangle size={13} />,
-  },
+const STATUS_ICONS: Record<string, React.ReactNode> = {
+  draft: <FileText size={13} />,
+  submitted: <Clock size={13} />,
+  in_review: <RefreshCw size={13} />,
+  approved: <CheckCircle2 size={13} />,
+  rejected: <XCircle size={13} />,
+  needs_revision: <AlertTriangle size={13} />,
 };
 
 const CATEGORY_ICON: Record<string, React.ReactNode> = {
-  beer: <Beer size={14} className="text-amber-500" />,
-  wine: <Wine size={14} className="text-rose-500" />,
-  spirits: <GlassWater size={14} className="text-indigo-500" />,
+  beer: <Beer size={14} className={CATEGORY_TEXT.beer} />,
+  wine: <Wine size={14} className={CATEGORY_TEXT.wine} />,
+  spirits: <GlassWater size={14} className={CATEGORY_TEXT.spirits} />,
 };
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -276,7 +233,8 @@ export default function QueuePage() {
                 </tr>
               ) : (
                 filtered.map((item) => {
-                  const sc = STATUS_CONFIG[item.status] || STATUS_CONFIG.draft;
+                  const sc = STATUS_STYLES[item.status] || STATUS_STYLES.draft;
+                  const statusIcon = STATUS_ICONS[item.status] || STATUS_ICONS.draft;
                   return (
                     <tr
                       key={item.id}
@@ -302,7 +260,7 @@ export default function QueuePage() {
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${sc.color} ${sc.bg}`}
                         >
-                          {sc.icon}
+                          {statusIcon}
                           {sc.label}
                         </span>
                       </td>

@@ -11,8 +11,13 @@ import {
   Info,
   Pencil,
   Check,
+  BookOpen,
+  MessageSquare,
+  Loader2,
 } from "lucide-react";
 import { ChecklistItem, CheckStatus } from "@/lib/types";
+import { Citation } from "@/lib/validation";
+import { fetchExplanation } from "@/lib/explain";
 
 interface LabelChecklistProps {
   items: ChecklistItem[];
@@ -293,16 +298,117 @@ function ChecklistRow({
           </div>
         )}
 
-        {/* Description (collapsed for extractable items that have a value) */}
-        {(!item.extractable || !displayValue) && (
-          <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">
+        {/* Description (collapsed for extractable items that have a value, except health_warning) */}
+        {(!item.extractable || !displayValue || item.id === "health_warning") && (
+          <p className={`text-[11px] mt-0.5 leading-tight ${
+            item.id === "health_warning" ? "text-amber-700 font-medium" : "text-gray-500"
+          }`}>
             {item.description}
           </p>
         )}
         {item.note && (
           <p className="text-[11px] text-blue-600 mt-0.5 italic">{item.note}</p>
         )}
+
+        {/* Citations from validation results */}
+        <CitationLines item={item} />
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Citation lines + Explain button
+// ---------------------------------------------------------------------------
+
+function CitationLines({ item }: { item: ChecklistItem }) {
+  const [expandedRule, setExpandedRule] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const citations = (item.validationResults ?? [])
+    .filter((r) => r.citation)
+    .reduce<{ ruleId: string; citation: Citation; pass: boolean; severity: string }[]>(
+      (acc, r) => {
+        if (!acc.some((a) => a.citation.chapter === r.citation!.chapter && a.citation.section === r.citation!.section)) {
+          acc.push({ ruleId: r.ruleId, citation: r.citation!, pass: r.pass, severity: r.severity });
+        }
+        return acc;
+      },
+      []
+    );
+
+  if (citations.length === 0) return null;
+
+  const handleExplain = async (ruleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (expandedRule === ruleId) {
+      setExpandedRule(null);
+      return;
+    }
+    setExpandedRule(ruleId);
+    setLoading(true);
+    try {
+      const result = await fetchExplanation(
+        ruleId,
+        item.id,
+        item.detectedValue,
+        item.userValue
+      );
+      setExplanation(result);
+    } catch {
+      setExplanation("Unable to load explanation. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      {citations.map(({ ruleId, citation, pass, severity }) => (
+        <div key={ruleId}>
+          <div className="flex items-center gap-1.5">
+            <BookOpen size={11} className="text-gray-400 shrink-0" />
+            <span className="text-[10px] text-gray-500">
+              § Ch. {citation.chapter}, {citation.section} — {citation.summary}
+            </span>
+            {citation.referenceUrl && (
+              <a
+                href={citation.referenceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[10px] text-blue-500 hover:text-blue-700 underline shrink-0"
+                title={citation.referenceUrl}
+              >
+                TTB Ref ↗
+              </a>
+            )}
+            {!pass && (severity === "error" || severity === "warning") && (
+              <button
+                type="button"
+                onClick={(e) => handleExplain(ruleId, e)}
+                className="text-[10px] text-indigo-500 hover:text-indigo-700 flex items-center gap-0.5 shrink-0"
+              >
+                <MessageSquare size={10} />
+                {expandedRule === ruleId ? "Hide" : "Explain"}
+              </button>
+            )}
+          </div>
+          {expandedRule === ruleId && (
+            <div className="ml-4 mt-1 p-2 bg-gray-50 rounded text-[11px] text-gray-700 leading-relaxed border border-gray-200">
+              {loading ? (
+                <span className="flex items-center gap-1.5 text-gray-400">
+                  <Loader2 size={12} className="animate-spin" />
+                  Getting explanation...
+                </span>
+              ) : (
+                explanation
+              )}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

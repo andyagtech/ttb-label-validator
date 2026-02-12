@@ -1,6 +1,6 @@
 # Coverage Matrix
 
-> Comprehensive inventory of every feature, test, API endpoint, walkthrough step, and component — mapped to whether it was explicitly requested in `project_description.md` or built as additional value.
+> Comprehensive inventory of every feature, test, API endpoint, walkthrough step, and component — mapped to whether it was explicitly requested in `docs/project_description.md` or built as additional value.
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Symbol | Meaning |
 |--------|---------|
-| ✅ | Explicitly requested in `project_description.md` |
+| ✅ | Explicitly requested in `docs/project_description.md` |
 | ⭐ | Built beyond what was explicitly requested |
 
 ### Feature Matrix
@@ -68,6 +68,7 @@
 | **API test page (`/api-test`)** | ⭐ | Interactive API playground for all endpoints |
 | **Rate limiting (flatten API)** | ⭐ | 5 req/min/IP with `X-RateLimit-*` headers |
 | **Export high-resolution corrected image** | ⭐ | PNG/JPEG at user-selected quality |
+| **Test label image generation (Gemini AI)** | ⭐ | `/generate` page + `/api/generate-label` — Nano Banana text-to-image with 10 presets |
 | **TTB labeling reference document** | ⭐ | 530+ line reference with CFR citations and COLA system summaries |
 | **Infrastructure justification document** | ⭐ | Capacity analysis, cost projections, production roadmap |
 
@@ -161,6 +162,8 @@ These features are available on the **Submission Simulator** (`/`) — the hypot
 | `GET` | `/api/queue/[id]` | Full submission detail | — | ✅ 404 | — |
 | `PATCH` | `/api/queue/[id]` | Update submission status | ✅ `status` required | ✅ 400, 404 | — |
 | `POST` | `/api/queue/[id]` | Submit a review decision | ✅ `decision` + `reviewerId` required | ✅ 400, 404 | — |
+| `GET` | `/api/generate-label` | List available label generation presets | — | — | — |
+| `POST` | `/api/generate-label` | Generate test label image via Gemini AI | ✅ falls back to defaults | ✅ 422, 500, 502 | — |
 
 ### API Test Page (`/api-test`)
 
@@ -169,6 +172,7 @@ Interactive browser-based API playground covering all 7 endpoints:
 | Endpoint | Method | Image Upload | JSON Body | Path Param | Sample Labels |
 |----------|--------|-------------|-----------|------------|---------------|
 | OCR Extract | POST | ✅ | — | — | ✅ 6 samples |
+| Generate Label | POST | — | ✅ preset/fields | — | — |
 | AI Flatten | POST | ✅ | — | — | ✅ 6 samples |
 | Queue List | GET | — | — | — | — |
 | Queue Create | POST | — | ✅ default body | — | — |
@@ -177,6 +181,8 @@ Interactive browser-based API playground covering all 7 endpoints:
 | Queue Patch | PATCH | — | ✅ default body | ✅ `{id}` | — |
 
 Features: response timing, JSON syntax highlighting, copy-to-clipboard, sample label selector, file upload.
+
+The **Test Label Generator** (`/generate`) provides a dedicated UI for generating labels with presets, custom fields, history, download, and "Send to Simulator" integration.
 
 ---
 
@@ -297,10 +303,12 @@ Features: response timing, JSON syntax highlighting, copy-to-clipboard, sample l
 | `/queue` | Page | Agent Review Queue — dashboard, filter, navigate | ✅ 8 steps |
 | `/queue/[id]` | Page | Agent Review Workspace — side-by-side, checklist, comparison, decision | ✅ 6 steps |
 | `/api-test` | Page | Interactive API playground | — |
+| `/generate` | Page | Test label generator (Gemini AI) — presets, fields, history | — |
 | `/api/ocr` | API | AI vision OCR extraction | — |
 | `/api/flatten` | API | OpenCV perspective/cylindrical rectification | — |
 | `/api/queue` | API | Queue CRUD (list + create) | — |
 | `/api/queue/[id]` | API | Submission detail + review (GET + PATCH + POST) | — |
+| `/api/generate-label` | API | Label generation presets (GET) + Gemini image gen (POST) | — |
 
 ---
 
@@ -308,9 +316,11 @@ Features: response timing, JSON syntax highlighting, copy-to-clipboard, sample l
 
 | Document | Path | Lines | Content |
 |----------|------|-------|---------|
-| **README** | `README.md` | ~540 | Setup, architecture, features, API docs, trade-offs |
-| **Coverage Matrix** | `COVERAGE.md` | this file | Full feature/test/walkthrough inventory |
-| **Project Description** | `project_description.md` | 126 | Original assignment brief |
+| **README** | `README.md` | ~600 | Setup, architecture, features, API docs, error handling, trade-offs |
+| **Testing Guide** | `docs/TESTING_GUIDE.md` | ~250 | Exact testing instructions, manual flows, infra tests, smoke checklist |
+| **Coverage Matrix** | `docs/COVERAGE.md` | this file | Full feature/test/walkthrough inventory |
+| **Build Plan** | `docs/PLAN.md` | 66 | Original phased build plan |
+| **Project Description** | `docs/project_description.md` | 126 | Original assignment brief |
 | **Infrastructure Justification** | `docs/infrastructure-justification.md` | ~200 | Capacity analysis, cost projections, production roadmap |
 | **TTB Labeling Reference** | `references/ttb-malt-beverage-labeling-reference.md` | ~530 | CFR citations, COLA system summaries from 20 PDFs |
 | **Lambda SAM Template** | `backend/flatten/template.yaml` | — | AWS SAM deployment for OpenCV Lambda |
