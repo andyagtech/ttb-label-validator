@@ -56,7 +56,7 @@ export const C = {
 export function GovBanner() {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div style={{ background: C.lightGray, fontSize: 13 }}>
+    <div id="gov-banner" style={{ background: C.lightGray, fontSize: 13 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "4px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <img
@@ -139,9 +139,9 @@ export function GovBanner() {
 // ---------------------------------------------------------------------------
 export function TTBHeader({ activeNav }: { activeNav?: string }) {
   return (
-    <header>
+    <header id="ttb-header">
       {/* Logo bar — darkest navy background */}
-      <div style={{ background: C.darkNavy }}>
+      <div id="ttb-logo-bar" style={{ background: C.darkNavy }}>
         <div
           style={{
             maxWidth: 1200,
@@ -191,7 +191,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
       </div>
 
       {/* Main nav bar — lighter blue */}
-      <nav style={{ background: C.lightBlue }}>
+      <nav id="ttb-main-nav" style={{ background: C.lightBlue }}>
         <div
           style={{
             maxWidth: 1200,
@@ -264,7 +264,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
       </nav>
 
       {/* Green info bar — usa-alert--success */}
-      <div style={{ background: C.greenBg, borderBottom: `3px solid ${C.green}`, padding: "10px 0" }}>
+      <div id="ttb-info-bar" style={{ background: C.greenBg, borderBottom: `3px solid ${C.green}`, padding: "10px 0" }}>
         <div
           style={{
             maxWidth: 1200,
@@ -304,7 +304,7 @@ export interface BreadcrumbItem {
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <div style={{ background: C.white, borderBottom: `1px solid ${C.border}` }}>
+    <div id="breadcrumbs" style={{ background: C.white, borderBottom: `1px solid ${C.border}` }}>
       <div
         style={{
           maxWidth: 1200,
@@ -339,6 +339,7 @@ export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
 export function AlertBanner() {
   return (
     <div
+      id="alert-banner"
       style={{
         background: C.yellowBg,
         borderLeft: `4px solid ${C.gold}`,
@@ -365,7 +366,7 @@ export function AlertBanner() {
 // ---------------------------------------------------------------------------
 export function TTBFooter() {
   return (
-    <footer style={{ background: C.darkNavy, color: C.lightGrayText, marginTop: 64 }}>
+    <footer id="ttb-footer" style={{ background: C.darkNavy, color: C.lightGrayText, marginTop: 64 }}>
       <div
         style={{
           maxWidth: 1200,
@@ -452,6 +453,7 @@ export function FeedbackButton({
   if (!visible) return null;
   return (
     <button
+      id="feedback-button"
       onClick={onClick}
       aria-label="How helpful is this page?"
       style={{
@@ -505,6 +507,7 @@ export function TTBShell({
 
   return (
     <div
+      id="ttb-shell"
       style={{
         fontFamily: "'Public Sans', 'Source Sans Pro', 'Segoe UI', system-ui, sans-serif",
         color: C.darkGray,

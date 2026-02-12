@@ -106,11 +106,12 @@ export default function TTBStylePrototype() {
         { label: "ALFD", href: "/" },
         { label: "Certificate of Label Approval (COLA)" },
       ]} />
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
+      <main id="home-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
         <AlertBanner />
 
         {/* Page title */}
         <h1
+          id="home-title"
           style={{
             fontFamily: "'Merriweather', Georgia, serif",
             fontSize: 32,
@@ -137,9 +138,9 @@ export default function TTBStylePrototype() {
         </p>
 
         {/* Two-column layout */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 32 }}>
+        <div id="home-layout" style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 32 }}>
           {/* Left: Validation Results */}
-          <div>
+          <div id="home-validation-column">
             {/* Summary card */}
             <div
               style={{
@@ -159,6 +160,7 @@ export default function TTBStylePrototype() {
                 }}
               >
                 <h2
+                  id="validation-results-title"
                   style={{
                     fontSize: 20,
                     fontWeight: 700,
@@ -185,6 +187,7 @@ export default function TTBStylePrototype() {
 
               {/* Summary stats */}
               <div
+                id="validation-summary-stats"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(3, 1fr)",
@@ -255,6 +258,7 @@ export default function TTBStylePrototype() {
 
             {/* Checklist table */}
             <div
+              id="validation-checklist"
               style={{
                 background: C.white,
                 borderRadius: 8,
@@ -358,7 +362,7 @@ export default function TTBStylePrototype() {
           </div>
 
           {/* Right sidebar */}
-          <aside>
+          <aside id="home-sidebar">
             {/* Upload card */}
             <div
               style={{
@@ -370,6 +374,7 @@ export default function TTBStylePrototype() {
               }}
             >
               <h3
+                id="upload-title"
                 style={{
                   fontSize: 16,
                   fontWeight: 700,
@@ -488,6 +493,7 @@ export default function TTBStylePrototype() {
                   if (uploadedImage) (e.target as HTMLElement).style.background = C.navy;
                 }}
                 disabled={!uploadedImage}
+                id="validate-label-button"
               >
                 Validate Label
               </button>
@@ -522,6 +528,7 @@ export default function TTBStylePrototype() {
               }}
             >
               <h3
+                id="quick-links-title"
                 style={{
                   fontSize: 16,
                   fontWeight: 700,
@@ -577,6 +584,7 @@ export default function TTBStylePrototype() {
               }}
             >
               <h3
+                id="app-nav-title"
                 style={{
                   fontSize: 16,
                   fontWeight: 700,

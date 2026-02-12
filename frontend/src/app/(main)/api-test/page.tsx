@@ -499,11 +499,11 @@ export default function TTBApiTestPage() {
         { label: "API Test Console" },
       ]} />
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px" }}>
+      <div id="api-test-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div id="api-test-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div>
-            <h1 style={{
+            <h1 id="api-test-title" style={{
               fontFamily: "'Merriweather', Georgia, serif",
               fontSize: 24, fontWeight: 700, color: C.darkNavy, margin: 0,
             }}>
@@ -532,12 +532,12 @@ export default function TTBApiTestPage() {
         </div>
 
         {/* 3-column layout: sidebar | config | response */}
-        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr 1fr", gap: 16, alignItems: "start" }}>
+        <div id="api-test-layout" style={{ display: "grid", gridTemplateColumns: "260px 1fr 1fr", gap: 16, alignItems: "start" }}>
 
           {/* ============================================================ */}
           {/* LEFT: Endpoint Picker (Step 1) */}
           {/* ============================================================ */}
-          <div style={{
+          <div id="api-test-endpoint-picker" style={{
             background: C.white, borderRadius: 8, border: `1px solid ${C.border}`,
             overflow: "hidden",
           }}>
@@ -629,7 +629,7 @@ export default function TTBApiTestPage() {
           {/* ============================================================ */}
           {/* MIDDLE: Configuration (Step 2) */}
           {/* ============================================================ */}
-          <div>
+          <div id="api-test-config-panel">
             {/* Step header */}
             <div style={{
               padding: "10px 14px", marginBottom: 12,
@@ -864,7 +864,7 @@ export default function TTBApiTestPage() {
           {/* ============================================================ */}
           {/* RIGHT: Response Viewer (Step 3) */}
           {/* ============================================================ */}
-          <div>
+          <div id="api-test-response-panel">
             {/* Step header */}
             <div style={{
               padding: "10px 14px", marginBottom: 12,

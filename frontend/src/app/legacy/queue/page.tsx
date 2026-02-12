@@ -104,13 +104,13 @@ export default function QueuePage() {
   const agentSteps = [...AGENT_QUEUE_STEPS, ...AGENT_REVIEW_STEPS];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div id="legacy-queue-shell" className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header id="legacy-queue-header" className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold text-gray-800">
+              <h1 id="legacy-queue-title" className="text-lg font-semibold text-gray-800">
                 Review Queue
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">
@@ -139,9 +139,9 @@ export default function QueuePage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div id="legacy-queue-main" className="max-w-6xl mx-auto px-6 py-6">
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div id="legacy-queue-stats" className="grid grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-2xl font-bold text-gray-800">{items.length}</p>
             <p className="text-xs text-gray-500">Total</p>
@@ -163,7 +163,7 @@ export default function QueuePage() {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 mb-4" data-walkthrough="queue-filters">
+        <div id="legacy-queue-filters" className="flex gap-1 mb-4" data-walkthrough="queue-filters">
           {(
             [
               ["all", "All"],
@@ -187,7 +187,7 @@ export default function QueuePage() {
 
         {/* Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" data-walkthrough="queue-table">
-          <table className="w-full">
+          <table id="legacy-queue-table" className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider px-4 py-3">

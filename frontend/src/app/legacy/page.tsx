@@ -838,13 +838,13 @@ export default function Home() {
   }, [slots, beverageCategory]);
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div id="legacy-shell" className="min-h-screen bg-[var(--background)]">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
+      <header id="legacy-header" className="border-b border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 id="legacy-title" className="text-xl font-bold text-gray-900">
                 TTB Label Validator
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-violet-100 text-violet-700">
@@ -925,7 +925,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main id="legacy-main" className="max-w-6xl mx-auto px-4 py-6">
         {/* Label slot tabs */}
         <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
           {slots.map((slot) => (

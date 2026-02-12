@@ -233,11 +233,12 @@ export default function TTBGeneratePage() {
         { label: "Test Label Generator" },
       ]} />
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
+      <div id="generate-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
         {/* Page header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div id="generate-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
             <h1
+              id="generate-title"
               style={{
                 fontFamily: "'Merriweather', Georgia, serif",
                 fontSize: 28,
@@ -297,9 +298,9 @@ export default function TTBGeneratePage() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        <div id="generate-layout" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
           {/* LEFT: Configuration */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div id="generate-config-panel" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Preset picker */}
             <div style={{ background: C.white, borderRadius: 8, border: `1px solid ${C.border}`, padding: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -548,7 +549,7 @@ export default function TTBGeneratePage() {
           </div>
 
           {/* RIGHT: Generated image + history */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div id="generate-output-panel" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ background: C.white, borderRadius: 8, border: `1px solid ${C.border}`, overflow: "hidden" }}>
               <div style={{
                 padding: "10px 16px",

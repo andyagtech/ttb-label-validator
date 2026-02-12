@@ -314,9 +314,9 @@ export default function ApiTestPage() {
   const currentImage = selectedSample || uploadedPreview;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div id="legacy-api-test-shell" className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header id="legacy-api-test-header" className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/legacy" className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition">
@@ -325,7 +325,7 @@ export default function ApiTestPage() {
             </Link>
             <div className="h-5 w-px bg-gray-200" />
             <div>
-              <h1 className="text-lg font-semibold text-gray-800">API Test Page</h1>
+              <h1 id="legacy-api-test-title" className="text-lg font-semibold text-gray-800">API Test Page</h1>
               <p className="text-xs text-gray-500">Test endpoints with sample labels or your own images</p>
             </div>
           </div>
@@ -338,9 +338,9 @@ export default function ApiTestPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-2 gap-6">
+      <div id="legacy-api-test-main" className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-2 gap-6">
         {/* Left: Request Builder */}
-        <div className="space-y-4">
+        <div id="legacy-api-test-request-panel" className="space-y-4">
           {/* Endpoint Selector */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider block mb-3">

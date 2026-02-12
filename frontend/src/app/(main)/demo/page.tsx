@@ -85,11 +85,11 @@ export default function TTBDemoPage() {
         { label: "Component Demo" },
       ]} />
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
+      <div id="demo-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div id="demo-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
-            <h1 style={{
+            <h1 id="demo-title" style={{
               fontFamily: "'Merriweather', Georgia, serif",
               fontSize: 28, fontWeight: 700, color: C.darkNavy, margin: 0,
             }}>
@@ -112,7 +112,7 @@ export default function TTBDemoPage() {
         </div>
 
         {/* Quick nav */}
-        <div style={{
+        <div id="demo-quick-nav" style={{
           display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32,
           padding: 16, background: C.lightGray, borderRadius: 8,
         }}>

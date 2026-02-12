@@ -253,9 +253,9 @@ export default function ReviewPage() {
   const uncheckedCount = allCheckItems.filter((c) => c.status === "unchecked").length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div id="legacy-review-shell" className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header id="legacy-review-header" className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
@@ -269,7 +269,7 @@ export default function ReviewPage() {
             <div>
               <div className="flex items-center gap-2">
                 {CATEGORY_ICON[submission.beverageCategory]}
-                <h1 className="text-base font-semibold text-gray-800">
+                <h1 id="legacy-review-title" className="text-base font-semibold text-gray-800">
                   {submission.productName}
                 </h1>
                 <span

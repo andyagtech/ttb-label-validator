@@ -190,11 +190,11 @@ export default function TTBAgentsPage() {
         { label: "Review Agents" },
       ]} />
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
+      <div id="agents-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div id="agents-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
-            <h1 style={{
+            <h1 id="agents-title" style={{
               fontFamily: "'Merriweather', Georgia, serif",
               fontSize: 28,
               fontWeight: 700,
@@ -232,7 +232,7 @@ export default function TTBAgentsPage() {
         </div>
 
         {/* Summary Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+        <div id="agents-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
           {[
             { n: agents.length, label: "Total Agents", icon: <User size={16} /> },
             { n: activeCount, label: "Active Now", icon: <Shield size={16} />, color: C.green },
@@ -252,7 +252,7 @@ export default function TTBAgentsPage() {
         </div>
 
         {/* Agent Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div id="agents-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           {agents.map((agent) => {
             const st = STATUS_COLORS[agent.status];
             const approvalRate = agent.stats.reviewed > 0

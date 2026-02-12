@@ -216,13 +216,13 @@ export default function GeneratePage() {
   }, [generatedImage, generatedMime]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div id="legacy-generate-shell" className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header id="legacy-generate-header" className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <h1 id="legacy-generate-title" className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                 <Sparkles size={18} className="text-purple-500" />
                 Test Label Generator
               </h1>
@@ -252,10 +252,10 @@ export default function GeneratePage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div id="legacy-generate-main" className="max-w-6xl mx-auto px-6 py-6">
+        <div id="legacy-generate-layout" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* LEFT: Configuration */}
-          <div className="space-y-4">
+          <div id="legacy-generate-config-panel" className="space-y-4">
             {/* Preset picker — real COLA-derived presets */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-3">

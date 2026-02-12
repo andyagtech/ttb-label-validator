@@ -133,11 +133,12 @@ export default function TTBQueuePage() {
         { label: "Home", href: "/" },
         { label: "Review Queue" },
       ]} />
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
+      <div id="queue-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
       {/* Page header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+      <div id="queue-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <h1
+            id="queue-title"
             style={{
               fontFamily: "'Merriweather', Georgia, serif",
               fontSize: 28,
@@ -196,7 +197,7 @@ export default function TTBQueuePage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+      <div id="queue-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
         {[
           { n: items.length, label: "Total", color: C.darkNavy, border: C.border },
           { n: pendingCount, label: "Pending Review", color: "#e5a000", border: "#f5d78e" },
@@ -219,7 +220,7 @@ export default function TTBQueuePage() {
       </div>
 
       {/* Filter tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16 }} data-walkthrough="queue-filters">
+      <div id="queue-filters" style={{ display: "flex", gap: 4, marginBottom: 16 }} data-walkthrough="queue-filters">
         {(
           [
             ["all", "All"],
@@ -257,7 +258,7 @@ export default function TTBQueuePage() {
         }}
         data-walkthrough="queue-table"
       >
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <table id="queue-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ background: C.lightGray }}>
               {["Submission", "Category", "Status", "Submitter", "Submitted", "Reviewer", ""].map(

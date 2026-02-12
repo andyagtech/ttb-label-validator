@@ -182,6 +182,7 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
     <>
       {/* Panel */}
       <div
+        id="walkthrough-panel"
         className="fixed top-0 right-0 w-[380px] h-full bg-white border-l border-gray-200 shadow-2xl z-40 flex flex-col"
         style={{ animation: "walkthroughSlideIn 0.3s ease-out" }}
       >

@@ -273,7 +273,7 @@ export default function TTBReviewPage() {
       ]} />
 
       {/* Submission info bar */}
-      <div className="bg-white border-b border-gray-200">
+      <div id="review-info-bar" className="bg-white border-b border-gray-200">
         <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
@@ -287,7 +287,7 @@ export default function TTBReviewPage() {
             <div>
               <div className="flex items-center gap-2">
                 {CATEGORY_ICON[submission.beverageCategory]}
-                <h1 className="text-base font-semibold text-gray-800">
+                <h1 id="review-title" className="text-base font-semibold text-gray-800">
                   {submission.productName}
                 </h1>
                 <span
@@ -303,7 +303,7 @@ export default function TTBReviewPage() {
           </div>
 
           {/* Stats badges */}
-          <div className="flex items-center gap-4" data-walkthrough="stats-bar">
+          <div id="review-stats-bar" className="flex items-center gap-4" data-walkthrough="stats-bar">
             <div className="flex items-center gap-3 text-[11px]">
               <span className="flex items-center gap-1 text-emerald-600">
                 <CheckCircle2 size={12} /> {passCount} pass
@@ -334,7 +334,7 @@ export default function TTBReviewPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="bg-white border-b border-gray-200">
+      <div id="review-tab-bar" className="bg-white border-b border-gray-200">
         <div className="max-w-[1400px] mx-auto px-6 flex gap-1">
           {([
             { key: "side-by-side" as LeftTab, label: "Label + Data", icon: <SplitSquareHorizontal size={13} />, wt: "tab-label-data" },
@@ -369,11 +369,11 @@ export default function TTBReviewPage() {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-6 py-6 flex gap-6">
+      <div id="review-workspace" className="max-w-[1400px] mx-auto px-6 py-6 flex gap-6">
         {/* ============================================================== */}
         {/* LEFT: Content area (flex-1) */}
         {/* ============================================================== */}
-        <div className="flex-1 min-w-0">
+        <div id="review-content-panel" className="flex-1 min-w-0">
 
           {/* ---- SIDE-BY-SIDE TAB ---- */}
           {leftTab === "side-by-side" && (
@@ -727,7 +727,7 @@ export default function TTBReviewPage() {
         {/* ============================================================== */}
         {/* RIGHT: Review Decision Panel (fixed width) */}
         {/* ============================================================== */}
-        <div className="w-[320px] shrink-0 space-y-4" data-walkthrough="decision-panel">
+        <div id="review-decision-panel" className="w-[320px] shrink-0 space-y-4" data-walkthrough="decision-panel">
           {submitted ? (
             <div className="bg-white rounded-xl border border-emerald-200 p-6 text-center sticky top-20">
               <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3" />
@@ -752,6 +752,7 @@ export default function TTBReviewPage() {
                   Reviewer Name
                 </label>
                 <input
+                  id="reviewer-name-input"
                   type="text"
                   value={reviewerName}
                   onChange={(e) => setReviewerName(e.target.value)}
@@ -851,6 +852,7 @@ export default function TTBReviewPage() {
                   Notes
                 </label>
                 <textarea
+                  id="review-notes-input"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Optional notes..."
@@ -861,6 +863,7 @@ export default function TTBReviewPage() {
 
               {/* Submit */}
               <button
+                id="submit-review-button"
                 onClick={submitReview}
                 disabled={!decision || !reviewerName.trim() || submitting || !isPending}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl bg-[#1a4480] text-white hover:bg-[#162e51] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
