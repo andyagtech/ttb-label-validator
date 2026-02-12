@@ -1,6 +1,6 @@
 # Coverage Matrix
 
-> Comprehensive inventory of every feature, test, API endpoint, walkthrough step, and component — mapped to whether it was explicitly requested in `docs/project_description.md` or built as additional value.
+> Comprehensive inventory of every feature, test, API endpoint, walkthrough step, and component — mapped to whether it was explicitly requested in `docs/PROJECT_DESCRIPTION.md` or built as additional value.
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Symbol | Meaning |
 |--------|---------|
-| ✅ | Explicitly requested in `docs/project_description.md` |
+| ✅ | Explicitly requested in `docs/PROJECT_DESCRIPTION.md` |
 | ⭐ | Built beyond what was explicitly requested |
 
 ### Feature Matrix
@@ -220,7 +220,7 @@ The **Test Label Generator** (`/generate`) provides a dedicated UI for generatin
 | | warns when statement (2) is missing | Partial warning — impairment |
 | **ABV format** | passes "Alcohol 14% by volume" | Standard format |
 | | passes "13.5% Alc. By Vol." | Abbreviated format |
-| | passes "45% Alc./Vol. (90 Proof)" | Sample label format from `project_description.md` |
+| | passes "45% Alc./Vol. (90 Proof)" | Sample label format from `PROJECT_DESCRIPTION.md` |
 | | rejects "5% ABV" | "ABV" not an allowed abbreviation |
 | | ABV optional for beer (malt beverages) | 27 CFR 7.71 |
 | | ABV mandatory for wine | Category-specific rule |
@@ -242,7 +242,7 @@ The **Test Label Generator** (`/generate`) provides a dedicated UI for generatin
 | **Cross-field rules** | warns varietal without appellation (wine) | Varietal requires appellation |
 | | warns vintage without appellation (wine) | Vintage requires appellation |
 | | no cross-field warning when appellation present | Correct combination |
-| **Sample label** | all front label fields pass for spirits | Full `project_description.md` sample |
+| **Sample label** | all front label fields pass for spirits | Full `PROJECT_DESCRIPTION.md` sample |
 | | all back label fields pass for spirits | Full sample, back position |
 
 ### `ocr.test.ts` — 32 tests
@@ -320,7 +320,7 @@ The **Test Label Generator** (`/generate`) provides a dedicated UI for generatin
 | **Testing Guide** | `docs/TESTING_GUIDE.md` | ~250 | Exact testing instructions, manual flows, infra tests, smoke checklist |
 | **Coverage Matrix** | `docs/COVERAGE.md` | this file | Full feature/test/walkthrough inventory |
 | **Build Plan** | `docs/PLAN.md` | 66 | Original phased build plan |
-| **Project Description** | `docs/project_description.md` | 126 | Original assignment brief |
-| **Infrastructure Justification** | `docs/infrastructure-justification.md` | ~200 | Capacity analysis, cost projections, production roadmap |
+| **Project Description** | `docs/PROJECT_DESCRIPTION.md` | 126 | Original assignment brief |
+| **Infrastructure Justification** | `docs/INFRASTRUCTURE_JUSTIFICATION.md` | ~200 | Capacity analysis, cost projections, production roadmap |
 | **TTB Labeling Reference** | `references/ttb-malt-beverage-labeling-reference.md` | ~530 | CFR citations, COLA system summaries from 20 PDFs |
 | **Lambda SAM Template** | `backend/flatten/template.yaml` | — | AWS SAM deployment for OpenCV Lambda |

@@ -161,10 +161,10 @@ Standalone Python Lambda for image flattening. Deployed separately from the Node
 | `TESTING_GUIDE.md` | Exact instructions for testing every feature — unit tests, manual flows, infrastructure, env permutations, smoke test checklist |
 | `COVERAGE.md` | Comprehensive coverage matrix — features, tests, walkthroughs, APIs, components, documentation inventory |
 | `PLAN.md` | Original build plan with phased milestones |
-| `project_description.md` | Take-home project brief with stakeholder interviews and requirements |
+| `PROJECT_DESCRIPTION.md` | Take-home project brief with stakeholder interviews and requirements |
 | `openapi.yaml` | OpenAPI 3.1 spec covering all API endpoints — Lambda (`/health`, `/ocr`, `/openrouter`) and Next.js (`/api/ocr`, `/api/flatten`, `/api/queue`, `/api/queue/{id}`) with full request/response schemas |
-| `validation-and-review-architecture.md` | Design doc — two-tier validation pipeline, review queue assignment logic, multi-reviewer workflow, QA (gold standard audits, re-review sampling), reviewer metrics, data flow diagram |
-| `infrastructure-justification.md` | Capacity analysis against real TTB volume (605 labels/day, 47 agents, 150K/year), cost estimates, serverless scaling rationale, production roadmap with 5 phases, honest gap assessment of POC-only components |
+| `VALIDATION_AND_REVIEW_ARCHITECTURE.md` | Design doc — two-tier validation pipeline, review queue assignment logic, multi-reviewer workflow, QA (gold standard audits, re-review sampling), reviewer metrics, data flow diagram |
+| `INFRASTRUCTURE_JUSTIFICATION.md` | Capacity analysis against real TTB volume (605 labels/day, 47 agents, 150K/year), cost estimates, serverless scaling rationale, production roadmap with 5 phases, honest gap assessment of POC-only components |
 | `STYLE_GUIDE.md` | Design tokens, color palette, typography, component patterns, shared imports cheat sheet, citation pattern docs |
 | `TTB_VISUAL_MATCH_ESTIMATE.md` | Analysis of TTB.gov visual identity (USWDS), gap analysis vs current app, 4-phase plan with ~22hr estimate (NOT IMPLEMENTED) |
 

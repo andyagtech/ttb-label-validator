@@ -299,10 +299,10 @@ describe("Cross-field rules", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Sample Label from project_description.md (Line 93-99)
+// Sample Label from PROJECT_DESCRIPTION.md (Line 93-99)
 // ---------------------------------------------------------------------------
 
-describe("Sample label from project_description.md", () => {
+describe("Sample label from PROJECT_DESCRIPTION.md", () => {
   const sampleFields: ExtractedFields = {
     brandName: "OLD TOM DISTILLERY",
     classType: "Kentucky Straight Bourbon Whiskey",

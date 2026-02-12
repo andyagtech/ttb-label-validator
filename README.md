@@ -198,7 +198,7 @@ flowchart TB
 
 ### Production Path
 
-The current prototype is serverless-first and infrastructure-agnostic. The same application logic runs on production backing services with no rewrites. See [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md) for full capacity analysis.
+The current prototype is serverless-first and infrastructure-agnostic. The same application logic runs on production backing services with no rewrites. See [`docs/INFRASTRUCTURE_JUSTIFICATION.md`](docs/INFRASTRUCTURE_JUSTIFICATION.md) for full capacity analysis.
 
 ```mermaid
 flowchart TB
@@ -239,7 +239,7 @@ flowchart TB
     style Unchanged fill:#eff6ff,stroke:#3b82f6
 ```
 
-**This is an agent-facing tool.** The primary users are 47 TTB compliance agents reviewing ~605 label applications per business day. The prototype has two views: an **Agent Review View** (review queue, pre-processed fields, validation, checklist, approve/reject) and a **Submission Simulator** (image upload, correction, OCR — simulating what a backend ingestion pipeline would produce from COLA). At production scale, Lambda compute uses **<5% of default capacity** and total annual cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/infrastructure-justification.md`](docs/infrastructure-justification.md).
+**This is an agent-facing tool.** The primary users are 47 TTB compliance agents reviewing ~605 label applications per business day. The prototype has two views: an **Agent Review View** (review queue, pre-processed fields, validation, checklist, approve/reject) and a **Submission Simulator** (image upload, correction, OCR — simulating what a backend ingestion pipeline would produce from COLA). At production scale, Lambda compute uses **<5% of default capacity** and total annual cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/INFRASTRUCTURE_JUSTIFICATION.md`](docs/INFRASTRUCTURE_JUSTIFICATION.md).
 
 ### Two-Tier OCR Strategy
 
@@ -458,10 +458,10 @@ ttb_cola_project/
 │   ├── TESTING_GUIDE.md         # Exact testing instructions for every feature
 │   ├── COVERAGE.md              # Feature/test/walkthrough coverage matrix
 │   ├── PLAN.md                  # Original build plan with phased milestones
-│   ├── project_description.md   # Take-home project brief
+│   ├── PROJECT_DESCRIPTION.md   # Take-home project brief
 │   ├── openapi.yaml             # OpenAPI 3.1 spec for all API endpoints
-│   ├── validation-and-review-architecture.md # Two-tier validation + review queue design
-│   └── infrastructure-justification.md # Capacity analysis, cost projections, roadmap
+│   ├── VALIDATION_AND_REVIEW_ARCHITECTURE.md # Two-tier validation + review queue design
+│   └── INFRASTRUCTURE_JUSTIFICATION.md # Capacity analysis, cost projections, roadmap
 ├── references/                  # TTB reference documents (PDFs, markdown)
 ├── sample_labels/               # Test label images (PNG, JPG, HEIC)
 ├── .gitignore                   # Root gitignore (OS, IDE, env, deps, build, Vercel)

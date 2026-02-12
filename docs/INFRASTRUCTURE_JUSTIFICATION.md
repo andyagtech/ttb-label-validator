@@ -2,7 +2,7 @@
 
 ## The Tool: An Agent-Facing Review Assistant
 
-Per the stakeholder interviews in `project_description.md`, this tool is built for **TTB compliance agents** — the 47 specialists who review ~150,000 label applications per year. The tool accelerates their review workflow by automating the tedious matching and verification work they currently do by eye.
+Per the stakeholder interviews in `PROJECT_DESCRIPTION.md`, this tool is built for **TTB compliance agents** — the 47 specialists who review ~150,000 label applications per year. The tool accelerates their review workflow by automating the tedious matching and verification work they currently do by eye.
 
 ### How the tool fits the agent workflow
 
