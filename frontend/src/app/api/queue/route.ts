@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllSubmissions, createSubmission } from "@/lib/store";
 
+/** GET /api/queue — list all submissions, optionally filtered by comma-separated statuses. */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     subs = subs.filter((s) => statuses.includes(s.status));
   }
 
-  // Return a lightweight summary for the list view
+  // Project to a lightweight summary shape for the list view (omits full labels/reviews)
   const items = subs.map((s) => ({
     id: s.id,
     productName: s.productName,
@@ -37,11 +38,13 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ submissions: items, total: items.length });
 }
 
+/** POST /api/queue — create a new submission. Requires beverageCategory and productName. */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { beverageCategory, productName, submitterId, labels, serverValidation, formFields } = body;
 
+    // Validate minimum required fields
     if (!beverageCategory || !productName) {
       return NextResponse.json(
         { error: "beverageCategory and productName are required" },

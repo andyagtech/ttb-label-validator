@@ -372,50 +372,76 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 ```
 ttb_cola_project/
 ├── frontend/                    # Next.js 14 application (Vercel)
+│   ├── vercel.json              # Vercel config: security headers, redirects, framework
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── page.tsx         # Main app — upload, editor, OCR, checklist, flatten
-│   │   │   ├── api-test/page.tsx # Interactive API endpoint tester
-│   │   │   ├── generate/page.tsx # Test label generator (Gemini AI)
-│   │   │   ├── queue/
-│   │   │   │   ├── page.tsx     # Review queue dashboard
-│   │   │   │   └── [id]/page.tsx # Submission review page
-│   │   │   ├── api/
-│   │   │   │   ├── ocr/route.ts # POST — OpenRouter OCR proxy
-│   │   │   │   ├── flatten/route.ts # POST — OpenCV flatten proxy + rate limiter
-│   │   │   │   ├── generate-label/route.ts # GET (presets) + POST (Gemini image gen)
-│   │   │   │   └── queue/       # Queue REST API
-│   │   │   │       ├── route.ts # GET (list) + POST (create)
-│   │   │   │       └── [id]/route.ts # GET + PATCH + POST (review)
-│   │   │   ├── layout.tsx
-│   │   │   └── globals.css      # Tailwind + walkthrough animations
+│   │   │   ├── layout.tsx       # Root layout — HTML shell, Inter font, global CSS
+│   │   │   ├── globals.css      # Tailwind directives + walkthrough animations
+│   │   │   │
+│   │   │   ├── (main)/          # ← Route group: TTB-styled pages (served at /)
+│   │   │   │   ├── layout.tsx   # Wraps pages in TTBShell (gov banner, header, footer)
+│   │   │   │   ├── page.tsx     # Home — label upload, compliance validation
+│   │   │   │   ├── queue/
+│   │   │   │   │   ├── page.tsx # Review queue dashboard with status filtering
+│   │   │   │   │   └── [id]/page.tsx # Agent review workspace (label, checklist, decision)
+│   │   │   │   ├── generate/page.tsx  # AI test label generator (Gemini)
+│   │   │   │   ├── api-test/page.tsx  # Interactive API endpoint tester
+│   │   │   │   ├── agents/page.tsx    # Review agent profiles and performance stats
+│   │   │   │   └── demo/page.tsx      # Component and feature showcase
+│   │   │   │
+│   │   │   ├── legacy/          # ← Original Tailwind-styled pages (preserved at /legacy)
+│   │   │   │   ├── page.tsx     # Submission Simulator — image editor, OCR, checklist
+│   │   │   │   ├── queue/       # Original queue pages
+│   │   │   │   ├── api-test/    # Original API tester
+│   │   │   │   └── generate/    # Original label generator
+│   │   │   │
+│   │   │   └── api/             # Next.js API routes (serverless functions)
+│   │   │       ├── ocr/route.ts           # POST — OpenRouter OCR proxy
+│   │   │       ├── flatten/route.ts       # POST — OpenCV flatten proxy + rate limiter
+│   │   │       ├── explain/route.ts       # POST — AI explanation for validation findings
+│   │   │       ├── generate-label/route.ts # GET (presets) + POST (Gemini image gen)
+│   │   │       ├── queue/                 # Submission queue REST API
+│   │   │       │   ├── route.ts           # GET (list) + POST (create)
+│   │   │       │   ├── [id]/route.ts      # GET + PATCH + POST (review)
+│   │   │       │   └── seed/route.ts      # POST — re-seed mock data
+│   │   │       └── admin/                 # Admin management API
+│   │   │           ├── agents/route.ts    # GET (list) + POST (create agent)
+│   │   │           └── stats/
+│   │   │               ├── route.ts       # GET — global review statistics
+│   │   │               └── [agentId]/route.ts # GET — per-agent statistics
+│   │   │
 │   │   ├── components/
-│   │   │   ├── CornerEditor.tsx  # 4-point corner editor with zoom/pan
-│   │   │   ├── MeshWarpEditor.tsx# Multi-point mesh warp editor
-│   │   │   ├── LabelChecklist.tsx# Checklist with validation results
-│   │   │   ├── FormComparison.tsx# COLA form vs label fuzzy comparison
-│   │   │   ├── BatchUpload.tsx   # Batch upload modal with queue + CSV export
-│   │   │   ├── ImageInput.tsx    # Drag-and-drop image upload
-│   │   │   └── WalkthroughPanel.tsx # 8-step guided tutorial with highlights
+│   │   │   ├── TTBShell.tsx     # TTB.gov visual shell (banner, header, nav, footer)
+│   │   │   ├── CornerEditor.tsx # 4-point corner editor with zoom/pan
+│   │   │   ├── MeshWarpEditor.tsx # Multi-point mesh warp editor
+│   │   │   ├── LabelChecklist.tsx # Checklist with validation results
+│   │   │   ├── FormComparison.tsx # COLA form vs label fuzzy comparison
+│   │   │   ├── BatchUpload.tsx  # Batch upload modal with queue + CSV export
+│   │   │   ├── ImageInput.tsx   # Drag-and-drop image upload
+│   │   │   └── WalkthroughPanel.tsx # Guided tutorial with element highlighting
+│   │   │
 │   │   ├── lib/
-│   │   │   ├── perspective.ts    # Perspective transform + cylindrical unwrap
-│   │   │   ├── meshwarp.ts       # Coons patch mesh warp + curved edge generation
-│   │   │   ├── autofit.ts        # Curvature auto-estimation (Sobel analysis)
-│   │   │   ├── smartcrop.ts      # Edge-detection label boundary detection (graphics)
-│   │   │   ├── sharpen.ts        # Client-side unsharp mask (Canvas pixel manipulation)
-│   │   │   ├── ocr.ts            # Tesseract.js + server OCR + field mapping
-│   │   │   ├── validation.ts     # TTB validation rules engine (category-aware)
-│   │   │   ├── fuzzyMatch.ts     # Levenshtein fuzzy matching for form comparison
-│   │   │   ├── types.ts          # Checklist items, review types, submissions
-│   │   │   ├── store.ts          # In-memory submission store + mock seed data
-│   │   │   └── __tests__/        # Unit tests (Vitest) — 77 tests
+│   │   │   ├── perspective.ts   # Perspective transform + cylindrical unwrap
+│   │   │   ├── meshwarp.ts      # Coons patch mesh warp + curved edge generation
+│   │   │   ├── autofit.ts       # Curvature auto-estimation (Sobel analysis)
+│   │   │   ├── smartcrop.ts     # Edge-detection label boundary detection (graphics)
+│   │   │   ├── sharpen.ts       # Client-side unsharp mask (Canvas pixel manipulation)
+│   │   │   ├── ocr.ts           # Tesseract.js + server OCR + field mapping
+│   │   │   ├── validation.ts    # TTB validation rules engine (category-aware)
+│   │   │   ├── fuzzyMatch.ts    # Levenshtein fuzzy matching for form comparison
+│   │   │   ├── types.ts         # TypeScript types — checklist, review, submission
+│   │   │   ├── store.ts         # In-memory submission store + 8 mock seed submissions
+│   │   │   ├── agentStore.ts    # In-memory agent store + 5 seed agents + stats helpers
+│   │   │   ├── styles.ts        # Shared design tokens, color maps, utility formatters
+│   │   │   └── __tests__/       # Unit tests (Vitest) — 77 tests
 │   │   │       ├── validation.test.ts  # 31 tests — rules engine
 │   │   │       ├── ocr.test.ts         # 32 tests — OCR parsing
 │   │   │       └── fuzzyMatch.test.ts  # 14 tests — fuzzy matching
 │   │   └── types/
-│   │       └── tesseract.d.ts    # Tesseract.js type declarations
-│   ├── vitest.config.ts          # Test configuration
+│   │       └── tesseract.d.ts   # Tesseract.js type declarations
+│   ├── vitest.config.ts         # Test configuration
 │   └── package.json
+│
 ├── backend/                     # AWS Lambda — Node.js OpenRouter proxy
 │   ├── src/
 │   │   ├── index.ts             # Lambda entry point + CORS + routing
@@ -438,6 +464,7 @@ ttb_cola_project/
 │   └── infrastructure-justification.md # Capacity analysis, cost projections, roadmap
 ├── references/                  # TTB reference documents (PDFs, markdown)
 ├── sample_labels/               # Test label images (PNG, JPG, HEIC)
+├── .gitignore                   # Root gitignore (OS, IDE, env, deps, build, Vercel)
 └── INDEX.md                     # Repo structure guide
 ```
 
@@ -472,11 +499,18 @@ Full OpenAPI 3.1 specification: [`docs/openapi.yaml`](docs/openapi.yaml)
 | `/api/queue/{id}` | POST | Next.js | Submit a review decision |
 | `/api/generate-label` | GET | Next.js | List available label generation presets |
 | `/api/generate-label` | POST | Next.js | Generate test label image via Gemini AI |
+| `/api/queue/seed` | POST | Next.js | Re-seed mock submission data |
+| `/api/admin/agents` | GET | Next.js | List all review agents with profiles and stats |
+| `/api/admin/agents` | POST | Next.js | Create a new review agent |
+| `/api/admin/stats` | GET | Next.js | Global review statistics (submissions, reviews, agents) |
+| `/api/admin/stats/{agentId}` | GET | Next.js | Per-agent review statistics with recent activity |
 | Lambda URL | POST | Lambda (Python) | Direct OpenCV flatten (cylindrical or perspective) |
 
 - **OCR endpoints** accept `{ imageBase64, mimeType }` and return `{ success, fields, model }` with 12 TTB field keys.
 - **Flatten endpoint** accepts `{ imageBase64, mode, mimeType }` and returns `{ success, imageBase64, mode, details }`.
 - **Generate-label endpoint** accepts `{ preset?, labelType?, category?, brandName?, classType?, ... }` and returns `{ success, imageBase64, mimeType, prompt }`.
+- **Admin agents endpoint** accepts `{ name, title, email, division?, specialties?, certifications?, status? }` for POST; returns `{ agents, total }` for GET.
+- **Admin stats endpoint** returns `{ stats: { totalSubmissions, byStatus, byCategory, totalReviews, avgReviewTimeSeconds, ... } }`.
 
 ## Approach & Design Decisions
 

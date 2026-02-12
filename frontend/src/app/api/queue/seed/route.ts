@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { reseedSubmissions } from "@/lib/store";
 
+/** POST /api/queue/seed — reset all submissions to the original 8 mock entries. */
 export async function POST() {
   const submissions = reseedSubmissions();
   const items = submissions.map((s) => ({

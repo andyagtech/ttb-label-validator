@@ -8,16 +8,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllAgents, createAgent } from "@/lib/agentStore";
 
+/** GET /api/admin/agents — return all agents with their profiles and stats. */
 export async function GET() {
   const agents = getAllAgents();
   return NextResponse.json({ agents, total: agents.length });
 }
 
+/** POST /api/admin/agents — create a new agent. Requires name, title, email. */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, title, email, division, specialties, certifications, status } = body;
 
+    // Validate required fields before creating
     if (!name || !title || !email) {
       return NextResponse.json(
         { error: "name, title, and email are required" },

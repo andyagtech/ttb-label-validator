@@ -11,24 +11,41 @@ import { getAllSubmissions } from "./store";
 // Types
 // ---------------------------------------------------------------------------
 
+/** Aggregate performance metrics for a single review agent. */
 export interface AgentStats {
+  /** Total labels this agent has reviewed (lifetime) */
   reviewed: number;
+  /** Number of labels approved */
   approved: number;
+  /** Number of labels rejected */
   rejected: number;
+  /** Number of labels sent back for revision */
   needsRevision: number;
+  /** Average active review time per label in seconds */
   avgTimeSeconds: number;
 }
 
+/** A TTB compliance review agent profile. */
 export interface Agent {
+  /** Unique agent identifier (e.g. "agent-jp") */
   id: string;
+  /** Full display name */
   name: string;
+  /** Job title (e.g. "Senior COLA Review Specialist") */
   title: string;
+  /** Government email address */
   email: string;
+  /** Organizational division */
   division: string;
+  /** Label categories and compliance areas the agent specializes in */
   specialties: string[];
+  /** Current availability status */
   status: "active" | "away" | "offline";
+  /** Professional certifications held */
   certifications: string[];
+  /** Lifetime performance metrics */
   stats: AgentStats;
+  /** ISO 8601 timestamp of when this agent was added to the system */
   createdAt: string;
 }
 
@@ -36,6 +53,12 @@ export interface Agent {
 // Seed Data
 // ---------------------------------------------------------------------------
 
+/**
+ * Generate the initial set of 5 seed agents.
+ *
+ * These agents correspond to characters mentioned in the project brief
+ * (Jenny Park, Dave Morrison) plus additional realistic profiles.
+ */
 function generateSeedAgents(): Agent[] {
   return [
     {
@@ -118,16 +141,25 @@ function ensureSeeded() {
 // Public API
 // ---------------------------------------------------------------------------
 
+/** Return all agents in the store (seeds on first call). */
 export function getAllAgents(): Agent[] {
   ensureSeeded();
   return agents;
 }
 
+/** Look up a single agent by ID. Returns `undefined` if not found. */
 export function getAgent(id: string): Agent | undefined {
   ensureSeeded();
   return agents.find((a) => a.id === id);
 }
 
+/**
+ * Create a new agent and add it to the store.
+ *
+ * Generates a unique ID from the current timestamp and initializes
+ * stats to zero. Only `name`, `title`, and `email` are required;
+ * other fields have sensible defaults.
+ */
 export function createAgent(data: {
   name: string;
   title: string;
@@ -159,6 +191,7 @@ export function createAgent(data: {
 // Stats helpers
 // ---------------------------------------------------------------------------
 
+/** System-wide aggregate statistics across all submissions and agents. */
 export interface GlobalStats {
   totalSubmissions: number;
   byStatus: Record<string, number>;
@@ -170,6 +203,12 @@ export interface GlobalStats {
   activeAgentCount: number;
 }
 
+/**
+ * Compute global review statistics by iterating over all submissions.
+ *
+ * Aggregates submission counts by status and category, review counts
+ * by decision, and calculates the average review time across all reviews.
+ */
 export function getGlobalStats(): GlobalStats {
   ensureSeeded();
   const submissions = getAllSubmissions();
@@ -203,6 +242,7 @@ export function getGlobalStats(): GlobalStats {
   };
 }
 
+/** Detailed per-agent statistics computed from the submission store. */
 export interface AgentDetailStats {
   agent: Agent;
   recentReviews: Array<{
@@ -218,6 +258,13 @@ export interface AgentDetailStats {
   avgTimeSeconds: number;
 }
 
+/**
+ * Compute detailed review statistics for a specific agent.
+ *
+ * Matches reviews by `reviewerId === agent.name` across all submissions
+ * and returns category/decision breakdowns plus the 20 most recent reviews.
+ * Returns `undefined` if the agent ID is not found.
+ */
 export function getAgentStats(agentId: string): AgentDetailStats | undefined {
   ensureSeeded();
   const agent = agents.find((a) => a.id === agentId);

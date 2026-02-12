@@ -24,30 +24,66 @@ The entire user-facing application. Deployed to Vercel.
 | `tailwind.config.ts` | Tailwind theme — extends default with no custom tokens |
 | `postcss.config.js` | PostCSS with Tailwind plugin |
 | `next.config.js` | Next.js config (minimal) |
+| `vercel.json` | Vercel deployment config — security headers (XSS, CSRF, referrer), API cache-control, permanent redirects from old `/ttb-style/*` paths |
 | `vitest.config.ts` | Unit test runner config (Vitest) |
 | `.env.local` | Local dev environment variables (gitignored) |
 
 ### `frontend/src/app/` — Pages & API Routes
 
-| File / Directory | Purpose |
-|------------------|---------|
+The app uses **Next.js route groups** for a blue/green deployment pattern:
+- `(main)/` — TTB-styled pages served at the root `/` (wrapped in TTBShell)
+- `legacy/` — original Tailwind-styled pages preserved at `/legacy`
+
+#### Root
+
+| File | Purpose |
+|------|---------|
 | `layout.tsx` | Root layout — HTML shell, Inter font, global CSS import |
 | `globals.css` | Tailwind directives + walkthrough animation keyframes |
-| **`page.tsx`** | **Main application** (~1900 lines) — image upload, corner/mesh editor, perspective correction, cylindrical unwrap, OCR (Quick Check + AI Extract), validation checklist, data tab, compare tab, batch upload, sharpen, AI flatten. Single-page app with all state managed via `useState`. |
-| `api-test/page.tsx` | Interactive API endpoint tester with sample images, JSON body editor, response viewer |
-| `generate/page.tsx` | Test label generator — Gemini AI presets, custom prompts, history, download, send to simulator |
-| `queue/page.tsx` | Review queue dashboard — submission list, status badges, filter tabs |
-| `queue/[id]/page.tsx` | Individual submission review — label images, checklist, findings editor, review decisions, timer |
-| `api/ocr/route.ts` | `POST /api/ocr` — proxies to OpenRouter for vision-model OCR extraction |
-| `api/flatten/route.ts` | `POST /api/flatten` — proxies to Python Lambda for OpenCV image flattening; includes per-IP rate limiter (5 req/min) |
-| `api/generate-label/route.ts` | `GET` (list presets) + `POST` (generate label image via Gemini Nano Banana) |
-| `api/queue/route.ts` | `GET /api/queue` (list submissions) + `POST /api/queue` (create submission) |
-| `api/queue/[id]/route.ts` | `GET` (detail) + `PATCH` (update status) + `POST` (submit review decision) |
+
+#### `(main)/` — TTB-Styled Pages (served at `/`)
+
+| File | URL | Purpose |
+|------|-----|---------|
+| `layout.tsx` | — | Wraps all pages in `TTBShell` (gov banner, header, nav, footer) |
+| `page.tsx` | `/` | Home — label upload, compliance validation, sidebar navigation |
+| `queue/page.tsx` | `/queue` | Review queue dashboard — submission list, status badges, filter tabs |
+| `queue/[id]/page.tsx` | `/queue/{id}` | Agent review workspace — label images, checklist, findings, decision panel, timer |
+| `generate/page.tsx` | `/generate` | AI test label generator — Gemini AI presets, custom prompts, history |
+| `api-test/page.tsx` | `/api-test` | Interactive API endpoint tester — grouped sidebar, path params, response viewer |
+| `agents/page.tsx` | `/agents` | Review agent profiles — performance stats, specialties, certifications, recent activity |
+| `demo/page.tsx` | `/demo` | Component and feature showcase — pages, colors, typography, buttons, badges, cards |
+
+#### `legacy/` — Original Tailwind-Styled Pages (served at `/legacy`)
+
+| File | URL | Purpose |
+|------|-----|---------|
+| `page.tsx` | `/legacy` | Submission Simulator — image upload, corner/mesh editor, OCR, checklist, flatten (~1900 lines) |
+| `queue/page.tsx` | `/legacy/queue` | Original review queue dashboard |
+| `queue/[id]/page.tsx` | `/legacy/queue/{id}` | Original submission review page |
+| `api-test/page.tsx` | `/legacy/api-test` | Original API endpoint tester |
+| `generate/page.tsx` | `/legacy/generate` | Original test label generator |
+
+#### `api/` — Next.js API Routes (Serverless Functions)
+
+| File | Endpoints | Purpose |
+|------|-----------|---------|
+| `ocr/route.ts` | `POST /api/ocr` | OpenRouter OCR proxy — vision-model structured extraction |
+| `flatten/route.ts` | `POST /api/flatten` | OpenCV flatten proxy + per-IP rate limiter (5 req/min) |
+| `explain/route.ts` | `POST /api/explain` | AI explanation for validation findings |
+| `generate-label/route.ts` | `GET` + `POST /api/generate-label` | List presets + generate label image via Gemini |
+| `queue/route.ts` | `GET` + `POST /api/queue` | List submissions + create new submission |
+| `queue/[id]/route.ts` | `GET` + `PATCH` + `POST /api/queue/{id}` | Submission detail + status update + review decision |
+| `queue/seed/route.ts` | `POST /api/queue/seed` | Re-seed mock submission data |
+| `admin/agents/route.ts` | `GET` + `POST /api/admin/agents` | List all agents + create new agent |
+| `admin/stats/route.ts` | `GET /api/admin/stats` | Global review statistics |
+| `admin/stats/[agentId]/route.ts` | `GET /api/admin/stats/{agentId}` | Per-agent review statistics with recent activity |
 
 ### `frontend/src/components/` — Reusable UI Components
 
 | Component | Purpose |
 |-----------|---------|
+| `TTBShell.tsx` | Full-page layout shell replicating TTB.gov visual identity — gov banner, header, nav bar, footer, breadcrumbs. Exports color tokens (`C`) used across all TTB-styled pages |
 | `ImageInput.tsx` | Drag-and-drop / file-picker image upload with preview and multi-label detection |
 | `CornerEditor.tsx` | 4-point draggable corner editor on canvas with zoom/pan, connecting lines |
 | `MeshWarpEditor.tsx` | Multi-point spline edge editor (3–6 control points per edge) for precise mesh warping |
@@ -71,7 +107,8 @@ The entire user-facing application. Deployed to Vercel.
 | `fuzzyMatch.ts` | Levenshtein distance with Unicode normalization, case folding, punctuation stripping. Used by FormComparison for "STONE'S THROW" ↔ "Stone's Throw" matching |
 | `types.ts` | TypeScript types — `LabelSlot`, `ChecklistItem`, `BeverageCategory`, `Submission`, `ReviewRecord`, `ReviewFinding`, `ReviewDecision`, `ExtractedFields` |
 | `styles.ts` | Centralized design tokens, color maps (category, status, verdict), shared Tailwind class strings, utility formatters (`timeAgo`, `formatDate`, `formatSeconds`) |
-| `store.ts` | In-memory submission store with 8 realistic mock seed submissions. CRUD operations + review workflow state machine |
+| `store.ts` | In-memory submission store — 8 realistic mock seed submissions, CRUD operations, review workflow state machine. Server-side singleton that resets on redeploy |
+| `agentStore.ts` | In-memory agent store — 5 seed agents (Jenny Park, Dave Morrison, etc.), agent CRUD, global + per-agent statistics computed from submission reviews |
 
 ### `frontend/src/lib/__tests__/` — Unit Tests (77 total)
 
@@ -168,20 +205,39 @@ Official TTB documentation used during development:
 ## How the Pieces Connect
 
 ```
-User opens browser
-  → frontend/src/app/page.tsx loads
-  → User uploads image → ImageInput.tsx
-  → Corners placed → CornerEditor.tsx or MeshWarpEditor.tsx
+User opens browser → / (TTB-styled home via (main)/page.tsx + TTBShell layout)
+
+Submission Flow (label upload → OCR → validation):
+  → Upload image          → components/ImageInput.tsx
+  → Place corners         → components/CornerEditor.tsx or MeshWarpEditor.tsx
   → Perspective correction → lib/perspective.ts or lib/meshwarp.ts
-  → Auto-flatten → lib/autofit.ts (curvature estimation)
-  → AI Flatten → /api/flatten → backend/flatten/lambda_function.py (OpenCV)
-  → Sharpen → lib/sharpen.ts (client-side)
-  → Quick Check → lib/ocr.ts (Tesseract.js, browser-side)
-  → AI Extract → /api/ocr → backend/src/handlers/ocr.ts → OpenRouter → Claude 3.5 Sonnet
-  → Validation → lib/validation.ts (rules engine)
-  → Checklist → components/LabelChecklist.tsx
-  → Compare → components/FormComparison.tsx + lib/fuzzyMatch.ts
-  → Review Queue → /queue → lib/store.ts (in-memory)
-  → Batch → components/BatchUpload.tsx (sequential OCR + CSV)
-  → Generate test labels → /generate → /api/generate-label → Gemini AI
+  → Auto-flatten          → lib/autofit.ts (curvature estimation)
+  → AI Flatten            → /api/flatten → backend/flatten/lambda_function.py (OpenCV)
+  → Sharpen               → lib/sharpen.ts (client-side Canvas pixel manipulation)
+  → Quick Check           → lib/ocr.ts (Tesseract.js, browser-side, instant)
+  → AI Extract            → /api/ocr → OpenRouter → Claude 3.5 Sonnet (structured JSON)
+  → Validation            → lib/validation.ts (rules engine, category-aware)
+  → Checklist             → components/LabelChecklist.tsx
+  → Compare with COLA     → components/FormComparison.tsx + lib/fuzzyMatch.ts
+  → Submit to Queue       → /api/queue (POST) → lib/store.ts (in-memory)
+
+Agent Review Flow:
+  → /queue                → Review queue dashboard (filter, sort, pick submission)
+  → /queue/{id}           → Full review workspace (label images, checklist, decision)
+  → Submit decision       → /api/queue/{id} (POST) → auto-status transition
+
+Admin & Stats:
+  → /agents               → Agent profiles page (reads from agentStore.ts)
+  → /api/admin/agents     → Agent CRUD API
+  → /api/admin/stats      → Global review statistics (computed from store + agentStore)
+
+Supporting Tools:
+  → /generate             → AI test label generator → /api/generate-label → Gemini AI
+  → /api-test             → Interactive API endpoint tester (all endpoints)
+  → /demo                 → Component and feature showcase
+  → Batch upload          → components/BatchUpload.tsx (sequential OCR + CSV export)
+
+Legacy Pages (preserved at /legacy for reference):
+  → /legacy               → Original Tailwind-styled Submission Simulator
+  → /legacy/queue          → Original review queue
 ```

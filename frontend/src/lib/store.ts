@@ -32,22 +32,32 @@ function ensureSeeded() {
 // Public API
 // ---------------------------------------------------------------------------
 
+/** Reset the store and re-generate all mock submissions. Used by the seed API. */
 export function reseedSubmissions(): Submission[] {
   seeded = true;
   submissions = generateMockSubmissions();
   return submissions;
 }
 
+/** Return every submission in the store (seeds on first access). */
 export function getAllSubmissions(): Submission[] {
   ensureSeeded();
   return submissions;
 }
 
+/** Look up a single submission by ID. Returns `undefined` if not found. */
 export function getSubmission(id: string): Submission | undefined {
   ensureSeeded();
   return submissions.find((s) => s.id === id);
 }
 
+/**
+ * Create a new submission and prepend it to the store.
+ *
+ * Auto-generates a unique ID from the current timestamp and sets the
+ * initial status to "submitted". The submission is inserted at the
+ * front of the array so it appears first in queue listings.
+ */
 export function createSubmission(data: {
   beverageCategory: BeverageCategory;
   productName: string;
@@ -75,6 +85,7 @@ export function createSubmission(data: {
   return submission;
 }
 
+/** Update a submission's status (e.g. "in_review" → "approved"). */
 export function updateSubmissionStatus(
   id: string,
   status: SubmissionStatus
@@ -87,6 +98,15 @@ export function updateSubmissionStatus(
   return sub;
 }
 
+/**
+ * Append a review to a submission and auto-transition its status.
+ *
+ * Status transitions:
+ *   approve        → "approved"
+ *   reject         → "rejected"
+ *   needs_revision → "needs_revision"
+ *   escalate       → "in_review" (stays in review for senior agent)
+ */
 export function addReview(
   submissionId: string,
   review: ReviewRecord
@@ -108,6 +128,7 @@ export function addReview(
 // Mock Data Generator
 // ---------------------------------------------------------------------------
 
+/** Generate an ISO 8601 timestamp `n` days in the past with randomized work hours. */
 function daysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -115,7 +136,13 @@ function daysAgo(n: number): string {
   return d.toISOString();
 }
 
-// Generate a simple SVG label placeholder with product-specific colors and text
+/**
+ * Generate a data-URI SVG label placeholder image.
+ *
+ * Creates a styled card with the product name, label type, and extracted
+ * field values — used as visual stand-ins for actual label artwork in
+ * the mock seed data.
+ */
 function makeLabelSvg(
   bgColor: string,
   textColor: string,
@@ -140,6 +167,22 @@ function makeLabelSvg(
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 
+/**
+ * Generate 8 realistic mock submissions spanning beer, wine, and spirits.
+ *
+ * Each submission includes:
+ * - Product details matching real TTB label scenarios
+ * - OCR-extracted fields and COLA form fields for comparison testing
+ * - Pre-populated checklists with auto_pass / auto_fail statuses
+ * - SVG placeholder label images color-coded by beverage category
+ * - Review records for submissions that have already been reviewed
+ *
+ * Notable test cases:
+ * - "Stone's Throw" — Dave's fuzzy matching case (STONE'S THROW vs Stone's Throw)
+ * - "Blue Agave" — rejected for prohibited "ABV" abbreviation
+ * - "Velvet Reserve" — needs revision for title-case government warning
+ * - "Sunset Rosé" — flagged class/type (Rosé not in TTB lookup table)
+ */
 function generateMockSubmissions(): Submission[] {
   const mockData: Array<{
     productName: string;
@@ -422,9 +465,10 @@ function generateMockSubmissions(): Submission[] {
     },
   ];
 
+  // Transform raw mock data into fully-typed Submission objects
   return mockData.map((m, idx) => {
     const created = daysAgo(m.daysAgo);
-    // Color schemes per category
+    // Category-specific color schemes for SVG label placeholders
     const colorMap: Record<BeverageCategory, [string, string]> = {
       spirits: ["#2d1b0e", "#d4a76a"],
       beer: ["#f5e6c8", "#5c3d1e"],

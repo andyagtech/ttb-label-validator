@@ -1,3 +1,19 @@
+/**
+ * TTBShell — full-page layout shell that replicates TTB.gov's visual identity.
+ *
+ * Provides the complete page chrome shared across all TTB-styled pages:
+ *   - GovBanner: USWDS-style "official website" disclaimer (collapsible)
+ *   - TTBHeader: dark navy logo bar, blue navigation bar, green info bar
+ *   - TTBFooter: dark navy footer with navigation columns
+ *   - TTBShell:  composed wrapper with breadcrumb support and walkthrough panel
+ *
+ * All colors are extracted from actual TTB.gov computed styles (MHTML snapshot)
+ * and referenced via the exported `C` constant for consistency across pages.
+ *
+ * Design note: Uses inline styles intentionally (not Tailwind) because the
+ * TTB-styled pages need pixel-accurate color matching to TTB.gov's USWDS
+ * tokens, which don't map cleanly to Tailwind's default palette.
+ */
 "use client";
 
 import React, { useState } from "react";

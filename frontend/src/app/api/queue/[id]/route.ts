@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSubmission, updateSubmissionStatus, addReview } from "@/lib/store";
 import { ReviewRecord } from "@/lib/types";
 
+/** GET /api/queue/{id} — return full submission detail including labels, reviews, and OCR data. */
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
@@ -21,6 +22,7 @@ export async function GET(
   return NextResponse.json({ submission: sub });
 }
 
+/** PATCH /api/queue/{id} — update a submission's status (e.g. "submitted" → "in_review"). */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -44,6 +46,12 @@ export async function PATCH(
   }
 }
 
+/**
+ * POST /api/queue/{id} — submit a review decision for this submission.
+ *
+ * Creates a ReviewRecord and auto-transitions the submission status
+ * based on the decision (approve → approved, reject → rejected, etc.).
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -52,6 +60,7 @@ export async function POST(
     const body = await request.json();
     const { decision, reviewerId, notes, findings } = body;
 
+    // Both decision and reviewerId are required to create a valid review
     if (!decision || !reviewerId) {
       return NextResponse.json(
         { error: "decision and reviewerId are required" },
