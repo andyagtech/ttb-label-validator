@@ -18,106 +18,22 @@ import {
   Send,
   ArrowRight,
 } from "lucide-react";
-import { C } from "@/components/TTBShell";
+import { C } from "@/lib/ttb-tokens";
 import { autoEstimateCurvature } from "@/lib/autofit";
 import { createMeshEdgesFromCorners, createCurvedMeshEdges } from "@/lib/meshwarp";
-import type { LabelSlot, MultiLabelChoice } from "@/app/legacy/_components/types";
-
-/* ------------------------------------------------------------------ */
-/* Shared style fragments                                              */
-/* ------------------------------------------------------------------ */
-
-const card: React.CSSProperties = {
-  background: C.white,
-  borderRadius: 8,
-  border: `1px solid ${C.border}`,
-  padding: 16,
-};
-
-const highlightCard = (color: string): React.CSSProperties => ({
-  ...card,
-  border: `2px solid ${color}`,
-});
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 700,
-  color: C.darkNavy,
-  margin: 0,
-};
-
-const helpText: React.CSSProperties = {
-  fontSize: 12,
-  color: C.medGray,
-  margin: "6px 0 0",
-  lineHeight: 1.5,
-};
-
-const toggleBtn = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 4,
-  padding: "10px 0",
-  borderRadius: 6,
-  border: active ? `2px solid ${C.navy}` : `1px solid ${C.border}`,
-  background: active ? `${C.navy}0D` : C.white,
-  color: active ? C.navy : C.medGray,
-  cursor: "pointer",
-  fontSize: 12,
-  fontWeight: 600,
-});
-
-const smallToggle = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: "6px 0",
-  fontSize: 12,
-  fontWeight: 600,
-  borderRadius: 4,
-  border: active ? `2px solid ${C.navy}` : `1px solid ${C.border}`,
-  background: active ? `${C.navy}0D` : C.white,
-  color: active ? C.navy : C.medGray,
-  cursor: "pointer",
-  textAlign: "center",
-});
-
-const sliderRow: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  fontSize: 12,
-  color: C.medGray,
-  marginBottom: 4,
-};
-
-const slider: React.CSSProperties = {
-  width: "100%",
-  accentColor: C.navy,
-};
-
-const sliderHints: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  fontSize: 10,
-  color: C.medGray,
-  marginTop: 2,
-};
-
-const outlineBtn: React.CSSProperties = {
-  flex: 1,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-  padding: "8px 0",
-  fontSize: 12,
-  fontWeight: 600,
-  borderRadius: 6,
-  border: `1px solid ${C.border}`,
-  background: C.white,
-  color: C.darkGray,
-  cursor: "pointer",
-};
+import type { LabelSlot, MultiLabelChoice } from "@/lib/editor-types";
+import {
+  card,
+  highlightCard,
+  sectionTitle,
+  helpText,
+  toggleBtn,
+  smallToggle,
+  sliderRow,
+  slider,
+  sliderHints,
+  outlineBtn,
+} from "@/lib/editor-styles";
 
 /* ------------------------------------------------------------------ */
 /* Props                                                               */

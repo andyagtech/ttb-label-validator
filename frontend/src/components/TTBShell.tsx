@@ -22,53 +22,11 @@ import { ChevronDown, ChevronRight, Search, Info } from "lucide-react";
 import WalkthroughPanel, { SUBMITTER_STEPS } from "@/components/WalkthroughPanel";
 
 // ---------------------------------------------------------------------------
-// Exact TTB.gov color tokens (extracted from MHTML / computed styles)
+// TTB.gov design tokens — canonical source is @/lib/ttb-tokens.ts
+// Re-exported here for backward compatibility (many pages import from TTBShell).
 // ---------------------------------------------------------------------------
-export const C = {
-  // Core palette
-  navy: "#1a4480", // rgb(26,68,128)  — primary interactive
-  darkNavy: "#162e51", // rgb(22,46,81)   — header bg, footer bg
-  navBg: "#083c6f", // rgb(8,60,111)   — .treas-main-nav background
-  lightBlue: "#005ea2", // rgb(0,94,162)   — links, nav bar
-  linkHover: "#1a4480", // rgb(26,68,128)  — link hover
-  white: "#ffffff",
-  lightGray: "#f0f0f0", // rgb(240,240,240) — gov banner, zebra rows
-  medGray: "#71767a", // rgb(113,118,122) — helper text
-  darkGray: "#1b1b1b", // rgb(27,27,27)   — body text
-  coolGray: "#3d4551", // rgb(61,69,81)   — footer text
-  lightGrayText: "#a9aeb1", // rgb(169,174,177) — muted labels
-  border: "#dfe1e2", // rgb(223,225,226) — borders
-  // Accents
-  gold: "#ffbe2e", // rgb(255,190,46) — alert banners
-  goldBright: "#f8e71c", // rgb(248,231,28) — nav active underline
-  red: "#b50909", // rgb(181,9,9)    — error
-  redDark: "#9c3d10", // rgb(156,61,16)  — red button hover
-  green: "#00a91c", // rgb(0,169,28)   — success, Report Fraud button
-  greenBg: "#ecf3ec", // rgb(236,243,236)
-  yellowBg: "#faf3d1", // rgb(250,243,209)
-  redBg: "#f4e3db", // rgb(244,227,219)
-  infoBg: "#e7f6f8", // rgb(231,246,248)
-} as const;
-
-// ---------------------------------------------------------------------------
-// Layout constants — repeated spacing / sizing values used across TTB pages
-// ---------------------------------------------------------------------------
-export const L = {
-  /** Max content width (matches TTB.gov's 1200px container) */
-  maxWidth: 1200,
-  /** Standard page-level horizontal padding */
-  pagePadding: "24px",
-  /** Grid gap between major layout columns */
-  sectionGap: 32,
-  /** Grid gap between cards / stat boxes */
-  cardGap: 16,
-  /** Bottom margin before footer */
-  footerMargin: 64,
-  /** Serif font stack for headings (matches TTB.gov Merriweather usage) */
-  serif: "'Merriweather', Georgia, serif",
-  /** Sans-serif font stack for body text */
-  sans: "'Public Sans', 'Source Sans Pro', 'Segoe UI', system-ui, sans-serif",
-} as const;
+import { C, L } from "@/lib/ttb-tokens";
+export { C, L };
 
 // ---------------------------------------------------------------------------
 // Gov Banner
