@@ -173,7 +173,7 @@ export default function TTBAgentsPage() {
   return (
     <>
       <Breadcrumbs items={[
-        { label: "Home", href: "/ttb-style" },
+        { label: "Home", href: "/" },
         { label: "Review Agents" },
       ]} />
 
@@ -196,7 +196,7 @@ export default function TTBAgentsPage() {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Link
-              href="/ttb-style"
+              href="/"
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "8px 16px", border: `1px solid ${C.border}`, borderRadius: 4,
@@ -206,7 +206,7 @@ export default function TTBAgentsPage() {
               <ArrowLeft size={13} /> Home
             </Link>
             <Link
-              href="/ttb-style/queue"
+              href="/queue"
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "8px 16px", border: `1px solid ${C.border}`, borderRadius: 4,
@@ -371,7 +371,7 @@ export default function TTBAgentsPage() {
                             <span style={{ color: dc.color }}>{dc.icon}</span>
                             <span style={{ fontSize: 12, color: C.darkGray, flex: 1 }}>
                               {a.submissionId ? (
-                                <Link href={`/ttb-style/queue/${a.submissionId}`} style={{ color: C.lightBlue, textDecoration: "none" }}>
+                                <Link href={`/queue/${a.submissionId}`} style={{ color: C.lightBlue, textDecoration: "none" }}>
                                   {a.productName}
                                 </Link>
                               ) : a.productName}

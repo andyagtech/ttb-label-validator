@@ -71,7 +71,7 @@ export default function TTBDemoPage() {
   return (
     <>
       <Breadcrumbs items={[
-        { label: "Home", href: "/ttb-style" },
+        { label: "Home", href: "/" },
         { label: "Component Demo" },
       ]} />
 
@@ -90,7 +90,7 @@ export default function TTBDemoPage() {
             </p>
           </div>
           <Link
-            href="/ttb-style"
+            href="/"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "8px 16px", border: `1px solid ${C.border}`, borderRadius: 4,
@@ -136,15 +136,15 @@ export default function TTBDemoPage() {
           <Section title="Pages" description="All pages available in the TTB-styled prototype">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
               {[
-                { href: "/ttb-style", label: "Home / Validator", desc: "Upload labels for compliance checking", icon: <Shield size={18} /> },
-                { href: "/ttb-style/queue", label: "Review Queue", desc: "Agent review dashboard with filtering", icon: <ClipboardCheck size={18} /> },
-                { href: "/ttb-style/generate", label: "Label Generator", desc: "AI-powered test label generation", icon: <Sparkles size={18} /> },
-                { href: "/ttb-style/api-test", label: "API Test", desc: "Interactive API endpoint tester", icon: <FlaskConical size={18} /> },
-                { href: "/ttb-style/agents", label: "Review Agents", desc: "Agent profiles and performance stats", icon: <Users size={18} /> },
-                { href: "/ttb-style/demo", label: "This Page", desc: "Component & feature showcase", icon: <BarChart3 size={18} /> },
-                { href: "/", label: "Full Editor (Original)", desc: "Perspective correction, OCR, validation", icon: <Camera size={18} /> },
-                { href: "/queue", label: "Queue (Original)", desc: "Original styled queue page", icon: <FileText size={18} /> },
-                { href: "/generate", label: "Generator (Original)", desc: "Original styled generator", icon: <Wand2 size={18} /> },
+                { href: "/", label: "Home / Validator", desc: "Upload labels for compliance checking", icon: <Shield size={18} /> },
+                { href: "/queue", label: "Review Queue", desc: "Agent review dashboard with filtering", icon: <ClipboardCheck size={18} /> },
+                { href: "/generate", label: "Label Generator", desc: "AI-powered test label generation", icon: <Sparkles size={18} /> },
+                { href: "/api-test", label: "API Test", desc: "Interactive API endpoint tester", icon: <FlaskConical size={18} /> },
+                { href: "/agents", label: "Review Agents", desc: "Agent profiles and performance stats", icon: <Users size={18} /> },
+                { href: "/demo", label: "This Page", desc: "Component & feature showcase", icon: <BarChart3 size={18} /> },
+                { href: "/legacy", label: "Full Editor (Legacy)", desc: "Perspective correction, OCR, validation", icon: <Camera size={18} /> },
+                { href: "/legacy/queue", label: "Queue (Legacy)", desc: "Original styled queue page", icon: <FileText size={18} /> },
+                { href: "/legacy/generate", label: "Generator (Legacy)", desc: "Original styled generator", icon: <Wand2 size={18} /> },
               ].map((p) => (
                 <Link key={p.href} href={p.href} style={{
                   display: "flex", alignItems: "flex-start", gap: 12,

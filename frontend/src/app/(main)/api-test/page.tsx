@@ -482,7 +482,7 @@ export default function TTBApiTestPage() {
   return (
     <>
       <Breadcrumbs items={[
-        { label: "Home", href: "/ttb-style" },
+        { label: "Home", href: "/" },
         { label: "API Test Console" },
       ]} />
 
@@ -501,14 +501,14 @@ export default function TTBApiTestPage() {
             </p>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <Link href="/ttb-style" style={{
+            <Link href="/" style={{
               display: "inline-flex", alignItems: "center", gap: 5,
               padding: "7px 14px", border: `1px solid ${C.border}`, borderRadius: 4,
               fontSize: 12, fontWeight: 600, color: C.darkGray, textDecoration: "none", background: C.white,
             }}>
               <ArrowLeft size={12} /> Home
             </Link>
-            <Link href="/ttb-style/demo" style={{
+            <Link href="/demo" style={{
               display: "inline-flex", alignItems: "center", gap: 5,
               padding: "7px 14px", border: `1px solid ${C.border}`, borderRadius: 4,
               fontSize: 12, fontWeight: 600, color: C.darkGray, textDecoration: "none", background: C.white,

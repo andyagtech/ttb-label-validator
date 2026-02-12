@@ -30,7 +30,8 @@ import {
   ReviewFinding,
 } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
-import { Breadcrumbs } from "@/components/TTBShell";
+import WalkthroughPanel from "@/components/WalkthroughPanel";
+import { AGENT_REVIEW_STEPS } from "@/components/AgentWalkthroughSteps";
 import { STATUS_STYLES, CATEGORY_TEXT, VERDICT_COLORS, VERDICT_TEXT, FIELD_LABELS, formatDate, formatSeconds } from "@/lib/styles";
 
 // ---------------------------------------------------------------------------
@@ -83,7 +84,7 @@ type LeftTab = "side-by-side" | "checklist" | "comparison" | "history";
 // Component
 // ---------------------------------------------------------------------------
 
-export default function TTBReviewPage() {
+export default function ReviewPage() {
   const params = useParams();
   const id = params.id as string;
 
@@ -106,6 +107,7 @@ export default function TTBReviewPage() {
   // UI state
   const [leftTab, setLeftTab] = useState<LeftTab>("side-by-side");
   const [selectedLabelIdx, setSelectedLabelIdx] = useState(0);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
 
   // Timer tick
   useEffect(() => {
@@ -216,7 +218,7 @@ export default function TTBReviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Clock size={24} className="animate-pulse text-gray-400 mx-auto mb-2" />
           <p className="text-sm text-gray-500">Loading submission...</p>
@@ -227,11 +229,11 @@ export default function TTBReviewPage() {
 
   if (error || !submission) {
     return (
-      <div className="flex items-center justify-center py-24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <XCircle size={24} className="text-red-400 mx-auto mb-2" />
           <p className="text-sm text-gray-500">{error || "Not found"}</p>
-          <Link href="/ttb-style/queue" className="text-xs text-blue-500 hover:underline mt-2 block">
+          <Link href="/legacy/queue" className="text-xs text-blue-500 hover:underline mt-2 block">
             ← Back to Queue
           </Link>
         </div>
@@ -251,19 +253,13 @@ export default function TTBReviewPage() {
   const uncheckedCount = allCheckItems.filter((c) => c.status === "unchecked").length;
 
   return (
-    <>
-      <Breadcrumbs items={[
-        { label: "Home", href: "/ttb-style" },
-        { label: "Review Queue", href: "/ttb-style/queue" },
-        { label: submission.productName },
-      ]} />
-
-      {/* Submission info bar */}
-      <div className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/ttb-style/queue"
+              href="/legacy/queue"
               className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition"
             >
               <ArrowLeft size={14} />
@@ -317,7 +313,7 @@ export default function TTBReviewPage() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Tab bar */}
       <div className="bg-white border-b border-gray-200">
@@ -364,6 +360,7 @@ export default function TTBReviewPage() {
           {/* ---- SIDE-BY-SIDE TAB ---- */}
           {leftTab === "side-by-side" && (
             <div className="space-y-4">
+              {/* Label selector (if multiple) */}
               {submission.labels.length > 1 && (
                 <div className="flex gap-2">
                   {submission.labels.map((l, i) => (
@@ -383,6 +380,7 @@ export default function TTBReviewPage() {
                 </div>
               )}
 
+              {/* Side-by-side layout */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Left: Label Image */}
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -416,6 +414,7 @@ export default function TTBReviewPage() {
 
                 {/* Right: Extracted Data + Checklist */}
                 <div className="space-y-4">
+                  {/* OCR Extracted Fields */}
                   {ocrResults && (
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                       <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
@@ -460,6 +459,7 @@ export default function TTBReviewPage() {
                     </div>
                   )}
 
+                  {/* Label Checklist (inline) */}
                   {selectedLabel && (
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                       <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
@@ -561,6 +561,7 @@ export default function TTBReviewPage() {
 
               {comparisonResults ? (
                 <div className="p-4 space-y-3">
+                  {/* Summary bar */}
                   {comparisonSummary && (
                     <div className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-3 ${
                       comparisonSummary.issues === 0
@@ -582,6 +583,7 @@ export default function TTBReviewPage() {
                     </div>
                   )}
 
+                  {/* Field-by-field comparison */}
                   <div className="space-y-2">
                     {Object.entries(comparisonResults).map(([key, result]) => (
                       <div
@@ -724,8 +726,8 @@ export default function TTBReviewPage() {
                 Decision: {decision} · Time: {formatSeconds(elapsed)}
               </p>
               <Link
-                href="/ttb-style/queue"
-                className="block w-full px-4 py-2 text-xs font-medium rounded-lg bg-[#1a4480] text-white hover:bg-[#162e51] transition text-center"
+                href="/legacy/queue"
+                className="block w-full px-4 py-2 text-xs font-medium rounded-lg bg-gray-800 text-white hover:bg-gray-900 transition text-center"
               >
                 Back to Queue
               </Link>
@@ -849,7 +851,7 @@ export default function TTBReviewPage() {
               <button
                 onClick={submitReview}
                 disabled={!decision || !reviewerName.trim() || submitting || !isPending}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl bg-[#1a4480] text-white hover:bg-[#162e51] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
               >
                 <Send size={14} />
                 {submitting ? "Submitting..." : !isPending ? "Already Reviewed" : "Submit Review"}
@@ -858,6 +860,29 @@ export default function TTBReviewPage() {
           )}
         </div>
       </div>
-    </>
+      {/* Walkthrough Panel */}
+      {showWalkthrough && (
+        <WalkthroughPanel
+          onClose={() => setShowWalkthrough(false)}
+          steps={AGENT_REVIEW_STEPS}
+          title="Review Page Guide"
+        />
+      )}
+
+      {/* Walkthrough FAB */}
+      {!showWalkthrough && (
+        <button
+          onClick={() => setShowWalkthrough(true)}
+          className="fixed bottom-5 left-5 w-12 h-12 rounded-full bg-white border-2 border-gray-200 shadow-lg hover:shadow-xl hover:scale-110 transition-all z-30 flex items-center justify-center group"
+          title="Review page walkthrough"
+        >
+          <img
+            src="/question-mark.svg"
+            alt="Help"
+            className="w-6 h-6 text-gray-600 group-hover:text-blue-600 transition"
+          />
+        </button>
+      )}
+    </div>
   );
 }

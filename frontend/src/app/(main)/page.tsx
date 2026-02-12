@@ -92,8 +92,8 @@ export default function TTBStylePrototype() {
   return (
     <>
       <Breadcrumbs items={[
-        { label: "Home", href: "/ttb-style" },
-        { label: "ALFD", href: "/ttb-style" },
+        { label: "Home", href: "/" },
+        { label: "ALFD", href: "/" },
         { label: "Certificate of Label Approval (COLA)" },
       ]} />
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
@@ -579,7 +579,7 @@ export default function TTBStylePrototype() {
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <Link
-                  href="/ttb-style"
+                  href="/"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -598,7 +598,7 @@ export default function TTBStylePrototype() {
                   Label Validator
                 </Link>
                 <Link
-                  href="/ttb-style/queue"
+                  href="/queue"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -617,7 +617,7 @@ export default function TTBStylePrototype() {
                   Agent Review Queue
                 </Link>
                 <Link
-                  href="/ttb-style/generate"
+                  href="/generate"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -636,7 +636,7 @@ export default function TTBStylePrototype() {
                   Test Label Generator
                 </Link>
                 <Link
-                  href="/ttb-style/agents"
+                  href="/agents"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -655,7 +655,7 @@ export default function TTBStylePrototype() {
                   Review Agents
                 </Link>
                 <Link
-                  href="/ttb-style/api-test"
+                  href="/api-test"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -674,7 +674,7 @@ export default function TTBStylePrototype() {
                   API Test Console
                 </Link>
                 <Link
-                  href="/ttb-style/demo"
+                  href="/demo"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -691,6 +691,29 @@ export default function TTBStylePrototype() {
                 >
                   <BarChart3 size={16} style={{ color: C.navy }} />
                   Component Demo
+                </Link>
+              </div>
+
+              {/* Legacy link */}
+              <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, marginTop: 12 }}>
+                <Link
+                  href="/legacy"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 12px",
+                    borderRadius: 4,
+                    background: "transparent",
+                    color: C.medGray,
+                    textDecoration: "none",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <ExternalLink size={14} style={{ color: C.medGray }} />
+                  Legacy View (v1)
                 </Link>
               </div>
             </div>

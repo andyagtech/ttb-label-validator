@@ -895,7 +895,7 @@ export default function Home() {
               Batch
             </button>
             <Link
-              href="/queue"
+              href="/legacy/queue"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
               title="View the review queue"
             >
@@ -903,12 +903,20 @@ export default function Home() {
               Agent Queue
             </Link>
             <Link
-              href="/api-test"
+              href="/legacy/api-test"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
               title="Test API endpoints"
             >
               <FlaskConical size={13} />
               API
+            </Link>
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition"
+              title="Switch to the new TTB-styled interface"
+            >
+              <ArrowRight size={13} />
+              New TTB View
             </Link>
             <span className="text-xs text-gray-400">
               {filledSlots}/{totalSlots} labels uploaded

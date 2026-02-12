@@ -120,7 +120,7 @@ export default function TTBQueuePage() {
   return (
     <>
       <Breadcrumbs items={[
-        { label: "Home", href: "/ttb-style" },
+        { label: "Home", href: "/" },
         { label: "Review Queue" },
       ]} />
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
@@ -144,7 +144,7 @@ export default function TTBQueuePage() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Link
-            href="/ttb-style"
+            href="/"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -351,7 +351,7 @@ export default function TTBQueuePage() {
                   >
                     <td style={{ padding: "12px 16px" }}>
                       <Link
-                        href={`/ttb-style/queue/${item.id}`}
+                        href={`/queue/${item.id}`}
                         style={{ textDecoration: "none", display: "block" }}
                       >
                         <div style={{ fontSize: 14, fontWeight: 600, color: C.darkNavy }}>
@@ -388,7 +388,7 @@ export default function TTBQueuePage() {
                       )}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <Link href={`/ttb-style/queue/${item.id}`}>
+                      <Link href={`/queue/${item.id}`}>
                         <ChevronRight size={14} style={{ color: C.medGray }} />
                       </Link>
                     </td>

@@ -123,7 +123,7 @@ export default function QueuePage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href="/"
+              href="/legacy"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
             >
               Submission Simulator →
@@ -241,7 +241,7 @@ export default function QueuePage() {
                       className="hover:bg-gray-50/50 transition cursor-pointer group"
                     >
                       <td className="px-4 py-3">
-                        <Link href={`/queue/${item.id}`} className="block">
+                        <Link href={`/legacy/queue/${item.id}`} className="block">
                           <p className="text-sm font-medium text-gray-800 group-hover:text-blue-600 transition">
                             {item.productName}
                           </p>
@@ -276,7 +276,7 @@ export default function QueuePage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={`/queue/${item.id}`}>
+                        <Link href={`/legacy/queue/${item.id}`}>
                           <ChevronRight
                             size={14}
                             className="text-gray-300 group-hover:text-blue-500 transition"

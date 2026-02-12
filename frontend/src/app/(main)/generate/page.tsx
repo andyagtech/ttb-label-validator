@@ -211,13 +211,13 @@ export default function TTBGeneratePage() {
       "generated-label",
       JSON.stringify({ imageBase64: generatedImage, mimeType: generatedMime })
     );
-    window.location.href = "/ttb-style";
+    window.location.href = "/";
   }, [generatedImage, generatedMime]);
 
   return (
     <>
       <Breadcrumbs items={[
-        { label: "Home", href: "/ttb-style" },
+        { label: "Home", href: "/" },
         { label: "Test Label Generator" },
       ]} />
 
@@ -246,7 +246,7 @@ export default function TTBGeneratePage() {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Link
-              href="/ttb-style"
+              href="/"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -265,7 +265,7 @@ export default function TTBGeneratePage() {
               Simulator
             </Link>
             <Link
-              href="/ttb-style/queue"
+              href="/queue"
               style={{
                 display: "inline-flex",
                 alignItems: "center",

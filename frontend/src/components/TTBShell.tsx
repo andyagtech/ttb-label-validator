@@ -136,7 +136,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
             justifyContent: "space-between",
           }}
         >
-          <Link href="/ttb-style" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <img
               src="/TTB_logo_web.svg"
               alt="TTB — Alcohol and Tobacco Tax and Trade Bureau"

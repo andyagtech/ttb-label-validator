@@ -236,14 +236,14 @@ export default function GeneratePage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href="/"
+              href="/legacy"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
             >
               <ArrowLeft size={13} />
               Simulator
             </Link>
             <Link
-              href="/queue"
+              href="/legacy/queue"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
             >
               Queue
