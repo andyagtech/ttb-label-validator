@@ -37,11 +37,9 @@ export async function POST(request: NextRequest) {
   if (explicitlyDisabled || !apiKey) {
     return NextResponse.json<ExplainResponse>(
       {
-        error: !apiKey
-          ? "OPENROUTER_API_KEY not configured."
-          : "Explain feature is disabled.",
+        error: !apiKey ? "OPENROUTER_API_KEY not configured." : "Explain feature is disabled.",
       },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
@@ -50,10 +48,7 @@ export async function POST(request: NextRequest) {
     const { ruleId, excerpt, detectedValue, userValue, itemLabel } = body;
 
     if (!ruleId || !excerpt) {
-      return NextResponse.json<ExplainResponse>(
-        { error: "ruleId and excerpt are required." },
-        { status: 400 }
-      );
+      return NextResponse.json<ExplainResponse>({ error: "ruleId and excerpt are required." }, { status: 400 });
     }
 
     const userMessage = [
@@ -67,8 +62,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join("\n");
 
-    const model =
-      process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
+    const model = process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
 
     const response = await fetch(OPENROUTER_URL, {
       method: "POST",
@@ -93,13 +87,12 @@ export async function POST(request: NextRequest) {
       const errText = await response.text();
       return NextResponse.json<ExplainResponse>(
         { error: `OpenRouter API error: ${response.status} ${errText}` },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
     const data = await response.json();
-    const explanation =
-      data.choices?.[0]?.message?.content || "No explanation generated.";
+    const explanation = data.choices?.[0]?.message?.content || "No explanation generated.";
 
     return NextResponse.json<ExplainResponse>({ explanation });
   } catch (err) {
@@ -107,7 +100,7 @@ export async function POST(request: NextRequest) {
       {
         error: `Server error: ${err instanceof Error ? err.message : "Unknown"}`,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

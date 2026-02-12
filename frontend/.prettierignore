@@ -1,0 +1,10 @@
+# Build outputs
+.next/
+out/
+node_modules/
+coverage/
+
+# Generated files
+*.min.js
+*.min.css
+package-lock.json

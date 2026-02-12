@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  ListFilter,
-  Eye,
-  ImageIcon,
-  ClipboardCheck,
-  GitCompare,
-  History,
-  Scale,
-  Timer,
-} from "lucide-react";
+import { ListFilter, Eye, ImageIcon, ClipboardCheck, GitCompare, History, Scale, Timer } from "lucide-react";
 import { WalkthroughStep } from "./WalkthroughPanel";
 
 // ---------------------------------------------------------------------------
@@ -60,7 +51,7 @@ export const AGENT_REVIEW_STEPS: WalkthroughStep[] = [
     title: "Form vs. Label Comparison",
     description: "Fuzzy-match COLA application fields against the label.",
     detail:
-      "This tab compares what the applicant wrote on their COLA form with what OCR extracted from the label. Each field gets a verdict: exact match, close match, or mismatch. The system uses Levenshtein distance — so \"STONE'S THROW\" vs \"Stone's Throw\" scores as an exact match after normalization.",
+      'This tab compares what the applicant wrote on their COLA form with what OCR extracted from the label. Each field gets a verdict: exact match, close match, or mismatch. The system uses Levenshtein distance — so "STONE\'S THROW" vs "Stone\'s Throw" scores as an exact match after normalization.',
     icon: <GitCompare size={18} />,
     highlightSelector: "[data-walkthrough='tab-form-comparison']",
   },

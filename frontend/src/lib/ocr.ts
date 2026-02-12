@@ -13,9 +13,7 @@ import { ChecklistItem } from "./types";
 // Feature flags
 // ---------------------------------------------------------------------------
 
-export const TESSERACT_ENABLED =
-  typeof window !== "undefined" &&
-  process.env.NEXT_PUBLIC_TESSERACT_ENABLED === "true";
+export const TESSERACT_ENABLED = typeof window !== "undefined" && process.env.NEXT_PUBLIC_TESSERACT_ENABLED === "true";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,9 +44,7 @@ export interface ExtractedFields {
  * Returns the raw recognized text.
  * Requires: npm install tesseract.js
  */
-export async function runTesseractOcr(
-  canvas: HTMLCanvasElement
-): Promise<string> {
+export async function runTesseractOcr(canvas: HTMLCanvasElement): Promise<string> {
   if (!TESSERACT_ENABLED) {
     console.warn("[OCR] Tesseract.js is not enabled. Set NEXT_PUBLIC_TESSERACT_ENABLED=true");
     return "";
@@ -83,10 +79,7 @@ export async function runTesseractOcr(
  * Prefers the Lambda proxy (NEXT_PUBLIC_LAMBDA_URL/ocr) when configured,
  * falls back to the Next.js /api/ocr route for local development.
  */
-export async function runServerOcr(
-  imageBase64: string,
-  mimeType: string = "image/png"
-): Promise<ExtractedFields> {
+export async function runServerOcr(imageBase64: string, mimeType: string = "image/png"): Promise<ExtractedFields> {
   // Always use the local Next.js API route for OCR
   // (The Lambda proxy does not have an /ocr endpoint)
   const endpoint = "/api/ocr";
@@ -107,7 +100,10 @@ export async function runServerOcr(
 
     const data = await response.json();
     if (data.success) {
-      console.log("[OCR] Server OCR fields:", Object.keys(data.fields).filter(k => data.fields[k]));
+      console.log(
+        "[OCR] Server OCR fields:",
+        Object.keys(data.fields).filter((k) => data.fields[k]),
+      );
       return data.fields as ExtractedFields;
     } else {
       console.warn("[OCR] Server OCR error:", data.error);
@@ -130,7 +126,10 @@ export async function runServerOcr(
 export function parseOcrText(rawText: string): ExtractedFields {
   const fields: ExtractedFields = { rawText };
   const text = rawText.replace(/\n/g, " ").replace(/\s+/g, " ");
-  const lines = rawText.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = rawText
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
 
   // --- Alcohol content ---
   // Patterns to try in order (most specific to most general):
@@ -161,15 +160,13 @@ export function parseOcrText(rawText: string): ExtractedFields {
 
   // --- Net contents ---
   // Try compound format first: "1 PINT, 8.9 FL. OZ." / "1 PINT 8.9 FL OZ"
-  const compoundNet = text.match(
-    /(\d+\.?\d*)\s*(pints?|pt\.?|quarts?|qt\.?)\s*[,.]?\s*(\d+\.?\d*)\s*(fl\.?\s*oz\.?)/i
-  );
+  const compoundNet = text.match(/(\d+\.?\d*)\s*(pints?|pt\.?|quarts?|qt\.?)\s*[,.]?\s*(\d+\.?\d*)\s*(fl\.?\s*oz\.?)/i);
   if (compoundNet) {
     fields.netContents = compoundNet[0].trim();
   } else {
     // Single unit: "750 mL", "12 FL OZ", "1.75 L", "1 PINT"
     const netMatch = text.match(
-      /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?)/i
+      /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?)/i,
     );
     if (netMatch) {
       fields.netContents = netMatch[0].trim();
@@ -204,12 +201,7 @@ export function parseOcrText(rawText: string): ExtractedFields {
   // Fallback: first prominent all-caps line that's 2+ words
   if (!fields.brandName) {
     for (const line of lines.slice(0, 8)) {
-      if (
-        line.length >= 4 &&
-        line.length <= 60 &&
-        /^[A-Z][A-Z\s&']+$/.test(line) &&
-        line.split(/\s+/).length >= 2
-      ) {
+      if (line.length >= 4 && line.length <= 60 && /^[A-Z][A-Z\s&']+$/.test(line) && line.split(/\s+/).length >= 2) {
         fields.brandName = line;
         break;
       }
@@ -233,9 +225,7 @@ export function parseOcrText(rawText: string): ExtractedFields {
 
   // --- Name & address ---
   // Look for patterns like "City, STATE" or "City, ST ZIPCODE"
-  const addressMatch = text.match(
-    /[\w\s]+,\s*[A-Z]{2}\s*\d{5}/
-  );
+  const addressMatch = text.match(/[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
   if (addressMatch) {
     // Grab some context before the zip
     const idx = text.indexOf(addressMatch[0]);
@@ -243,9 +233,7 @@ export function parseOcrText(rawText: string): ExtractedFields {
     fields.nameAddress = text.slice(start, idx + addressMatch[0].length).trim();
   } else {
     // Fallback: "City, ST" pattern
-    const cityStateMatch = text.match(
-      /([\w\s]+,\s*[A-Z]{2})\b/
-    );
+    const cityStateMatch = text.match(/([\w\s]+,\s*[A-Z]{2})\b/);
     if (cityStateMatch) {
       const idx = text.indexOf(cityStateMatch[0]);
       const start = Math.max(0, idx - 60);
@@ -254,7 +242,8 @@ export function parseOcrText(rawText: string): ExtractedFields {
   }
 
   // --- Varietal ---
-  const varietalPatterns = /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|gewürztraminer|chenin\s+blanc|semillon|muscat|moscato)\b/i;
+  const varietalPatterns =
+    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|gewürztraminer|chenin\s+blanc|semillon|muscat|moscato)\b/i;
   const varietalMatch = text.match(varietalPatterns);
   if (varietalMatch) {
     fields.varietal = varietalMatch[0].trim();
@@ -303,15 +292,10 @@ const FIELD_TO_CHECKLIST: Record<keyof ExtractedFields, string> = {
  * Apply extracted fields to checklist items as detectedValues.
  * Returns a new array of checklist items with values populated.
  */
-export function applyExtractedFields(
-  checklist: ChecklistItem[],
-  fields: ExtractedFields
-): ChecklistItem[] {
+export function applyExtractedFields(checklist: ChecklistItem[], fields: ExtractedFields): ChecklistItem[] {
   return checklist.map((item) => {
     // Find which field maps to this checklist item
-    const fieldKey = Object.entries(FIELD_TO_CHECKLIST).find(
-      ([, checklistId]) => checklistId === item.id
-    );
+    const fieldKey = Object.entries(FIELD_TO_CHECKLIST).find(([, checklistId]) => checklistId === item.id);
 
     if (!fieldKey) return item;
 

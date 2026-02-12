@@ -748,11 +748,7 @@ const SPIRITS_SAMPLES: SampleLabel[] = [
 // Combined exports
 // ---------------------------------------------------------------------------
 
-export const SAMPLE_LABELS: SampleLabel[] = [
-  ...BEER_SAMPLES,
-  ...WINE_SAMPLES,
-  ...SPIRITS_SAMPLES,
-];
+export const SAMPLE_LABELS: SampleLabel[] = [...BEER_SAMPLES, ...WINE_SAMPLES, ...SPIRITS_SAMPLES];
 
 /** Lookup by key */
 export function getSampleLabel(key: string): SampleLabel | undefined {
@@ -760,9 +756,7 @@ export function getSampleLabel(key: string): SampleLabel | undefined {
 }
 
 /** All samples for a category */
-export function getSamplesByCategory(
-  category: "beer" | "wine" | "spirits"
-): SampleLabel[] {
+export function getSamplesByCategory(category: "beer" | "wine" | "spirits"): SampleLabel[] {
   return SAMPLE_LABELS.filter((s) => s.generation.category === category);
 }
 

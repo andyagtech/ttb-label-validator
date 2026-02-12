@@ -1,17 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import {
-  Upload,
-  FileImage,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  X,
-  Download,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Upload, FileImage, CheckCircle2, XCircle, Loader2, X, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { runTesseractOcr, parseOcrText, runServerOcr, ExtractedFields, TESSERACT_ENABLED } from "@/lib/ocr";
 import { BeverageCategory } from "@/lib/types";
 import { validateExtractedFields, ValidationResult } from "@/lib/validation";
@@ -136,7 +126,7 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
         }
 
         const foundFields = Object.entries(fields).filter(
-          ([k, v]) => k !== "rawText" && v && String(v).trim().length > 0
+          ([k, v]) => k !== "rawText" && v && String(v).trim().length > 0,
         );
 
         const validationResults = validateExtractedFields(fields, category, "front");
@@ -158,7 +148,7 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
         };
       }
     },
-    [category, ocrTier]
+    [category, ocrTier],
   );
 
   const runBatch = useCallback(async () => {
@@ -170,15 +160,11 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
       if (items[i].status !== "queued") continue;
 
       // Mark as processing
-      setItems((prev) =>
-        prev.map((it, idx) => (idx === i ? { ...it, status: "processing" as const } : it))
-      );
+      setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, status: "processing" as const } : it)));
 
       const result = await processItem(items[i]);
 
-      setItems((prev) =>
-        prev.map((it, idx) => (idx === i ? { ...it, ...result } : it))
-      );
+      setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...result } : it)));
     }
 
     setIsRunning(false);
@@ -195,7 +181,7 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
         addFiles(e.dataTransfer.files);
       }
     },
-    [addFiles]
+    [addFiles],
   );
 
   // Stats
@@ -206,7 +192,18 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
 
   // CSV export
   const exportCsv = useCallback(() => {
-    const headers = ["File", "Status", "Fields", "Pass", "Fail", "Brand", "Class/Type", "ABV", "Net Contents", "Name/Address"];
+    const headers = [
+      "File",
+      "Status",
+      "Fields",
+      "Pass",
+      "Fail",
+      "Brand",
+      "Class/Type",
+      "ABV",
+      "Net Contents",
+      "Name/Address",
+    ];
     const rows = items.map((i) => [
       i.fileName,
       i.status,
@@ -237,7 +234,8 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
           <div>
             <h2 className="text-base font-semibold text-gray-800">Batch Upload</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Upload multiple label images for bulk OCR processing ({ocrTier === "quick" ? "Quick Check" : "AI Extract"})
+              Upload multiple label images for bulk OCR processing ({ocrTier === "quick" ? "Quick Check" : "AI Extract"}
+              )
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
@@ -254,12 +252,8 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
             className="m-5 border-2 border-dashed border-gray-300 rounded-xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition"
           >
             <Upload size={36} className="text-gray-400" />
-            <p className="text-sm text-gray-600 font-medium">
-              Drag &amp; drop label images here, or click to browse
-            </p>
-            <p className="text-xs text-gray-400">
-              Accepts PNG, JPEG, WebP. Select multiple files at once.
-            </p>
+            <p className="text-sm text-gray-600 font-medium">Drag &amp; drop label images here, or click to browse</p>
+            <p className="text-xs text-gray-400">Accepts PNG, JPEG, WebP. Select multiple files at once.</p>
           </div>
         )}
 
@@ -282,10 +276,13 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
               <div
                 key={item.id}
                 className={`border rounded-lg transition ${
-                  item.status === "processing" ? "border-blue-300 bg-blue-50/50" :
-                  item.status === "done" ? "border-gray-200 bg-white" :
-                  item.status === "error" ? "border-red-200 bg-red-50/50" :
-                  "border-gray-200 bg-gray-50/50"
+                  item.status === "processing"
+                    ? "border-blue-300 bg-blue-50/50"
+                    : item.status === "done"
+                      ? "border-gray-200 bg-white"
+                      : item.status === "error"
+                        ? "border-red-200 bg-red-50/50"
+                        : "border-gray-200 bg-gray-50/50"
                 }`}
               >
                 <div className="flex items-center gap-3 px-3 py-2">
@@ -304,13 +301,16 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
                     <p className="text-[10px] text-gray-500">
                       {item.status === "queued" && "Queued"}
                       {item.status === "processing" && "Processing..."}
-                      {item.status === "done" && `${item.fieldCount} fields, ${item.passCount} pass, ${item.failCount} issues`}
+                      {item.status === "done" &&
+                        `${item.fieldCount} fields, ${item.passCount} pass, ${item.failCount} issues`}
                       {item.status === "error" && (item.error || "Error")}
                     </p>
                   </div>
 
                   {/* Status icon */}
-                  {item.status === "processing" && <Loader2 size={16} className="text-blue-500 animate-spin shrink-0" />}
+                  {item.status === "processing" && (
+                    <Loader2 size={16} className="text-blue-500 animate-spin shrink-0" />
+                  )}
                   {item.status === "done" && <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />}
                   {item.status === "error" && <XCircle size={16} className="text-red-500 shrink-0" />}
 
@@ -370,8 +370,21 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
             <div className="flex-1 text-[11px] text-gray-500">
               {items.length} file{items.length !== 1 ? "s" : ""}
               {doneCount > 0 && <> &middot; {doneCount} done</>}
-              {errorCount > 0 && <> &middot; <span className="text-red-500">{errorCount} error{errorCount !== 1 ? "s" : ""}</span></>}
-              {doneCount > 0 && <> &middot; {totalPass} pass, {totalFail} issues</>}
+              {errorCount > 0 && (
+                <>
+                  {" "}
+                  &middot;{" "}
+                  <span className="text-red-500">
+                    {errorCount} error{errorCount !== 1 ? "s" : ""}
+                  </span>
+                </>
+              )}
+              {doneCount > 0 && (
+                <>
+                  {" "}
+                  &middot; {totalPass} pass, {totalFail} issues
+                </>
+              )}
             </div>
 
             {/* Export CSV */}
@@ -410,7 +423,8 @@ export default function BatchUpload({ category, ocrTier, onClose }: BatchUploadP
                 className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
               >
                 <Loader2 size={13} className={isRunning ? "animate-spin" : ""} />
-                Process {items.filter((i) => i.status === "queued").length} File{items.filter((i) => i.status === "queued").length !== 1 ? "s" : ""}
+                Process {items.filter((i) => i.status === "queued").length} File
+                {items.filter((i) => i.status === "queued").length !== 1 ? "s" : ""}
               </button>
             )}
           </div>

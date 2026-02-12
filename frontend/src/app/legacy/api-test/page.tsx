@@ -83,7 +83,7 @@ const ENDPOINTS: EndpointDef[] = [
         submitterId: "API Test Page",
       },
       null,
-      2
+      2,
     ),
   },
   {
@@ -112,7 +112,7 @@ const ENDPOINTS: EndpointDef[] = [
         activeSeconds: 60,
       },
       null,
-      2
+      2,
     ),
   },
   {
@@ -177,7 +177,7 @@ function syntaxHighlight(json: string): string {
           cls = "text-gray-500"; // null
         }
         return `<span class="${cls}">${match}</span>`;
-      }
+      },
     );
 }
 
@@ -319,20 +319,22 @@ export default function ApiTestPage() {
       <header id="legacy-api-test-header" className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/legacy" className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition">
+            <Link
+              href="/legacy"
+              className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition"
+            >
               <ArrowLeft size={14} />
               Validator
             </Link>
             <div className="h-5 w-px bg-gray-200" />
             <div>
-              <h1 id="legacy-api-test-title" className="text-lg font-semibold text-gray-800">API Test Page</h1>
+              <h1 id="legacy-api-test-title" className="text-lg font-semibold text-gray-800">
+                API Test Page
+              </h1>
               <p className="text-xs text-gray-500">Test endpoints with sample labels or your own images</p>
             </div>
           </div>
-          <Link
-            href="/legacy/queue"
-            className="text-xs text-gray-500 hover:text-gray-700 transition"
-          >
+          <Link href="/legacy/queue" className="text-xs text-gray-500 hover:text-gray-700 transition">
             Queue →
           </Link>
         </div>
@@ -362,8 +364,8 @@ export default function ApiTestPage() {
                       ep.method === "GET"
                         ? "bg-emerald-100 text-emerald-700"
                         : ep.method === "POST"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-amber-100 text-amber-700"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-amber-100 text-amber-700"
                     }`}
                   >
                     {ep.method}
@@ -391,7 +393,10 @@ export default function ApiTestPage() {
                 className="w-full text-sm font-mono border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
               />
               <p className="text-[10px] text-gray-400 mt-1">
-                Resolved URL: <span className="font-mono text-gray-600">{selectedEndpoint.path.replace("{id}", pathParam || "...")}</span>
+                Resolved URL:{" "}
+                <span className="font-mono text-gray-600">
+                  {selectedEndpoint.path.replace("{id}", pathParam || "...")}
+                </span>
               </p>
             </div>
           )}
@@ -415,11 +420,7 @@ export default function ApiTestPage() {
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
-                    <img
-                      src={sample.file}
-                      alt={sample.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={sample.file} alt={sample.name} className="w-full h-full object-cover" />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
                       <p className="text-[9px] text-white font-medium truncate">{sample.name}</p>
                     </div>
@@ -442,9 +443,7 @@ export default function ApiTestPage() {
                   Upload your own image
                 </button>
                 {uploadedFile && (
-                  <span className="text-[10px] text-gray-500 truncate max-w-[120px]">
-                    {uploadedFile.name}
-                  </span>
+                  <span className="text-[10px] text-gray-500 truncate max-w-[120px]">{uploadedFile.name}</span>
                 )}
               </div>
               <input
@@ -461,11 +460,7 @@ export default function ApiTestPage() {
               {/* Preview */}
               {currentImage && (
                 <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                  <img
-                    src={currentImage}
-                    alt="Selected"
-                    className="max-h-48 mx-auto object-contain"
-                  />
+                  <img src={currentImage} alt="Selected" className="max-h-48 mx-auto object-contain" />
                 </div>
               )}
             </div>
@@ -513,9 +508,7 @@ export default function ApiTestPage() {
             {/* Response Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                  Response
-                </span>
+                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Response</span>
                 {response && (
                   <>
                     <span
@@ -523,8 +516,8 @@ export default function ApiTestPage() {
                         response.status >= 200 && response.status < 300
                           ? "bg-emerald-100 text-emerald-700"
                           : response.status >= 400
-                          ? "bg-red-100 text-red-700"
-                          : "bg-amber-100 text-amber-700"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-amber-100 text-amber-700"
                       }`}
                     >
                       {response.status} {response.statusText}
@@ -567,9 +560,7 @@ export default function ApiTestPage() {
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
                     <ImageIcon size={24} className="text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-gray-400">
-                      Select an endpoint and click Send Request
-                    </p>
+                    <p className="text-xs text-gray-400">Select an endpoint and click Send Request</p>
                   </div>
                 </div>
               )}
@@ -580,27 +571,24 @@ export default function ApiTestPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center gap-2 mb-3">
               <ChevronDown size={13} className="text-gray-400" />
-              <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
-                Quick Reference
-              </span>
+              <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Quick Reference</span>
             </div>
             <div className="space-y-2 text-[11px] text-gray-600">
               <div>
-                <span className="font-medium text-gray-700">OCR Response Fields:</span>{" "}
-                brandName, classType, alcoholContent, netContents, healthWarning, nameAddress,
-                countryOfOrigin, sulfiteDeclaration, appellation, vintageDate, varietal, ageStatement
+                <span className="font-medium text-gray-700">OCR Response Fields:</span> brandName, classType,
+                alcoholContent, netContents, healthWarning, nameAddress, countryOfOrigin, sulfiteDeclaration,
+                appellation, vintageDate, varietal, ageStatement
               </div>
               <div>
-                <span className="font-medium text-gray-700">Queue Statuses:</span>{" "}
-                draft, submitted, in_review, approved, rejected, needs_revision
+                <span className="font-medium text-gray-700">Queue Statuses:</span> draft, submitted, in_review,
+                approved, rejected, needs_revision
               </div>
               <div>
-                <span className="font-medium text-gray-700">Review Decisions:</span>{" "}
-                approve, reject, needs_revision, escalate
+                <span className="font-medium text-gray-700">Review Decisions:</span> approve, reject, needs_revision,
+                escalate
               </div>
               <div>
-                <span className="font-medium text-gray-700">Categories:</span>{" "}
-                beer, wine, spirits
+                <span className="font-medium text-gray-700">Categories:</span> beer, wine, spirits
               </div>
             </div>
           </div>

@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAllSubmissions, createSubmission } from "@/lib/store";
+import { log } from "@/lib/logger";
 
 /** GET /api/queue — list all submissions, optionally filtered by comma-separated statuses. */
 export async function GET(request: NextRequest) {
@@ -46,10 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Validate minimum required fields
     if (!beverageCategory || !productName) {
-      return NextResponse.json(
-        { error: "beverageCategory and productName are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "beverageCategory and productName are required" }, { status: 400 });
     }
 
     const submission = createSubmission({
@@ -62,7 +60,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ submission }, { status: 201 });
-  } catch {
+  } catch (err) {
+    log.error("QueueAPI", "POST /api/queue failed", err);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }

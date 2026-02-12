@@ -87,9 +87,7 @@ describe("parseOcrText — net contents", () => {
 
 describe("parseOcrText — government warning", () => {
   it("detects government warning text", () => {
-    const fields = parseOcrText(
-      "GOVERNMENT WARNING: (1) According to the Surgeon General..."
-    );
+    const fields = parseOcrText("GOVERNMENT WARNING: (1) According to the Surgeon General...");
     expect(fields.healthWarning).toBeDefined();
     expect(fields.healthWarning).toMatch(/GOVERNMENT WARNING/);
   });

@@ -35,9 +35,7 @@ function levenshtein(a: string, b: string): number {
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
     }
   }
 
@@ -57,10 +55,7 @@ export interface MatchResult {
  * Compare a form value against an OCR-extracted label value.
  * Returns a similarity score and verdict.
  */
-export function compareFields(
-  formValue: string | undefined,
-  labelValue: string | undefined
-): MatchResult {
+export function compareFields(formValue: string | undefined, labelValue: string | undefined): MatchResult {
   if (!formValue && !labelValue) {
     return { score: 100, verdict: "missing", message: "Neither form nor label has a value." };
   }
@@ -92,10 +87,22 @@ export function compareFields(
   const similarity = Math.round(((maxLen - dist) / maxLen) * 100);
 
   if (similarity >= 90) {
-    return { score: similarity, verdict: "match", message: `Very close match (${similarity}% similar). Minor differences in formatting.` };
+    return {
+      score: similarity,
+      verdict: "match",
+      message: `Very close match (${similarity}% similar). Minor differences in formatting.`,
+    };
   }
   if (similarity >= 70) {
-    return { score: similarity, verdict: "close", message: `Possible match (${similarity}% similar). Review the differences.` };
+    return {
+      score: similarity,
+      verdict: "close",
+      message: `Possible match (${similarity}% similar). Review the differences.`,
+    };
   }
-  return { score: similarity, verdict: "mismatch", message: `Mismatch (${similarity}% similar). Values appear different.` };
+  return {
+    score: similarity,
+    verdict: "mismatch",
+    message: `Mismatch (${similarity}% similar). Values appear different.`,
+  };
 }

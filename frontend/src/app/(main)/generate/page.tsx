@@ -82,7 +82,7 @@ export default function TTBGeneratePage() {
   const [category, setCategory] = useState<Category>("spirits");
   const [brandName, setBrandName] = useState("JACK DANIEL'S");
   const [classType, setClassType] = useState("Tennessee Whiskey");
-  const [alcoholContent, setAlcoholContent] = useState('40% Alc./Vol. (80 Proof)');
+  const [alcoholContent, setAlcoholContent] = useState("40% Alc./Vol. (80 Proof)");
   const [netContents, setNetContents] = useState("750 mL");
   const [appellation, setAppellation] = useState("");
   const [vintage, setVintage] = useState("");
@@ -127,7 +127,7 @@ export default function TTBGeneratePage() {
       setNameAddress(p.nameAddress || "");
       setCountryOfOrigin(p.countryOfOrigin || "");
     },
-    [presets]
+    [presets],
   );
 
   const generate = useCallback(async () => {
@@ -219,23 +219,20 @@ export default function TTBGeneratePage() {
 
   const sendToSimulator = useCallback(() => {
     if (!generatedImage) return;
-    sessionStorage.setItem(
-      "generated-label",
-      JSON.stringify({ imageBase64: generatedImage, mimeType: generatedMime })
-    );
+    sessionStorage.setItem("generated-label", JSON.stringify({ imageBase64: generatedImage, mimeType: generatedMime }));
     window.location.href = "/";
   }, [generatedImage, generatedMime]);
 
   return (
     <>
-      <Breadcrumbs items={[
-        { label: "Home", href: "/" },
-        { label: "Test Label Generator" },
-      ]} />
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Test Label Generator" }]} />
 
       <div id="generate-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
         {/* Page header */}
-        <div id="generate-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div
+          id="generate-header"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}
+        >
           <div>
             <h1
               id="generate-title"
@@ -304,7 +301,15 @@ export default function TTBGeneratePage() {
             {/* Preset picker */}
             <div style={{ background: C.white, borderRadius: 8, border: `1px solid ${C.border}`, padding: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.medGray, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: C.medGray,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
                   COLA Presets ({presets.length})
                 </span>
                 <div style={{ display: "flex", gap: 4 }}>
@@ -328,7 +333,9 @@ export default function TTBGeneratePage() {
                   ))}
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: 280, overflowY: "auto" }}>
+              <div
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: 280, overflowY: "auto" }}
+              >
                 {presets
                   .filter((p) => presetFilter === "all" || p.category === presetFilter)
                   .map((p) => {
@@ -355,7 +362,16 @@ export default function TTBGeneratePage() {
                       >
                         {CATEGORY_ICON[p.category]}
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.displayName || p.brandName}</div>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {p.displayName || p.brandName}
+                          </div>
                           <div style={{ fontSize: 10, color: C.medGray }}>
                             {p.classType} · {p.labelType}
                           </div>
@@ -369,12 +385,27 @@ export default function TTBGeneratePage() {
             {/* Label fields / custom prompt */}
             <div style={{ background: C.white, borderRadius: 8, border: `1px solid ${C.border}`, padding: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.medGray, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: C.medGray,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
                   {useCustomPrompt ? "Custom Prompt" : "Label Fields"}
                 </span>
                 <button
                   onClick={() => setUseCustomPrompt(!useCustomPrompt)}
-                  style={{ fontSize: 11, fontWeight: 600, color: C.navy, background: "none", border: "none", cursor: "pointer" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: C.navy,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
                 >
                   {useCustomPrompt ? "← Use fields" : "Write custom prompt →"}
                 </button>
@@ -386,13 +417,23 @@ export default function TTBGeneratePage() {
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   placeholder="Describe the label you want to generate..."
                   rows={8}
-                  style={{ width: "100%", fontSize: 13, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 12px", resize: "none", fontFamily: "inherit" }}
+                  style={{
+                    width: "100%",
+                    fontSize: 13,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    resize: "none",
+                    fontFamily: "inherit",
+                  }}
                 />
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
-                      <label style={{ fontSize: 11, color: C.medGray, display: "block", marginBottom: 4 }}>Label Side</label>
+                      <label style={{ fontSize: 11, color: C.medGray, display: "block", marginBottom: 4 }}>
+                        Label Side
+                      </label>
                       <div style={{ display: "flex", gap: 4 }}>
                         {(["front", "back"] as LabelType[]).map((t) => (
                           <button
@@ -416,7 +457,9 @@ export default function TTBGeneratePage() {
                       </div>
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, color: C.medGray, display: "block", marginBottom: 4 }}>Category</label>
+                      <label style={{ fontSize: 11, color: C.medGray, display: "block", marginBottom: 4 }}>
+                        Category
+                      </label>
                       <div style={{ display: "flex", gap: 4 }}>
                         {(["beer", "wine", "spirits"] as Category[]).map((c) => {
                           const cb = CATEGORY_BG[c];
@@ -451,13 +494,15 @@ export default function TTBGeneratePage() {
 
                   {/* Render Style */}
                   <div>
-                    <label style={{ fontSize: 11, color: C.medGray, display: "block", marginBottom: 4 }}>Render Style</label>
+                    <label style={{ fontSize: 11, color: C.medGray, display: "block", marginBottom: 4 }}>
+                      Render Style
+                    </label>
                     <div style={{ display: "flex", gap: 4 }}>
-                      {([
+                      {[
                         { key: "flat" as const, label: "Flat Label", icon: <RectangleHorizontal size={13} /> },
                         { key: "bottle" as const, label: "On Bottle", icon: <Wine size={13} /> },
                         { key: "can" as const, label: "On Can", icon: <Package size={13} /> },
-                      ]).map((opt) => (
+                      ].map((opt) => (
                         <button
                           key={opt.key}
                           onClick={() => setRenderStyle(opt.key)}
@@ -490,18 +535,32 @@ export default function TTBGeneratePage() {
                     <Field label="Alcohol Content" value={alcoholContent} onChange={setAlcoholContent} />
                     <Field label="Net Contents" value={netContents} onChange={setNetContents} />
                     {(category === "wine" || appellation) && (
-                      <Field label="Appellation" value={appellation} onChange={setAppellation} placeholder="e.g. Napa Valley" />
+                      <Field
+                        label="Appellation"
+                        value={appellation}
+                        onChange={setAppellation}
+                        placeholder="e.g. Napa Valley"
+                      />
                     )}
                     {(category === "wine" || vintage) && (
                       <Field label="Vintage" value={vintage} onChange={setVintage} placeholder="e.g. 2021" />
                     )}
-                    <Field label="Name & Address" value={nameAddress} onChange={setNameAddress} placeholder="Company, City, ST ZIP" />
+                    <Field
+                      label="Name & Address"
+                      value={nameAddress}
+                      onChange={setNameAddress}
+                      placeholder="Company, City, ST ZIP"
+                    />
                     <Field
                       label="Country of Origin"
                       value={countryOfOrigin}
                       onChange={setCountryOfOrigin}
                       placeholder="e.g. France"
-                      hint={category === "beer" ? "Optional for domestic products. Required only for imports per 27 CFR §7.63." : undefined}
+                      hint={
+                        category === "beer"
+                          ? "Optional for domestic products. Required only for imports per 27 CFR §7.63."
+                          : undefined
+                      }
                     />
                   </div>
                 </div>
@@ -543,22 +602,35 @@ export default function TTBGeneratePage() {
               )}
             </button>
 
-            {usedPrompt && (
-              <PromptViewer prompt={usedPrompt} copied={copied} onCopy={copyPrompt} />
-            )}
+            {usedPrompt && <PromptViewer prompt={usedPrompt} copied={copied} onCopy={copyPrompt} />}
           </div>
 
           {/* RIGHT: Generated image + history */}
-          <div id="generate-output-panel" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div
+            id="generate-output-panel"
+            aria-live="polite"
+            style={{ display: "flex", flexDirection: "column", gap: 16 }}
+          >
             <div style={{ background: C.white, borderRadius: 8, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-              <div style={{
-                padding: "10px 16px",
-                borderBottom: `1px solid ${C.lightGray}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: C.darkGray, display: "flex", alignItems: "center", gap: 6 }}>
+              <div
+                style={{
+                  padding: "10px 16px",
+                  borderBottom: `1px solid ${C.lightGray}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: C.darkGray,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
                   <ImageIcon size={13} style={{ color: C.medGray }} />
                   Generated Label
                 </span>
@@ -567,9 +639,17 @@ export default function TTBGeneratePage() {
                     <button
                       onClick={downloadImage}
                       style={{
-                        display: "flex", alignItems: "center", gap: 4,
-                        padding: "4px 8px", fontSize: 10, fontWeight: 600, borderRadius: 4,
-                        border: `1px solid ${C.border}`, background: C.lightGray, color: C.darkGray, cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        borderRadius: 4,
+                        border: `1px solid ${C.border}`,
+                        background: C.lightGray,
+                        color: C.darkGray,
+                        cursor: "pointer",
                       }}
                     >
                       <Download size={11} /> Save
@@ -577,9 +657,17 @@ export default function TTBGeneratePage() {
                     <button
                       onClick={sendToSimulator}
                       style={{
-                        display: "flex", alignItems: "center", gap: 4,
-                        padding: "4px 8px", fontSize: 10, fontWeight: 600, borderRadius: 4,
-                        border: `1px solid ${C.border}`, background: "#e8f0fe", color: C.navy, cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        borderRadius: 4,
+                        border: `1px solid ${C.border}`,
+                        background: "#e8f0fe",
+                        color: C.navy,
+                        cursor: "pointer",
                       }}
                     >
                       <ArrowLeft size={11} /> Send to Simulator
@@ -588,10 +676,18 @@ export default function TTBGeneratePage() {
                       onClick={generate}
                       disabled={generating}
                       style={{
-                        display: "flex", alignItems: "center", gap: 4,
-                        padding: "4px 8px", fontSize: 10, fontWeight: 600, borderRadius: 4,
-                        border: `1px solid ${C.border}`, background: C.lightGray, color: C.darkGray,
-                        cursor: generating ? "not-allowed" : "pointer", opacity: generating ? 0.6 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        borderRadius: 4,
+                        border: `1px solid ${C.border}`,
+                        background: C.lightGray,
+                        color: C.darkGray,
+                        cursor: generating ? "not-allowed" : "pointer",
+                        opacity: generating ? 0.6 : 1,
                       }}
                     >
                       <RefreshCw size={11} className={generating ? "animate-spin" : ""} /> Regen
@@ -600,10 +696,23 @@ export default function TTBGeneratePage() {
                 )}
               </div>
 
-              <div style={{ padding: 24, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400, background: C.lightGray }}>
+              <div
+                style={{
+                  padding: 24,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 400,
+                  background: C.lightGray,
+                }}
+              >
                 {generating ? (
                   <div style={{ textAlign: "center" }}>
-                    <Loader2 size={32} className="animate-spin" style={{ color: C.navy, margin: "0 auto 12px", display: "block" }} />
+                    <Loader2
+                      size={32}
+                      className="animate-spin"
+                      style={{ color: C.navy, margin: "0 auto 12px", display: "block" }}
+                    />
                     <p style={{ fontSize: 14, color: C.darkGray }}>Generating label with Gemini AI...</p>
                     <p style={{ fontSize: 12, color: C.medGray, marginTop: 4 }}>This may take 10-30 seconds</p>
                   </div>
@@ -611,11 +720,27 @@ export default function TTBGeneratePage() {
                   <img
                     src={`data:${generatedMime};base64,${generatedImage}`}
                     alt="Generated label"
-                    style={{ maxWidth: "100%", maxHeight: 500, borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: 500,
+                      borderRadius: 8,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                    }}
                   />
                 ) : error ? (
                   <div style={{ textAlign: "center", maxWidth: 320 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "50%",
+                        background: "#fee2e2",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto 12px",
+                      }}
+                    >
                       <span style={{ color: C.red, fontSize: 18 }}>!</span>
                     </div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: C.red, marginBottom: 4 }}>Generation Failed</p>
@@ -623,7 +748,18 @@ export default function TTBGeneratePage() {
                   </div>
                 ) : (
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#e8f0fe", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: "50%",
+                        background: "#e8f0fe",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto 12px",
+                      }}
+                    >
                       <Sparkles size={24} style={{ color: C.navy }} />
                     </div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: C.darkGray }}>No label generated yet</p>
@@ -637,7 +773,17 @@ export default function TTBGeneratePage() {
 
             {history.length > 0 && (
               <div style={{ background: C.white, borderRadius: 8, border: `1px solid ${C.border}`, padding: 16 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.medGray, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 12 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: C.medGray,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    display: "block",
+                    marginBottom: 12,
+                  }}
+                >
                   Recent Generations ({history.length})
                 </span>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
@@ -708,21 +854,23 @@ function Field({
         )}
       </label>
       {showHint && hint && (
-        <div style={{
-          position: "absolute",
-          bottom: "100%",
-          left: 0,
-          marginBottom: 4,
-          padding: "8px 12px",
-          background: C.darkNavy,
-          color: C.white,
-          fontSize: 11,
-          lineHeight: 1.5,
-          borderRadius: 6,
-          maxWidth: 240,
-          zIndex: 10,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            bottom: "100%",
+            left: 0,
+            marginBottom: 4,
+            padding: "8px 12px",
+            background: C.darkNavy,
+            color: C.white,
+            fontSize: 11,
+            lineHeight: 1.5,
+            borderRadius: 6,
+            maxWidth: 240,
+            zIndex: 10,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+          }}
+        >
           {hint}
         </div>
       )}
@@ -744,15 +892,7 @@ function Field({
   );
 }
 
-function PromptViewer({
-  prompt,
-  copied,
-  onCopy,
-}: {
-  prompt: string;
-  copied: boolean;
-  onCopy: () => void;
-}) {
+function PromptViewer({ prompt, copied, onCopy }: { prompt: string; copied: boolean; onCopy: () => void }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -784,18 +924,20 @@ function PromptViewer({
       </button>
       {expanded && (
         <div style={{ padding: "0 16px 12px", position: "relative" }}>
-          <pre style={{
-            fontSize: 11,
-            color: C.darkGray,
-            whiteSpace: "pre-wrap",
-            background: C.lightGray,
-            borderRadius: 6,
-            padding: 12,
-            border: `1px solid ${C.border}`,
-            maxHeight: 192,
-            overflowY: "auto",
-            margin: 0,
-          }}>
+          <pre
+            style={{
+              fontSize: 11,
+              color: C.darkGray,
+              whiteSpace: "pre-wrap",
+              background: C.lightGray,
+              borderRadius: 6,
+              padding: 12,
+              border: `1px solid ${C.border}`,
+              maxHeight: 192,
+              overflowY: "auto",
+              margin: 0,
+            }}
+          >
             {prompt}
           </pre>
           <button
@@ -812,11 +954,7 @@ function PromptViewer({
               cursor: "pointer",
             }}
           >
-            {copied ? (
-              <Check size={12} style={{ color: C.green }} />
-            ) : (
-              <Copy size={12} style={{ color: C.medGray }} />
-            )}
+            {copied ? <Check size={12} style={{ color: C.green }} /> : <Copy size={12} style={{ color: C.medGray }} />}
           </button>
         </div>
       )}

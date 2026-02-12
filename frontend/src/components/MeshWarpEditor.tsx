@@ -2,11 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Point } from "@/lib/perspective";
-import {
-  MeshEdges,
-  generateMeshGrid,
-  evalSpline,
-} from "@/lib/meshwarp";
+import { MeshEdges, generateMeshGrid, evalSpline } from "@/lib/meshwarp";
 
 const POINT_RADIUS = 7;
 const POINT_HIT_RADIUS = 18;
@@ -58,7 +54,7 @@ export default function MeshWarpEditor({
       if (onZoomChange) onZoomChange(clamped);
       else setInternalZoom(clamped);
     },
-    [onZoomChange]
+    [onZoomChange],
   );
 
   const effectiveScale = baseScale * zoom;
@@ -91,7 +87,7 @@ export default function MeshWarpEditor({
       const o = getOffset();
       return { x: p.x * effectiveScale + o.x, y: p.y * effectiveScale + o.y };
     },
-    [effectiveScale, getOffset]
+    [effectiveScale, getOffset],
   );
 
   const toImage = useCallback(
@@ -99,7 +95,7 @@ export default function MeshWarpEditor({
       const o = getOffset();
       return { x: (p.x - o.x) / effectiveScale, y: (p.y - o.y) / effectiveScale };
     },
-    [effectiveScale, getOffset]
+    [effectiveScale, getOffset],
   );
 
   // Color coding per edge — returns [r, g, b]
@@ -114,8 +110,7 @@ export default function MeshWarpEditor({
     }
   };
 
-  const rgba = (rgb: [number, number, number], a: number) =>
-    `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${a})`;
+  const rgba = (rgb: [number, number, number], a: number) => `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${a})`;
 
   // Draw
   const draw = useCallback(() => {
@@ -286,20 +281,14 @@ export default function MeshWarpEditor({
         if (skipLast && idx === pts.length - 1) return;
         const cp = toCanvas(pt);
         const isCorner = idx === 0 || idx === pts.length - 1;
-        const isActive =
-          dragging?.edge === edgeName && dragging?.index === idx;
-        const isHover =
-          hovered?.edge === edgeName && hovered?.index === idx;
+        const isActive = dragging?.edge === edgeName && dragging?.index === idx;
+        const isHover = hovered?.edge === edgeName && hovered?.index === idx;
 
         const r = isCorner ? POINT_RADIUS + 2 : POINT_RADIUS;
         const rgb = edgeRgb(edgeName);
 
         // Crosshair
-        ctx.strokeStyle = isActive
-          ? "rgba(239, 68, 68, 0.8)"
-          : isHover
-          ? rgba(rgb, 0.8)
-          : rgba(rgb, 0.5);
+        ctx.strokeStyle = isActive ? "rgba(239, 68, 68, 0.8)" : isHover ? rgba(rgb, 0.8) : rgba(rgb, 0.5);
         ctx.lineWidth = 1;
         const cs = 14;
         ctx.beginPath();
@@ -319,19 +308,13 @@ export default function MeshWarpEditor({
         // Fill
         ctx.beginPath();
         ctx.arc(cp.x, cp.y, r, 0, Math.PI * 2);
-        ctx.fillStyle = isActive
-          ? "rgba(239, 68, 68, 0.5)"
-          : isHover
-          ? rgba(rgb, 0.5)
-          : rgba(rgb, 0.3);
+        ctx.fillStyle = isActive ? "rgba(239, 68, 68, 0.5)" : isHover ? rgba(rgb, 0.5) : rgba(rgb, 0.3);
         ctx.fill();
 
         // Border
         ctx.beginPath();
         ctx.arc(cp.x, cp.y, r, 0, Math.PI * 2);
-        ctx.strokeStyle = isActive
-          ? "rgba(239, 68, 68, 0.9)"
-          : rgba(rgb, 0.8);
+        ctx.strokeStyle = isActive ? "rgba(239, 68, 68, 0.9)" : rgba(rgb, 0.8);
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
@@ -371,26 +354,34 @@ export default function MeshWarpEditor({
       ctx.textBaseline = "middle";
       ctx.fillText(`${Math.round(zoom * 100)}%`, 16, canvas.height - 19);
     }
-  }, [edges, effectiveScale, getOffset, toCanvas, dragging, hovered, maxDisplayWidth, maxDisplayHeight, showGrid, zoom]);
+  }, [
+    edges,
+    effectiveScale,
+    getOffset,
+    toCanvas,
+    dragging,
+    hovered,
+    maxDisplayWidth,
+    maxDisplayHeight,
+    showGrid,
+    zoom,
+  ]);
 
   useEffect(() => {
     draw();
   }, [draw]);
 
   // Mouse helpers
-  const getMousePos = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>): Point => {
-      const canvas = canvasRef.current!;
-      const rect = canvas.getBoundingClientRect();
-      const sx = canvas.width / rect.width;
-      const sy = canvas.height / rect.height;
-      return {
-        x: (e.clientX - rect.left) * sx,
-        y: (e.clientY - rect.top) * sy,
-      };
-    },
-    []
-  );
+  const getMousePos = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * sx,
+      y: (e.clientY - rect.top) * sy,
+    };
+  }, []);
 
   const findPoint = useCallback(
     (pos: Point): DragTarget | null => {
@@ -402,8 +393,8 @@ export default function MeshWarpEditor({
       for (const edgeName of edgeNames) {
         const pts = edges[edgeName];
         // For left/right, skip first and last (shared with top/bottom corners)
-        const startIdx = (edgeName === "left" || edgeName === "right") ? 1 : 0;
-        const endIdx = (edgeName === "left" || edgeName === "right") ? pts.length - 1 : pts.length;
+        const startIdx = edgeName === "left" || edgeName === "right" ? 1 : 0;
+        const endIdx = edgeName === "left" || edgeName === "right" ? pts.length - 1 : pts.length;
 
         for (let i = startIdx; i < endIdx; i++) {
           const cp = toCanvas(pts[i]);
@@ -418,7 +409,7 @@ export default function MeshWarpEditor({
       }
       return best;
     },
-    [edges, toCanvas]
+    [edges, toCanvas],
   );
 
   const handleMouseDown = useCallback(
@@ -434,7 +425,7 @@ export default function MeshWarpEditor({
         e.preventDefault();
       }
     },
-    [getMousePos, findPoint, panOffset]
+    [getMousePos, findPoint, panOffset],
   );
 
   const handleMouseMove = useCallback(
@@ -488,7 +479,7 @@ export default function MeshWarpEditor({
         setHovered(findPoint(pos));
       }
     },
-    [dragging, panning, panStart, getMousePos, toImage, edges, onEdgesChange, findPoint]
+    [dragging, panning, panStart, getMousePos, toImage, edges, onEdgesChange, findPoint],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -521,7 +512,7 @@ export default function MeshWarpEditor({
       }
       setZoom(newZoom);
     },
-    [zoom, getMousePos, getOffset, effectiveScale, baseScale, maxDisplayWidth, maxDisplayHeight, setZoom]
+    [zoom, getMousePos, getOffset, effectiveScale, baseScale, maxDisplayWidth, maxDisplayHeight, setZoom],
   );
 
   return (

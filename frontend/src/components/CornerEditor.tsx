@@ -55,7 +55,7 @@ export default function CornerEditor({
       if (onZoomChange) onZoomChange(clamped);
       else setInternalZoom(clamped);
     },
-    [onZoomChange]
+    [onZoomChange],
   );
 
   const effectiveScale = baseScale * zoom;
@@ -95,7 +95,7 @@ export default function CornerEditor({
         y: p.y * effectiveScale + o.y,
       };
     },
-    [effectiveScale, getOffset]
+    [effectiveScale, getOffset],
   );
 
   // Convert canvas coords to image coords
@@ -107,7 +107,7 @@ export default function CornerEditor({
         y: (p.y - o.y) / effectiveScale,
       };
     },
-    [effectiveScale, getOffset]
+    [effectiveScale, getOffset],
   );
 
   // Draw everything
@@ -181,28 +181,28 @@ export default function CornerEditor({
       ctx.lineWidth = 3;
       ctx.setLineDash([]);
       for (let r = 1; r < GRID_N; r++) drawPolyline(grid[r]);
-      for (let c = 1; c < GRID_N; c++) drawPolyline(grid.map(row => row[c]));
+      for (let c = 1; c < GRID_N; c++) drawPolyline(grid.map((row) => row[c]));
 
       // Pass 2: colored inner grid lines
       ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
       ctx.lineWidth = 1.5;
       for (let r = 1; r < GRID_N; r++) drawPolyline(grid[r]);
-      for (let c = 1; c < GRID_N; c++) drawPolyline(grid.map(row => row[c]));
+      for (let c = 1; c < GRID_N; c++) drawPolyline(grid.map((row) => row[c]));
 
       // Pass 3: outer border — white shadow then blue
       ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
       ctx.lineWidth = 4;
       drawPolyline(grid[0]);
       drawPolyline(grid[GRID_N]);
-      drawPolyline(grid.map(row => row[0]));
-      drawPolyline(grid.map(row => row[GRID_N]));
+      drawPolyline(grid.map((row) => row[0]));
+      drawPolyline(grid.map((row) => row[GRID_N]));
 
       ctx.strokeStyle = "rgba(59, 130, 246, 0.85)";
       ctx.lineWidth = 2;
       drawPolyline(grid[0]);
       drawPolyline(grid[GRID_N]);
-      drawPolyline(grid.map(row => row[0]));
-      drawPolyline(grid.map(row => row[GRID_N]));
+      drawPolyline(grid.map((row) => row[0]));
+      drawPolyline(grid.map((row) => row[GRID_N]));
     } else {
       // Flat mode or curved without grid: dashed border only
       ctx.strokeStyle = "rgba(59, 130, 246, 0.7)";
@@ -227,8 +227,8 @@ export default function CornerEditor({
       ctx.strokeStyle = isActive
         ? "rgba(239, 68, 68, 0.8)"
         : isHover
-        ? "rgba(59, 130, 246, 0.8)"
-        : "rgba(37, 99, 235, 0.6)";
+          ? "rgba(59, 130, 246, 0.8)"
+          : "rgba(37, 99, 235, 0.6)";
       ctx.lineWidth = 1;
       const crossSize = 18;
       ctx.beginPath();
@@ -251,8 +251,8 @@ export default function CornerEditor({
       ctx.fillStyle = isActive
         ? "rgba(239, 68, 68, 0.4)"
         : isHover
-        ? "rgba(59, 130, 246, 0.4)"
-        : "rgba(37, 99, 235, 0.25)";
+          ? "rgba(59, 130, 246, 0.4)"
+          : "rgba(37, 99, 235, 0.25)";
       ctx.fill();
 
       // Border ring
@@ -261,8 +261,8 @@ export default function CornerEditor({
       ctx.strokeStyle = isActive
         ? "rgba(239, 68, 68, 0.9)"
         : isHover
-        ? "rgba(59, 130, 246, 0.9)"
-        : "rgba(37, 99, 235, 0.7)";
+          ? "rgba(59, 130, 246, 0.9)"
+          : "rgba(37, 99, 235, 0.7)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
@@ -285,26 +285,38 @@ export default function CornerEditor({
       ctx.textBaseline = "middle";
       ctx.fillText(`${Math.round(zoom * 100)}%`, 16, canvas.height - 19);
     }
-  }, [corners, effectiveScale, getOffset, toCanvas, dragging, hovered, maxDisplayWidth, maxDisplayHeight, surfaceMode, curvature, crossCurvature, cylinderAxis, showGrid, zoom]);
+  }, [
+    corners,
+    effectiveScale,
+    getOffset,
+    toCanvas,
+    dragging,
+    hovered,
+    maxDisplayWidth,
+    maxDisplayHeight,
+    surfaceMode,
+    curvature,
+    crossCurvature,
+    cylinderAxis,
+    showGrid,
+    zoom,
+  ]);
 
   useEffect(() => {
     draw();
   }, [draw]);
 
   // Get mouse position relative to canvas
-  const getMousePos = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>): Point => {
-      const canvas = canvasRef.current!;
-      const rect = canvas.getBoundingClientRect();
-      const sx = canvas.width / rect.width;
-      const sy = canvas.height / rect.height;
-      return {
-        x: (e.clientX - rect.left) * sx,
-        y: (e.clientY - rect.top) * sy,
-      };
-    },
-    []
-  );
+  const getMousePos = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * sx,
+      y: (e.clientY - rect.top) * sy,
+    };
+  }, []);
 
   const findCorner = useCallback(
     (pos: Point): number | null => {
@@ -318,7 +330,7 @@ export default function CornerEditor({
       }
       return null;
     },
-    [corners, toCanvas]
+    [corners, toCanvas],
   );
 
   const handleMouseDown = useCallback(
@@ -335,7 +347,7 @@ export default function CornerEditor({
         e.preventDefault();
       }
     },
-    [getMousePos, findCorner, panOffset]
+    [getMousePos, findCorner, panOffset],
   );
 
   const handleMouseMove = useCallback(
@@ -362,7 +374,7 @@ export default function CornerEditor({
         setHovered(corner);
       }
     },
-    [dragging, panning, panStart, getMousePos, toImage, corners, onCornersChange, findCorner]
+    [dragging, panning, panStart, getMousePos, toImage, corners, onCornersChange, findCorner],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -398,24 +410,21 @@ export default function CornerEditor({
 
       setZoom(newZoom);
     },
-    [zoom, getMousePos, getOffset, effectiveScale, baseScale, maxDisplayWidth, maxDisplayHeight, setZoom]
+    [zoom, getMousePos, getOffset, effectiveScale, baseScale, maxDisplayWidth, maxDisplayHeight, setZoom],
   );
 
   // Touch support
-  const getTouchPos = useCallback(
-    (e: React.TouchEvent<HTMLCanvasElement>): Point => {
-      const canvas = canvasRef.current!;
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0] || e.changedTouches[0];
-      const sx = canvas.width / rect.width;
-      const sy = canvas.height / rect.height;
-      return {
-        x: (touch.clientX - rect.left) * sx,
-        y: (touch.clientY - rect.top) * sy,
-      };
-    },
-    []
-  );
+  const getTouchPos = useCallback((e: React.TouchEvent<HTMLCanvasElement>): Point => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0] || e.changedTouches[0];
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    return {
+      x: (touch.clientX - rect.left) * sx,
+      y: (touch.clientY - rect.top) * sy,
+    };
+  }, []);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -426,7 +435,7 @@ export default function CornerEditor({
         e.preventDefault();
       }
     },
-    [getTouchPos, findCorner]
+    [getTouchPos, findCorner],
   );
 
   const handleTouchMove = useCallback(
@@ -444,7 +453,7 @@ export default function CornerEditor({
       newCorners[dragging] = imgPos;
       onCornersChange(newCorners);
     },
-    [dragging, getTouchPos, toImage, corners, onCornersChange]
+    [dragging, getTouchPos, toImage, corners, onCornersChange],
   );
 
   const handleTouchEnd = useCallback(() => {

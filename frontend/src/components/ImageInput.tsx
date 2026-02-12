@@ -13,9 +13,7 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
   const [dragOver, setDragOver] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [facingMode, setFacingMode] = useState<"environment" | "user">(
-    "environment"
-  );
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
   // Cleanup camera on unmount
   useEffect(() => {
@@ -37,7 +35,7 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
       };
       reader.readAsDataURL(file);
     },
-    [onImageLoaded]
+    [onImageLoaded],
   );
 
   const handleDrop = useCallback(
@@ -47,7 +45,7 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
       const file = e.dataTransfer.files[0];
       if (file) handleFile(file);
     },
-    [handleFile]
+    [handleFile],
   );
 
   const handleFileSelect = useCallback(
@@ -55,7 +53,7 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
       const file = e.target.files?.[0];
       if (file) handleFile(file);
     },
-    [handleFile]
+    [handleFile],
   );
 
   const openCamera = useCallback(
@@ -84,12 +82,10 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
         }, 50);
       } catch (err) {
         console.error("Camera access denied:", err);
-        alert(
-          "Could not access camera. Please check permissions and try again."
-        );
+        alert("Could not access camera. Please check permissions and try again.");
       }
     },
-    [stream, facingMode]
+    [stream, facingMode],
   );
 
   const closeCamera = useCallback(() => {
@@ -122,20 +118,26 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
   if (cameraActive) {
     return (
       <div className="relative w-full bg-black rounded-xl overflow-hidden">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full aspect-[4/3] object-cover"
-        />
+        <video ref={videoRef} autoPlay playsInline muted className="w-full aspect-[4/3] object-cover" />
 
         {/* Guide frame overlay */}
         <div className="absolute inset-6 pointer-events-none">
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-3 border-l-3 border-blue-400 rounded-tl-lg" style={{ borderWidth: '3px 0 0 3px' }} />
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-3 border-r-3 border-blue-400 rounded-tr-lg" style={{ borderWidth: '3px 3px 0 0' }} />
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-3 border-l-3 border-blue-400 rounded-bl-lg" style={{ borderWidth: '0 0 3px 3px' }} />
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-3 border-r-3 border-blue-400 rounded-br-lg" style={{ borderWidth: '0 3px 3px 0' }} />
+          <div
+            className="absolute top-0 left-0 w-8 h-8 border-t-3 border-l-3 border-blue-400 rounded-tl-lg"
+            style={{ borderWidth: "3px 0 0 3px" }}
+          />
+          <div
+            className="absolute top-0 right-0 w-8 h-8 border-t-3 border-r-3 border-blue-400 rounded-tr-lg"
+            style={{ borderWidth: "3px 3px 0 0" }}
+          />
+          <div
+            className="absolute bottom-0 left-0 w-8 h-8 border-b-3 border-l-3 border-blue-400 rounded-bl-lg"
+            style={{ borderWidth: "0 0 3px 3px" }}
+          />
+          <div
+            className="absolute bottom-0 right-0 w-8 h-8 border-b-3 border-r-3 border-blue-400 rounded-br-lg"
+            style={{ borderWidth: "0 3px 3px 0" }}
+          />
         </div>
 
         {/* Status text */}
@@ -186,24 +188,13 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
         className={`
           relative cursor-pointer rounded-xl border-2 border-dashed p-12
           flex flex-col items-center justify-center gap-4 transition-all
-          ${
-            dragOver
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-          }
+          ${dragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"}
         `}
       >
-        <Upload
-          size={40}
-          className={dragOver ? "text-blue-500" : "text-gray-400"}
-        />
+        <Upload size={40} className={dragOver ? "text-blue-500" : "text-gray-400"} />
         <div className="text-center">
-          <p className="text-lg font-medium text-gray-700">
-            {dragOver ? "Drop image here" : "Upload Label Image"}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Drag & drop or click to browse — PNG, JPG, WEBP up to 10MB
-          </p>
+          <p className="text-lg font-medium text-gray-700">{dragOver ? "Drop image here" : "Upload Label Image"}</p>
+          <p className="text-sm text-gray-500 mt-1">Drag & drop or click to browse — PNG, JPG, WEBP up to 10MB</p>
         </div>
         <input
           ref={fileInputRef}

@@ -42,26 +42,15 @@ const STATUS_LABEL: Record<CheckStatus, string> = {
   not_applicable: "N/A",
 };
 
-export default function LabelChecklist({
-  items,
-  onToggle,
-  onValueChange,
-  readOnly = false,
-}: LabelChecklistProps) {
+export default function LabelChecklist({ items, onToggle, onValueChange, readOnly = false }: LabelChecklistProps) {
   const mandatoryItems = items.filter((i) => i.mandatory);
   const optionalItems = items.filter((i) => !i.mandatory);
 
   const checkedCount = items.filter(
-    (i) =>
-      i.status === "checked" ||
-      i.status === "auto_pass" ||
-      i.status === "not_applicable"
+    (i) => i.status === "checked" || i.status === "auto_pass" || i.status === "not_applicable",
   ).length;
   const mandatoryChecked = mandatoryItems.filter(
-    (i) =>
-      i.status === "checked" ||
-      i.status === "auto_pass" ||
-      i.status === "not_applicable"
+    (i) => i.status === "checked" || i.status === "auto_pass" || i.status === "not_applicable",
   ).length;
   const hasFailures = items.some((i) => i.status === "auto_fail");
 
@@ -85,11 +74,7 @@ export default function LabelChecklist({
         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
-              hasFailures
-                ? "bg-red-400"
-                : progressPct === 100
-                ? "bg-green-500"
-                : "bg-blue-500"
+              hasFailures ? "bg-red-400" : progressPct === 100 ? "bg-green-500" : "bg-blue-500"
             }`}
             style={{ width: `${progressPct}%` }}
           />
@@ -158,17 +143,14 @@ function ChecklistRow({
   const displayValue = item.userValue || item.detectedValue;
 
   const isClickable =
-    !readOnly &&
-    item.status !== "auto_pass" &&
-    item.status !== "auto_fail" &&
-    item.status !== "not_applicable";
+    !readOnly && item.status !== "auto_pass" && item.status !== "auto_fail" && item.status !== "not_applicable";
 
   const bgClass =
     item.status === "auto_fail"
       ? "bg-red-50 border-red-200"
       : item.status === "checked" || item.status === "auto_pass"
-      ? "bg-green-50/50 border-green-200"
-      : "bg-white border-gray-150";
+        ? "bg-green-50/50 border-green-200"
+        : "bg-white border-gray-150";
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -189,9 +171,7 @@ function ChecklistRow({
     <div
       onClick={() => isClickable && onToggle(item.id)}
       className={`w-full flex items-start gap-2.5 p-2.5 rounded-lg border text-left transition ${bgClass} ${
-        isClickable
-          ? "hover:bg-gray-50 cursor-pointer"
-          : "cursor-default"
+        isClickable ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"
       }`}
     >
       <div className="mt-0.5 shrink-0">{STATUS_ICON[item.status]}</div>
@@ -202,16 +182,14 @@ function ChecklistRow({
               item.status === "auto_fail"
                 ? "text-red-700"
                 : item.status === "checked" || item.status === "auto_pass"
-                ? "text-green-700"
-                : "text-gray-700"
+                  ? "text-green-700"
+                  : "text-gray-700"
             }`}
           >
             {item.label}
           </span>
           {item.mandatory && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">
-              Required
-            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Required</span>
           )}
           {STATUS_LABEL[item.status] && (
             <span
@@ -219,13 +197,12 @@ function ChecklistRow({
                 item.status === "auto_pass"
                   ? "text-emerald-600"
                   : item.status === "auto_fail"
-                  ? "text-red-600"
-                  : "text-green-600"
+                    ? "text-red-600"
+                    : "text-green-600"
               }`}
             >
               {STATUS_LABEL[item.status]}
-              {item.confidence !== undefined &&
-                ` (${Math.round(item.confidence * 100)}%)`}
+              {item.confidence !== undefined && ` (${Math.round(item.confidence * 100)}%)`}
             </span>
           )}
         </div>
@@ -234,11 +211,7 @@ function ChecklistRow({
         {item.extractable && (
           <div className="mt-1.5">
             {editing ? (
-              <form
-                onSubmit={handleSaveEdit}
-                className="flex items-center gap-1"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <form onSubmit={handleSaveEdit} className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <input
                   type="text"
                   value={editValue}
@@ -253,11 +226,7 @@ function ChecklistRow({
                     }
                   }}
                 />
-                <button
-                  type="submit"
-                  className="p-1 rounded hover:bg-blue-100 text-blue-600"
-                  onClick={handleSaveEdit}
-                >
+                <button type="submit" className="p-1 rounded hover:bg-blue-100 text-blue-600" onClick={handleSaveEdit}>
                   <Check size={14} />
                 </button>
               </form>
@@ -266,9 +235,7 @@ function ChecklistRow({
                 <span className="text-xs font-mono bg-gray-100 text-gray-800 px-2 py-0.5 rounded border border-gray-200 truncate">
                   {displayValue}
                 </span>
-                {item.userValue && (
-                  <span className="text-[10px] text-blue-500">edited</span>
-                )}
+                {item.userValue && <span className="text-[10px] text-blue-500">edited</span>}
                 {!readOnly && onValueChange && (
                   <button
                     type="button"
@@ -281,9 +248,7 @@ function ChecklistRow({
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-gray-400 italic">
-                  Not detected
-                </span>
+                <span className="text-[11px] text-gray-400 italic">Not detected</span>
                 {!readOnly && onValueChange && (
                   <button
                     type="button"
@@ -300,15 +265,15 @@ function ChecklistRow({
 
         {/* Description (collapsed for extractable items that have a value, except health_warning) */}
         {(!item.extractable || !displayValue || item.id === "health_warning") && (
-          <p className={`text-[11px] mt-0.5 leading-tight ${
-            item.id === "health_warning" ? "text-amber-700 font-medium" : "text-gray-500"
-          }`}>
+          <p
+            className={`text-[11px] mt-0.5 leading-tight ${
+              item.id === "health_warning" ? "text-amber-700 font-medium" : "text-gray-500"
+            }`}
+          >
             {item.description}
           </p>
         )}
-        {item.note && (
-          <p className="text-[11px] text-blue-600 mt-0.5 italic">{item.note}</p>
-        )}
+        {item.note && <p className="text-[11px] text-blue-600 mt-0.5 italic">{item.note}</p>}
 
         {/* Citations from validation results */}
         <CitationLines item={item} />
@@ -328,15 +293,12 @@ function CitationLines({ item }: { item: ChecklistItem }) {
 
   const citations = (item.validationResults ?? [])
     .filter((r) => r.citation)
-    .reduce<{ ruleId: string; citation: Citation; pass: boolean; severity: string }[]>(
-      (acc, r) => {
-        if (!acc.some((a) => a.citation.chapter === r.citation!.chapter && a.citation.section === r.citation!.section)) {
-          acc.push({ ruleId: r.ruleId, citation: r.citation!, pass: r.pass, severity: r.severity });
-        }
-        return acc;
-      },
-      []
-    );
+    .reduce<{ ruleId: string; citation: Citation; pass: boolean; severity: string }[]>((acc, r) => {
+      if (!acc.some((a) => a.citation.chapter === r.citation!.chapter && a.citation.section === r.citation!.section)) {
+        acc.push({ ruleId: r.ruleId, citation: r.citation!, pass: r.pass, severity: r.severity });
+      }
+      return acc;
+    }, []);
 
   if (citations.length === 0) return null;
 
@@ -349,14 +311,10 @@ function CitationLines({ item }: { item: ChecklistItem }) {
     setExpandedRule(ruleId);
     setLoading(true);
     try {
-      const result = await fetchExplanation(
-        ruleId,
-        item.id,
-        item.detectedValue,
-        item.userValue
-      );
+      const result = await fetchExplanation(ruleId, item.id, item.detectedValue, item.userValue);
       setExplanation(result);
-    } catch {
+    } catch (err) {
+      console.error("[LabelChecklist] Failed to load explanation", err);
       setExplanation("Unable to load explanation. Please try again.");
     } finally {
       setLoading(false);

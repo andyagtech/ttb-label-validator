@@ -15,10 +15,7 @@ import { Point } from "./perspective";
  * 3. Find the bounding box where energy exceeds a threshold
  * 4. Return the 4 corner points
  */
-export function detectLabelBounds(
-  canvas: HTMLCanvasElement,
-  padding: number = 0.01
-): [Point, Point, Point, Point] {
+export function detectLabelBounds(canvas: HTMLCanvasElement, padding: number = 0.01): [Point, Point, Point, Point] {
   const ctx = canvas.getContext("2d")!;
   const { width, height } = canvas;
   const imageData = ctx.getImageData(0, 0, width, height);
@@ -51,9 +48,13 @@ export function detectLabelBounds(
 
   // Normalise
   let maxCol = 1;
-  for (let x = 0; x < width; x++) { if (colEnergy[x] > maxCol) maxCol = colEnergy[x]; }
+  for (let x = 0; x < width; x++) {
+    if (colEnergy[x] > maxCol) maxCol = colEnergy[x];
+  }
   let maxRow = 1;
-  for (let y = 0; y < height; y++) { if (rowEnergy[y] > maxRow) maxRow = rowEnergy[y]; }
+  for (let y = 0; y < height; y++) {
+    if (rowEnergy[y] > maxRow) maxRow = rowEnergy[y];
+  }
   for (let x = 0; x < width; x++) colEnergy[x] /= maxCol;
   for (let y = 0; y < height; y++) rowEnergy[y] /= maxRow;
 
@@ -62,19 +63,31 @@ export function detectLabelBounds(
 
   let left = 0;
   for (let x = 0; x < width; x++) {
-    if (colEnergy[x] > threshold) { left = x; break; }
+    if (colEnergy[x] > threshold) {
+      left = x;
+      break;
+    }
   }
   let right = width - 1;
   for (let x = width - 1; x >= 0; x--) {
-    if (colEnergy[x] > threshold) { right = x; break; }
+    if (colEnergy[x] > threshold) {
+      right = x;
+      break;
+    }
   }
   let top = 0;
   for (let y = 0; y < height; y++) {
-    if (rowEnergy[y] > threshold) { top = y; break; }
+    if (rowEnergy[y] > threshold) {
+      top = y;
+      break;
+    }
   }
   let bottom = height - 1;
   for (let y = height - 1; y >= 0; y--) {
-    if (rowEnergy[y] > threshold) { bottom = y; break; }
+    if (rowEnergy[y] > threshold) {
+      bottom = y;
+      break;
+    }
   }
 
   // Add padding

@@ -30,7 +30,7 @@ export async function fetchExplanation(
   ruleId: string,
   checklistItemId: string,
   detectedValue?: string,
-  userValue?: string
+  userValue?: string,
 ): Promise<string> {
   const key = cacheKey(ruleId, detectedValue);
   const cached = explanationCache.get(key);
@@ -38,9 +38,7 @@ export async function fetchExplanation(
 
   const excerpt = getExcerptForRule(ruleId) ?? "";
   const citation = citationFor(ruleId);
-  const itemLabel = citation
-    ? `Ch. ${citation.chapter}, ${citation.section}`
-    : checklistItemId;
+  const itemLabel = citation ? `Ch. ${citation.chapter}, ${citation.section}` : checklistItemId;
 
   try {
     const response = await fetch("/api/explain", {
@@ -62,8 +60,7 @@ export async function fetchExplanation(
     }
 
     const data = await response.json();
-    const explanation: string =
-      data.explanation ?? "No explanation returned.";
+    const explanation: string = data.explanation ?? "No explanation returned.";
 
     explanationCache.set(key, explanation);
     return explanation;

@@ -26,28 +26,48 @@ import WalkthroughPanel, { SUBMITTER_STEPS } from "@/components/WalkthroughPanel
 // ---------------------------------------------------------------------------
 export const C = {
   // Core palette
-  navy: "#1a4480",           // rgb(26,68,128)  — primary interactive
-  darkNavy: "#162e51",       // rgb(22,46,81)   — header bg, footer bg
-  navBg: "#083c6f",          // rgb(8,60,111)   — .treas-main-nav background
-  lightBlue: "#005ea2",      // rgb(0,94,162)   — links, nav bar
-  linkHover: "#1a4480",      // rgb(26,68,128)  — link hover
+  navy: "#1a4480", // rgb(26,68,128)  — primary interactive
+  darkNavy: "#162e51", // rgb(22,46,81)   — header bg, footer bg
+  navBg: "#083c6f", // rgb(8,60,111)   — .treas-main-nav background
+  lightBlue: "#005ea2", // rgb(0,94,162)   — links, nav bar
+  linkHover: "#1a4480", // rgb(26,68,128)  — link hover
   white: "#ffffff",
-  lightGray: "#f0f0f0",      // rgb(240,240,240) — gov banner, zebra rows
-  medGray: "#71767a",        // rgb(113,118,122) — helper text
-  darkGray: "#1b1b1b",       // rgb(27,27,27)   — body text
-  coolGray: "#3d4551",       // rgb(61,69,81)   — footer text
-  lightGrayText: "#a9aeb1",  // rgb(169,174,177) — muted labels
-  border: "#dfe1e2",         // rgb(223,225,226) — borders
+  lightGray: "#f0f0f0", // rgb(240,240,240) — gov banner, zebra rows
+  medGray: "#71767a", // rgb(113,118,122) — helper text
+  darkGray: "#1b1b1b", // rgb(27,27,27)   — body text
+  coolGray: "#3d4551", // rgb(61,69,81)   — footer text
+  lightGrayText: "#a9aeb1", // rgb(169,174,177) — muted labels
+  border: "#dfe1e2", // rgb(223,225,226) — borders
   // Accents
-  gold: "#ffbe2e",           // rgb(255,190,46) — alert banners
-  goldBright: "#f8e71c",     // rgb(248,231,28) — nav active underline
-  red: "#b50909",            // rgb(181,9,9)    — error
-  redDark: "#9c3d10",        // rgb(156,61,16)  — red button hover
-  green: "#00a91c",          // rgb(0,169,28)   — success, Report Fraud button
-  greenBg: "#ecf3ec",        // rgb(236,243,236)
-  yellowBg: "#faf3d1",       // rgb(250,243,209)
-  redBg: "#f4e3db",          // rgb(244,227,219)
-  infoBg: "#e7f6f8",         // rgb(231,246,248)
+  gold: "#ffbe2e", // rgb(255,190,46) — alert banners
+  goldBright: "#f8e71c", // rgb(248,231,28) — nav active underline
+  red: "#b50909", // rgb(181,9,9)    — error
+  redDark: "#9c3d10", // rgb(156,61,16)  — red button hover
+  green: "#00a91c", // rgb(0,169,28)   — success, Report Fraud button
+  greenBg: "#ecf3ec", // rgb(236,243,236)
+  yellowBg: "#faf3d1", // rgb(250,243,209)
+  redBg: "#f4e3db", // rgb(244,227,219)
+  infoBg: "#e7f6f8", // rgb(231,246,248)
+} as const;
+
+// ---------------------------------------------------------------------------
+// Layout constants — repeated spacing / sizing values used across TTB pages
+// ---------------------------------------------------------------------------
+export const L = {
+  /** Max content width (matches TTB.gov's 1200px container) */
+  maxWidth: 1200,
+  /** Standard page-level horizontal padding */
+  pagePadding: "24px",
+  /** Grid gap between major layout columns */
+  sectionGap: 32,
+  /** Grid gap between cards / stat boxes */
+  cardGap: 16,
+  /** Bottom margin before footer */
+  footerMargin: 64,
+  /** Serif font stack for headings (matches TTB.gov Merriweather usage) */
+  serif: "'Merriweather', Georgia, serif",
+  /** Sans-serif font stack for body text */
+  sans: "'Public Sans', 'Source Sans Pro', 'Segoe UI', system-ui, sans-serif",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -69,11 +89,11 @@ export function GovBanner() {
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
-          <span style={{ color: C.darkGray }}>
-            NOT an official website of the United States government
-          </span>
+          <span style={{ color: C.darkGray }}>NOT an official website of the United States government</span>
           <button
             onClick={() => setExpanded(!expanded)}
+            aria-expanded={expanded}
+            aria-label={expanded ? "Hide site information" : "Learn how to identify a .gov website"}
             style={{
               background: "none",
               border: "none",
@@ -85,7 +105,7 @@ export function GovBanner() {
               gap: 2,
             }}
           >
-            Here&rsquo;s how you know
+            <span aria-hidden="true">Here&rsquo;s how you know</span>
             <ChevronDown
               size={14}
               style={{
@@ -112,8 +132,7 @@ export function GovBanner() {
               <div>
                 <p style={{ fontWeight: 700 }}>Official websites use .gov</p>
                 <p style={{ color: C.medGray }}>
-                  A <strong>.gov</strong> website belongs to an official government
-                  organization in the United States.
+                  A <strong>.gov</strong> website belongs to an official government organization in the United States.
                 </p>
               </div>
             </div>
@@ -122,8 +141,8 @@ export function GovBanner() {
               <div>
                 <p style={{ fontWeight: 700 }}>Secure .gov websites use HTTPS</p>
                 <p style={{ color: C.medGray }}>
-                  A <strong>lock</strong> or <strong>https://</strong> means
-                  you&rsquo;ve safely connected to the .gov website.
+                  A <strong>lock</strong> or <strong>https://</strong> means you&rsquo;ve safely connected to the .gov
+                  website.
                 </p>
               </div>
             </div>
@@ -153,11 +172,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
           }}
         >
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <img
-              src="/TTB_logo_web.svg"
-              alt="TTB — Alcohol and Tobacco Tax and Trade Bureau"
-              style={{ height: 52 }}
-            />
+            <img src="/TTB_logo_web.svg" alt="TTB — Alcohol and Tobacco Tax and Trade Bureau" style={{ height: 52 }} />
           </Link>
           <a
             href="https://www.ttb.gov/about-ttb/ttb-tip-line"
@@ -178,12 +193,8 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
               cursor: "pointer",
               transition: "background 0.15s",
             }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "#008517")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = C.green)
-            }
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "#008517")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = C.green)}
           >
             Report Fraud: TTB Tips Online
           </a>
@@ -191,7 +202,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
       </div>
 
       {/* Main nav bar — lighter blue */}
-      <nav id="ttb-main-nav" style={{ background: C.lightBlue }}>
+      <nav id="ttb-main-nav" aria-label="Primary navigation" style={{ background: C.lightBlue }}>
         <div
           style={{
             maxWidth: 1200,
@@ -211,6 +222,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
             ].map(({ label, active }) => (
               <button
                 key={label}
+                aria-current={active ? "page" : undefined}
                 style={{
                   background: active ? "rgba(255,255,255,0.08)" : "transparent",
                   border: "none",
@@ -229,8 +241,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
                   whiteSpace: "nowrap" as const,
                 }}
                 onMouseEnter={(e) => {
-                  if (!active)
-                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+                  if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
                 }}
                 onMouseLeave={(e) => {
                   if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
@@ -257,7 +268,7 @@ export function TTBHeader({ activeNav }: { activeNav?: string }) {
               letterSpacing: "0.04em",
             }}
           >
-            <Search size={14} />
+            <Search size={14} aria-hidden="true" />
             SEARCH
           </button>
         </div>
@@ -304,7 +315,11 @@ export interface BreadcrumbItem {
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <div id="breadcrumbs" style={{ background: C.white, borderBottom: `1px solid ${C.border}` }}>
+    <nav
+      id="breadcrumbs"
+      aria-label="Breadcrumb"
+      style={{ background: C.white, borderBottom: `1px solid ${C.border}` }}
+    >
       <div
         style={{
           maxWidth: 1200,
@@ -318,18 +333,20 @@ export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
       >
         {items.map((item, i) => (
           <React.Fragment key={i}>
-            {i > 0 && <ChevronRight size={12} style={{ color: C.medGray }} />}
+            {i > 0 && <ChevronRight size={12} style={{ color: C.medGray }} aria-hidden="true" />}
             {item.href ? (
               <Link href={item.href} style={{ color: C.lightBlue, textDecoration: "underline" }}>
                 {item.label}
               </Link>
             ) : (
-              <span style={{ color: C.darkGray }}>{item.label}</span>
+              <span style={{ color: C.darkGray }} aria-current="page">
+                {item.label}
+              </span>
             )}
           </React.Fragment>
         ))}
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -340,6 +357,7 @@ export function AlertBanner() {
   return (
     <div
       id="alert-banner"
+      role="alert"
       style={{
         background: C.yellowBg,
         borderLeft: `4px solid ${C.gold}`,
@@ -353,9 +371,8 @@ export function AlertBanner() {
     >
       <Info size={20} style={{ color: C.red, flexShrink: 0, marginTop: 2 }} />
       <div style={{ fontSize: 14, lineHeight: 1.6, color: C.darkGray }}>
-        <strong>Prototype Notice:</strong> This is a PROTOTYPE of a tool
-        meant for use by the United States government. This is NOT an official
-        website of the United States government.
+        <strong>Prototype Notice:</strong> This is a PROTOTYPE of a tool meant for use by the United States government.
+        This is NOT an official website of the United States government.
       </div>
     </div>
   );
@@ -366,7 +383,11 @@ export function AlertBanner() {
 // ---------------------------------------------------------------------------
 export function TTBFooter() {
   return (
-    <footer id="ttb-footer" style={{ background: C.darkNavy, color: C.lightGrayText, marginTop: 64 }}>
+    <footer
+      id="ttb-footer"
+      aria-label="Site footer"
+      style={{ background: C.darkNavy, color: C.lightGrayText, marginTop: 64 }}
+    >
       <div
         style={{
           maxWidth: 1200,
@@ -380,47 +401,71 @@ export function TTBFooter() {
         }}
       >
         <div>
-          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-            About TTB
-          </h4>
+          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>About TTB</h4>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>About Us</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Careers</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Contact</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>FOIA</a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              About Us
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Careers
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Contact
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              FOIA
+            </a>
           </div>
         </div>
         <div>
-          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-            Industry Resources
-          </h4>
+          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Industry Resources</h4>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>COLAs Online</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Permits Online</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Formulas Online</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Pay.gov</a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              COLAs Online
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Permits Online
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Formulas Online
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Pay.gov
+            </a>
           </div>
         </div>
         <div>
-          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-            Regulations
-          </h4>
+          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Regulations</h4>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>27 CFR Part 4 (Wine)</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>27 CFR Part 5 (Spirits)</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>27 CFR Part 7 (Beer)</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>27 CFR Part 16 (Warning)</a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              27 CFR Part 4 (Wine)
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              27 CFR Part 5 (Spirits)
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              27 CFR Part 7 (Beer)
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              27 CFR Part 16 (Warning)
+            </a>
           </div>
         </div>
         <div>
-          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-            Government Links
-          </h4>
+          <h4 style={{ color: C.white, fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Government Links</h4>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>USA.gov</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Treasury.gov</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Regulations.gov</a>
-            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>Privacy Policy</a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              USA.gov
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Treasury.gov
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Regulations.gov
+            </a>
+            <a href="#" style={{ color: C.lightGrayText, textDecoration: "none" }}>
+              Privacy Policy
+            </a>
           </div>
         </div>
       </div>
@@ -443,13 +488,7 @@ export function TTBFooter() {
 // ---------------------------------------------------------------------------
 // "How helpful is this page?" feedback button (opens walkthrough panel)
 // ---------------------------------------------------------------------------
-export function FeedbackButton({
-  onClick,
-  visible,
-}: {
-  onClick: () => void;
-  visible: boolean;
-}) {
+export function FeedbackButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
   if (!visible) return null;
   return (
     <button
@@ -472,12 +511,8 @@ export function FeedbackButton({
         transition: "background 0.15s",
         fontFamily: "'Public Sans', 'Source Sans Pro', sans-serif",
       }}
-      onMouseEnter={(e) =>
-        ((e.currentTarget as HTMLElement).style.background = C.navy)
-      }
-      onMouseLeave={(e) =>
-        ((e.currentTarget as HTMLElement).style.background = C.lightBlue)
-      }
+      onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = C.navy)}
+      onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = C.lightBlue)}
     >
       How helpful is this page?
     </button>
@@ -522,26 +557,55 @@ export function TTBShell({
       />
       <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
+      {/* Skip-nav link — Section 508 / WCAG 2.1 best practice */}
+      <a
+        href="#main-content"
+        style={{
+          position: "absolute",
+          left: -9999,
+          top: "auto",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+          zIndex: 100,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.position = "fixed";
+          e.currentTarget.style.left = "8px";
+          e.currentTarget.style.top = "8px";
+          e.currentTarget.style.width = "auto";
+          e.currentTarget.style.height = "auto";
+          e.currentTarget.style.overflow = "visible";
+          e.currentTarget.style.padding = "8px 16px";
+          e.currentTarget.style.background = C.lightBlue;
+          e.currentTarget.style.color = C.white;
+          e.currentTarget.style.borderRadius = "4px";
+          e.currentTarget.style.fontSize = "14px";
+          e.currentTarget.style.fontWeight = "600";
+          e.currentTarget.style.textDecoration = "none";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.position = "absolute";
+          e.currentTarget.style.left = "-9999px";
+          e.currentTarget.style.width = "1px";
+          e.currentTarget.style.height = "1px";
+          e.currentTarget.style.overflow = "hidden";
+        }}
+      >
+        Skip to main content
+      </a>
+
       <GovBanner />
       <TTBHeader activeNav={activeNav} />
       {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
 
-      {children}
+      <main id="main-content">{children}</main>
 
       <TTBFooter />
 
-      <FeedbackButton
-        onClick={() => setShowWalkthrough(true)}
-        visible={!showWalkthrough}
-      />
+      <FeedbackButton onClick={() => setShowWalkthrough(true)} visible={!showWalkthrough} />
 
-      {showWalkthrough && (
-        <WalkthroughPanel
-          onClose={() => setShowWalkthrough(false)}
-          steps={steps}
-          title={title}
-        />
-      )}
+      {showWalkthrough && <WalkthroughPanel onClose={() => setShowWalkthrough(false)} steps={steps} title={title} />}
     </div>
   );
 }

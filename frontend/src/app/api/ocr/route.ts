@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         fields: {},
         error: "OPENROUTER_API_KEY not configured.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -89,12 +89,11 @@ export async function POST(request: NextRequest) {
     if (!imageBase64) {
       return NextResponse.json<OcrResponse>(
         { success: false, fields: {}, error: "imageBase64 is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const model =
-      process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
+    const model = process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
 
     const response = await fetch(OPENROUTER_URL, {
       method: "POST",
@@ -133,7 +132,7 @@ export async function POST(request: NextRequest) {
           fields: {},
           error: `OpenRouter API error: ${response.status} ${errText}`,
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -164,7 +163,7 @@ export async function POST(request: NextRequest) {
         fields: {},
         error: `Server error: ${err instanceof Error ? err.message : "Unknown"}`,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { validateExtractedFields, applyValidationResults, RULE_CITATIONS } from "../validation";
 import { ExtractedFields } from "../ocr";
 import { getChecklistTemplate } from "../types";
+import { validateExtractedFields, applyValidationResults, RULE_CITATIONS } from "../validation";
 
 // ---------------------------------------------------------------------------
 // Helper to find a specific rule result by ruleId
@@ -21,7 +21,7 @@ function findByChecklist(results: ReturnType<typeof validateExtractedFields>, ch
 
 describe("Government Warning validation", () => {
   const fullWarning =
-    'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.';
+    "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.";
 
   it("passes with correct full warning", () => {
     const fields: ExtractedFields = { healthWarning: fullWarning };
@@ -306,10 +306,10 @@ describe("Sample label from PROJECT_DESCRIPTION.md", () => {
   const sampleFields: ExtractedFields = {
     brandName: "OLD TOM DISTILLERY",
     classType: "Kentucky Straight Bourbon Whiskey",
-    alcoholContent: '45% Alc./Vol. (90 Proof)',
+    alcoholContent: "45% Alc./Vol. (90 Proof)",
     netContents: "750 mL",
     healthWarning:
-      'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.',
+      "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
     nameAddress: "Old Tom Distillery, Louisville, KY 40202",
   };
 
@@ -349,7 +349,7 @@ describe("Citations", () => {
       alcoholContent: "5% Alc. By Vol.",
       netContents: "12 FL OZ",
       healthWarning:
-        'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.',
+        "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
       nameAddress: "Test Brewery, Portland, OR",
       sulfiteDeclaration: "Contains Sulfites",
     };

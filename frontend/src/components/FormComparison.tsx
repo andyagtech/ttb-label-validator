@@ -104,7 +104,8 @@ export default function FormComparison({ extractedFields }: FormComparisonProps)
           COLA Application Form Values
         </h4>
         <p className="text-[11px] text-gray-500 mb-3">
-          Enter the values from the COLA application form. We&apos;ll compare them against what was detected on the label.
+          Enter the values from the COLA application form. We&apos;ll compare them against what was detected on the
+          label.
         </p>
       </div>
 
@@ -115,7 +116,10 @@ export default function FormComparison({ extractedFields }: FormComparisonProps)
           const labelVal = extractedFields?.[key as keyof ExtractedFields] as string | undefined;
 
           return (
-            <div key={key} className={`rounded-lg border p-2.5 transition ${result ? verdictColor(result.verdict) : "border-gray-200 bg-white"}`}>
+            <div
+              key={key}
+              className={`rounded-lg border p-2.5 transition ${result ? verdictColor(result.verdict) : "border-gray-200 bg-white"}`}
+            >
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
                 {FIELD_LABELS[key]}
               </label>
@@ -134,7 +138,9 @@ export default function FormComparison({ extractedFields }: FormComparisonProps)
                 <span className="text-[10px] text-gray-400 font-medium mt-1.5 shrink-0">vs</span>
                 {/* Label value (read-only) */}
                 <div className="flex-1">
-                  <div className={`px-2.5 py-1.5 text-xs rounded border ${labelVal ? "bg-gray-50 border-gray-200 text-gray-700" : "bg-gray-50 border-dashed border-gray-300 text-gray-400 italic"}`}>
+                  <div
+                    className={`px-2.5 py-1.5 text-xs rounded border ${labelVal ? "bg-gray-50 border-gray-200 text-gray-700" : "bg-gray-50 border-dashed border-gray-300 text-gray-400 italic"}`}
+                  >
                     {labelVal || "Not detected"}
                   </div>
                 </div>
@@ -163,9 +169,13 @@ export default function FormComparison({ extractedFields }: FormComparisonProps)
 
       {/* Summary */}
       {results && (
-        <div className={`px-3 py-2 rounded-lg text-xs font-medium ${
-          issueCount === 0 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
-        }`}>
+        <div
+          className={`px-3 py-2 rounded-lg text-xs font-medium ${
+            issueCount === 0
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : "bg-amber-50 text-amber-700 border border-amber-200"
+          }`}
+        >
           {matchCount} match{matchCount !== 1 ? "es" : ""}, {issueCount} issue{issueCount !== 1 ? "s" : ""} found
           {issueCount === 0 && " — all compared fields agree."}
         </div>

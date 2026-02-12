@@ -33,7 +33,7 @@ export interface MeshEdges {
 
 export function createMeshEdgesFromCorners(
   corners: [Point, Point, Point, Point],
-  pointsPerEdge: number = 6
+  pointsPerEdge: number = 6,
 ): MeshEdges {
   const [tl, tr, br, bl] = corners;
 
@@ -67,7 +67,7 @@ export function createCurvedMeshEdges(
   pointsPerEdge: number = 4,
   curvature: number = 0,
   axis: CylinderAxis = "vertical",
-  crossCurvature: number = 0
+  crossCurvature: number = 0,
 ): MeshEdges {
   const [tl, tr, br, bl] = corners;
 
@@ -83,11 +83,7 @@ export function createCurvedMeshEdges(
   };
 
   // Build an edge with optional bowing toward quad center
-  const makeEdge = (
-    start: Point,
-    end: Point,
-    bowFraction: number
-  ): Point[] => {
+  const makeEdge = (start: Point, end: Point, bowFraction: number): Point[] => {
     const pts: Point[] = [];
     const edgeMid: Point = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
     // Inward direction: from edge midpoint toward quad center
@@ -141,13 +137,7 @@ export function createCurvedMeshEdges(
 // Catmull-Rom spline interpolation
 // ---------------------------------------------------------------------------
 
-function catmullRomPoint(
-  p0: Point,
-  p1: Point,
-  p2: Point,
-  p3: Point,
-  t: number
-): Point {
+function catmullRomPoint(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
   const t2 = t * t;
   const t3 = t2 * t;
 
@@ -213,11 +203,7 @@ export function evalSpline(points: Point[], u: number): Point {
  *
  * Where P00=TL, P10=TR, P01=BL, P11=BR (corner points).
  */
-export function evaluateCoonsPatch(
-  edges: MeshEdges,
-  u: number,
-  v: number
-): Point {
+export function evaluateCoonsPatch(edges: MeshEdges, u: number, v: number): Point {
   // Evaluate boundary curves
   const topPt = evalSpline(edges.top, u);
   const bottomPt = evalSpline(edges.bottom, u);
@@ -237,19 +223,13 @@ export function evaluateCoonsPatch(
       v * bottomPt.x +
       (1 - u) * leftPt.x +
       u * rightPt.x -
-      ((1 - u) * (1 - v) * p00.x +
-        u * (1 - v) * p10.x +
-        (1 - u) * v * p01.x +
-        u * v * p11.x),
+      ((1 - u) * (1 - v) * p00.x + u * (1 - v) * p10.x + (1 - u) * v * p01.x + u * v * p11.x),
     y:
       (1 - v) * topPt.y +
       v * bottomPt.y +
       (1 - u) * leftPt.y +
       u * rightPt.y -
-      ((1 - u) * (1 - v) * p00.y +
-        u * (1 - v) * p10.y +
-        (1 - u) * v * p01.y +
-        u * v * p11.y),
+      ((1 - u) * (1 - v) * p00.y + u * (1 - v) * p10.y + (1 - u) * v * p01.y + u * v * p11.y),
   };
 }
 
@@ -257,11 +237,7 @@ export function evaluateCoonsPatch(
 // Generate mesh grid for visualization
 // ---------------------------------------------------------------------------
 
-export function generateMeshGrid(
-  edges: MeshEdges,
-  gridRows: number = 12,
-  gridCols: number = 12
-): Point[][] {
+export function generateMeshGrid(edges: MeshEdges, gridRows: number = 12, gridCols: number = 12): Point[][] {
   const grid: Point[][] = [];
   for (let r = 0; r <= gridRows; r++) {
     const row: Point[] = [];
@@ -283,7 +259,7 @@ export function applyMeshWarp(
   sourceCanvas: HTMLCanvasElement,
   edges: MeshEdges,
   outputWidth: number,
-  outputHeight: number
+  outputHeight: number,
 ): HTMLCanvasElement {
   const output = document.createElement("canvas");
   output.width = outputWidth;
@@ -292,12 +268,7 @@ export function applyMeshWarp(
   const outData = ctx.createImageData(outputWidth, outputHeight);
 
   const srcCtx = sourceCanvas.getContext("2d")!;
-  const srcData = srcCtx.getImageData(
-    0,
-    0,
-    sourceCanvas.width,
-    sourceCanvas.height
-  );
+  const srcData = srcCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
   const srcW = sourceCanvas.width;
   const srcH = sourceCanvas.height;
 
@@ -333,7 +304,7 @@ export function applyMeshWarp(
           srcData.data[idx00 + c] * (1 - fx) * (1 - fy) +
             srcData.data[idx10 + c] * fx * (1 - fy) +
             srcData.data[idx01 + c] * (1 - fx) * fy +
-            srcData.data[idx11 + c] * fx * fy
+            srcData.data[idx11 + c] * fx * fy,
         );
       }
     }
@@ -349,7 +320,7 @@ export function applyMeshWarp(
 
 export function computeMeshOutputDimensions(
   edges: MeshEdges,
-  maxDimension: number = 2000
+  maxDimension: number = 2000,
 ): { width: number; height: number } {
   // Approximate width = length of top edge spline
   let topLen = 0;

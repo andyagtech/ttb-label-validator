@@ -20,7 +20,7 @@ interface RateBucket {
   resetAt: number;
 }
 
-const RATE_LIMIT_MAX = 5;        // max requests per window
+const RATE_LIMIT_MAX = 5; // max requests per window
 const RATE_LIMIT_WINDOW = 60000; // 60 seconds
 const rateBuckets = new Map<string, RateBucket>();
 
@@ -68,9 +68,7 @@ export interface FlattenResponse {
 export async function POST(request: NextRequest) {
   // Get client IP
   const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown";
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
 
   // Rate limit check
   const { allowed, remaining, resetIn } = checkRateLimit(ip);
@@ -86,7 +84,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: `Rate limit exceeded. Try again in ${resetIn} seconds. Max ${RATE_LIMIT_MAX} requests per minute.`,
       },
-      { status: 429, headers: rateLimitHeaders }
+      { status: 429, headers: rateLimitHeaders },
     );
   }
 
@@ -95,7 +93,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { imageBase64, mode = "cylindrical", mimeType = "image/png", focalMultiplier } = body as {
+    const {
+      imageBase64,
+      mode = "cylindrical",
+      mimeType = "image/png",
+      focalMultiplier,
+    } = body as {
       imageBase64?: string;
       mode?: "cylindrical" | "perspective";
       mimeType?: string;
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
     if (!imageBase64) {
       return NextResponse.json<FlattenResponse>(
         { success: false, error: "imageBase64 is required." },
-        { status: 400, headers: rateLimitHeaders }
+        { status: 400, headers: rateLimitHeaders },
       );
     }
 
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: `Lambda error: ${lambdaResponse.status} ${errText}`,
           },
-          { status: 502, headers: rateLimitHeaders }
+          { status: 502, headers: rateLimitHeaders },
         );
       }
 
@@ -153,7 +156,7 @@ export async function POST(request: NextRequest) {
           imageSizeChars: imageBase64.length,
         },
       },
-      { status: 503, headers: rateLimitHeaders }
+      { status: 503, headers: rateLimitHeaders },
     );
   } catch (err) {
     return NextResponse.json<FlattenResponse>(
@@ -161,7 +164,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: `Server error: ${err instanceof Error ? err.message : "Unknown"}`,
       },
-      { status: 500, headers: rateLimitHeaders }
+      { status: 500, headers: rateLimitHeaders },
     );
   }
 }

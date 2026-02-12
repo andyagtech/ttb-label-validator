@@ -49,7 +49,7 @@ export interface ChecklistItem {
 
 export function getChecklistTemplate(
   labelPosition: "front" | "back" | "other",
-  category: BeverageCategory
+  category: BeverageCategory,
 ): ChecklistItem[] {
   const pos = labelPosition === "other" ? "any" : labelPosition;
 
@@ -68,8 +68,7 @@ export function getChecklistTemplate(
     {
       id: "class_type",
       label: "Class/type designation",
-      description:
-        'Class and type of the product (e.g., "Red Wine", "Blended Whiskey", "Lager").',
+      description: 'Class and type of the product (e.g., "Red Wine", "Blended Whiskey", "Lager").',
       appliesTo: ["front"],
       categories: "all",
       autoDetectable: "server",
@@ -79,8 +78,7 @@ export function getChecklistTemplate(
     {
       id: "alcohol_content",
       label: "Alcohol content statement",
-      description:
-        'Must read "Alcohol __% by volume" or "__% Alc. By Vol." — "ABV" alone is not allowed.',
+      description: 'Must read "Alcohol __% by volume" or "__% Alc. By Vol." — "ABV" alone is not allowed.',
       appliesTo: ["front", "any"],
       categories: ["wine", "spirits"],
       autoDetectable: "server",
@@ -101,8 +99,7 @@ export function getChecklistTemplate(
     {
       id: "net_contents",
       label: "Net contents",
-      description:
-        "Volume statement (e.g., 750 mL, 1 L, 12 FL OZ). Must appear on front or back.",
+      description: "Volume statement (e.g., 750 mL, 1 L, 12 FL OZ). Must appear on front or back.",
       appliesTo: ["front", "back"],
       categories: ["wine", "spirits"],
       autoDetectable: "server",
@@ -134,8 +131,7 @@ export function getChecklistTemplate(
     {
       id: "vintage_date",
       label: "Vintage date",
-      description:
-        "Year of harvest. Optional, but if present, appellation rules apply.",
+      description: "Year of harvest. Optional, but if present, appellation rules apply.",
       appliesTo: ["front"],
       categories: ["wine"],
       autoDetectable: "server",
@@ -145,8 +141,7 @@ export function getChecklistTemplate(
     {
       id: "varietal",
       label: "Grape varietal",
-      description:
-        "Grape variety (e.g., Pinot Noir). If stated, at least 75% of grapes must be that variety.",
+      description: "Grape variety (e.g., Pinot Noir). If stated, at least 75% of grapes must be that variety.",
       appliesTo: ["front"],
       categories: ["wine"],
       autoDetectable: "server",
@@ -156,8 +151,7 @@ export function getChecklistTemplate(
     {
       id: "age_statement",
       label: "Age statement",
-      description:
-        "Required for certain spirits types. States minimum aging period.",
+      description: "Required for certain spirits types. States minimum aging period.",
       appliesTo: ["front"],
       categories: ["spirits"],
       autoDetectable: "server",
@@ -191,8 +185,7 @@ export function getChecklistTemplate(
     {
       id: "country_origin",
       label: "Country of origin",
-      description:
-        'Required for imported products. Must state "Product of [Country]" or equivalent.',
+      description: 'Required for imported products. Must state "Product of [Country]" or equivalent.',
       appliesTo: ["back"],
       categories: "all",
       autoDetectable: "server",
@@ -202,8 +195,7 @@ export function getChecklistTemplate(
     {
       id: "sulfite_declaration",
       label: "Sulfite declaration",
-      description:
-        '"Contains Sulfites" — required if the product contains 10+ ppm of sulfur dioxide.',
+      description: '"Contains Sulfites" — required if the product contains 10+ ppm of sulfur dioxide.',
       appliesTo: ["back", "front"],
       categories: ["wine", "beer"],
       autoDetectable: "server",
@@ -215,8 +207,7 @@ export function getChecklistTemplate(
     {
       id: "image_sharp",
       label: "Image is sharp and in focus",
-      description:
-        "Text on the label should be clearly readable, not blurry or motion-blurred.",
+      description: "Text on the label should be clearly readable, not blurry or motion-blurred.",
       appliesTo: ["front", "back", "any"],
       categories: "all",
       autoDetectable: "browser",
@@ -226,8 +217,7 @@ export function getChecklistTemplate(
     {
       id: "image_lighting",
       label: "Even lighting, no glare",
-      description:
-        "The label should be evenly lit without harsh reflections or shadows obscuring text.",
+      description: "The label should be evenly lit without harsh reflections or shadows obscuring text.",
       appliesTo: ["front", "back", "any"],
       categories: "all",
       autoDetectable: "browser",
@@ -237,8 +227,7 @@ export function getChecklistTemplate(
     {
       id: "image_complete",
       label: "Entire label visible",
-      description:
-        "No part of the label should be cropped or hidden. All edges must be within the image.",
+      description: "No part of the label should be cropped or hidden. All edges must be within the image.",
       appliesTo: ["front", "back", "any"],
       categories: "all",
       autoDetectable: "browser",
@@ -248,8 +237,7 @@ export function getChecklistTemplate(
     {
       id: "corners_aligned",
       label: "Corner points aligned to label edges",
-      description:
-        "The 4 corner markers should tightly match the actual corners of the label.",
+      description: "The 4 corner markers should tightly match the actual corners of the label.",
       appliesTo: ["front", "back", "any"],
       categories: "all",
       autoDetectable: "browser",
@@ -258,16 +246,11 @@ export function getChecklistTemplate(
     },
   ];
 
-  return ALL_ITEMS
-    .filter((item) => {
-      const matchesPosition =
-        item.appliesTo.includes(pos as "front" | "back") ||
-        item.appliesTo.includes("any");
-      const matchesCategory =
-        item.categories === "all" || item.categories.includes(category);
-      return matchesPosition && matchesCategory;
-    })
-    .map((item) => ({ ...item, status: "unchecked" as CheckStatus }));
+  return ALL_ITEMS.filter((item) => {
+    const matchesPosition = item.appliesTo.includes(pos as "front" | "back") || item.appliesTo.includes("any");
+    const matchesCategory = item.categories === "all" || item.categories.includes(category);
+    return matchesPosition && matchesCategory;
+  }).map((item) => ({ ...item, status: "unchecked" as CheckStatus }));
 }
 
 // ---------------------------------------------------------------------------
@@ -312,13 +295,7 @@ export interface SubmissionLabel {
   checklist: ChecklistItem[];
 }
 
-export type SubmissionStatus =
-  | "draft"
-  | "submitted"
-  | "in_review"
-  | "approved"
-  | "rejected"
-  | "needs_revision";
+export type SubmissionStatus = "draft" | "submitted" | "in_review" | "approved" | "rejected" | "needs_revision";
 
 export interface Submission {
   id: string;

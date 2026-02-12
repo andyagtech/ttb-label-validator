@@ -9,8 +9,8 @@
  * Each rule returns ValidationResult[] which map to checklist items.
  */
 
-import { BeverageCategory, ChecklistItem } from "./types";
 import { ExtractedFields } from "./ocr";
+import { BeverageCategory, ChecklistItem } from "./types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -281,10 +281,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
   }
 
   // Check for statement (1) — Surgeon General / pregnancy / birth defects
-  const hasPart1 =
-    /surgeon\s+general/i.test(text) &&
-    /pregnan/i.test(text) &&
-    /birth\s+defects/i.test(text);
+  const hasPart1 = /surgeon\s+general/i.test(text) && /pregnan/i.test(text) && /birth\s+defects/i.test(text);
 
   if (!hasPart1) {
     results.push({
@@ -300,9 +297,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
 
   // Check for statement (2) — impairs driving / machinery / health problems
   const hasPart2 =
-    /impairs/i.test(text) &&
-    (/drive/i.test(text) || /operat/i.test(text)) &&
-    /health\s+problems/i.test(text);
+    /impairs/i.test(text) && (/drive/i.test(text) || /operat/i.test(text)) && /health\s+problems/i.test(text);
 
   if (!hasPart2) {
     results.push({
@@ -310,7 +305,8 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
       checklistItemId: id,
       severity: "error",
       message: "Missing or incomplete Statement (2) about impaired driving and health problems.",
-      suggestion: "Must state that consumption impairs ability to drive/operate machinery and may cause health problems.",
+      suggestion:
+        "Must state that consumption impairs ability to drive/operate machinery and may cause health problems.",
       pass: false,
       citation: citationFor("health_warning_part2"),
     });
@@ -339,10 +335,7 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
  * Acceptable: "Alcohol __% by volume" or "__% Alc. By Vol."
  * NOT acceptable: "__% ABV" — "ABV" is not an allowed abbreviation.
  */
-function validateAbvFormat(
-  text: string | undefined,
-  category: BeverageCategory
-): ValidationResult[] {
+function validateAbvFormat(text: string | undefined, category: BeverageCategory): ValidationResult[] {
   const results: ValidationResult[] = [];
   const id = "alcohol_content";
 
@@ -394,7 +387,9 @@ function validateAbvFormat(
   const validFormat1 = /alcohol\s*(?:\(alc\))?\s+\d+\.?\d*\s*%\s*by\s+vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
   const validFormat2 = /\d+\.?\d*\s*%\s*alc\.?\s*(?:\(alc\))?\s*by\s*vol\.?(?:\s*\(vol\))?/i.test(text);
   const validFormat3 = /\d+\.?\d*\s*%\s*alcohol\s*(?:\(alc\))?\s+by\s+vol(?:ume)?(?:\s*\(vol\))?/i.test(text);
-  const validFormat4 = /\d+\.?\d*\s*%\s*alc(?:ohol)?\.?\s*(?:\(alc\))?\s*\/\s*vol(?:ume)?\.?(?:\s*\(vol\))?/i.test(text);
+  const validFormat4 = /\d+\.?\d*\s*%\s*alc(?:ohol)?\.?\s*(?:\(alc\))?\s*\/\s*vol(?:ume)?\.?(?:\s*\(vol\))?/i.test(
+    text,
+  );
   const validFormat5 = /alcohol\s*(?:\(alc\))?\s*by\s+vol(?:ume)?(?:\s*\(vol\))?\s+\d+\.?\d*\s*%/i.test(text);
 
   if (validFormat1 || validFormat2 || validFormat3 || validFormat4 || validFormat5) {
@@ -437,10 +432,7 @@ function validateAbvFormat(
 // Net Contents Format
 // ---------------------------------------------------------------------------
 
-function validateNetContents(
-  text: string | undefined,
-  category: BeverageCategory
-): ValidationResult[] {
+function validateNetContents(text: string | undefined, category: BeverageCategory): ValidationResult[] {
   const results: ValidationResult[] = [];
   const id = "net_contents";
 
@@ -461,7 +453,8 @@ function validateNetContents(
   }
 
   // American units (required for malt beverages, accepted for all)
-  const hasAmericanUnit = /\d+\.?\d*\s*(fl\.?\s*oz\.?|fluid\s+ounces?|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?)/i.test(text);
+  const hasAmericanUnit =
+    /\d+\.?\d*\s*(fl\.?\s*oz\.?|fluid\s+ounces?|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?)/i.test(text);
   // Metric units (required for wine/spirits, optional for beer)
   const hasMetricUnit = /\d+\.?\d*\s*(ml|l|cl|liters?|milliliters?|centiliters?)/i.test(text);
 
@@ -482,7 +475,8 @@ function validateNetContents(
         checklistItemId: id,
         severity: "warning",
         message: "Net contents found in metric only — malt beverages must include American measure.",
-        suggestion: "Per 27 CFR 7.28, malt beverages must state net contents in American measure (FL OZ, PINT, QUART, GALLON). Metric may also appear.",
+        suggestion:
+          "Per 27 CFR 7.28, malt beverages must state net contents in American measure (FL OZ, PINT, QUART, GALLON). Metric may also appear.",
         pass: false,
         citation: citationFor("net_contents_metric_only"),
       });
@@ -531,7 +525,7 @@ function validateNetContents(
 function validatePresence(
   fieldValue: string | undefined,
   checklistItemId: string,
-  fieldLabel: string
+  fieldLabel: string,
 ): ValidationResult {
   if (fieldValue && fieldValue.trim().length > 0) {
     return {
@@ -558,55 +552,181 @@ function validatePresence(
 // ---------------------------------------------------------------------------
 
 const BEER_DESIGNATIONS = [
-  "ale", "beer", "lager", "stout", "porter", "malt liquor", "malt beverage",
-  "india pale ale", "ipa", "pale ale", "amber ale", "brown ale", "blonde ale",
-  "golden ale", "cream ale", "scotch ale", "old ale", "barley wine", "barleywine",
-  "wheat beer", "hefeweizen", "witbier", "weissbier", "dunkelweizen",
-  "pilsner", "pilsener", "bock", "doppelbock", "maibock", "eisbock",
-  "dunkel", "schwarzbier", "vienna lager", "oktoberfest", "märzen", "marzen",
-  "kölsch", "kolsch", "altbier", "rauchbier",
-  "saison", "farmhouse ale", "belgian ale", "tripel", "dubbel", "quadrupel",
-  "sour ale", "gose", "berliner weisse", "lambic", "gueuze", "flanders red",
-  "hard seltzer", "hard cider", "flavored malt beverage", "malt cooler",
-  "near beer", "non-alcoholic malt beverage",
+  "ale",
+  "beer",
+  "lager",
+  "stout",
+  "porter",
+  "malt liquor",
+  "malt beverage",
+  "india pale ale",
+  "ipa",
+  "pale ale",
+  "amber ale",
+  "brown ale",
+  "blonde ale",
+  "golden ale",
+  "cream ale",
+  "scotch ale",
+  "old ale",
+  "barley wine",
+  "barleywine",
+  "wheat beer",
+  "hefeweizen",
+  "witbier",
+  "weissbier",
+  "dunkelweizen",
+  "pilsner",
+  "pilsener",
+  "bock",
+  "doppelbock",
+  "maibock",
+  "eisbock",
+  "dunkel",
+  "schwarzbier",
+  "vienna lager",
+  "oktoberfest",
+  "märzen",
+  "marzen",
+  "kölsch",
+  "kolsch",
+  "altbier",
+  "rauchbier",
+  "saison",
+  "farmhouse ale",
+  "belgian ale",
+  "tripel",
+  "dubbel",
+  "quadrupel",
+  "sour ale",
+  "gose",
+  "berliner weisse",
+  "lambic",
+  "gueuze",
+  "flanders red",
+  "hard seltzer",
+  "hard cider",
+  "flavored malt beverage",
+  "malt cooler",
+  "near beer",
+  "non-alcoholic malt beverage",
 ];
 
 const WINE_DESIGNATIONS = [
-  "red wine", "white wine", "rosé", "rose", "blush wine",
-  "sparkling wine", "champagne", "prosecco", "cava", "crémant", "cremant",
-  "dessert wine", "fortified wine", "port", "sherry", "madeira", "marsala",
-  "vermouth", "aperitif wine",
-  "table wine", "light wine",
-  "cabernet sauvignon", "merlot", "pinot noir", "syrah", "shiraz",
-  "zinfandel", "malbec", "tempranillo", "sangiovese", "grenache", "nebbiolo",
-  "chardonnay", "sauvignon blanc", "riesling", "pinot grigio", "pinot gris",
-  "gewürztraminer", "gewurztraminer", "viognier", "chenin blanc", "semillon",
-  "muscat", "moscato", "moscatel",
-  "fruit wine", "apple wine", "berry wine", "honey wine", "mead",
-  "sake", "rice wine",
+  "red wine",
+  "white wine",
+  "rosé",
+  "rose",
+  "blush wine",
+  "sparkling wine",
+  "champagne",
+  "prosecco",
+  "cava",
+  "crémant",
+  "cremant",
+  "dessert wine",
+  "fortified wine",
+  "port",
+  "sherry",
+  "madeira",
+  "marsala",
+  "vermouth",
+  "aperitif wine",
+  "table wine",
+  "light wine",
+  "cabernet sauvignon",
+  "merlot",
+  "pinot noir",
+  "syrah",
+  "shiraz",
+  "zinfandel",
+  "malbec",
+  "tempranillo",
+  "sangiovese",
+  "grenache",
+  "nebbiolo",
+  "chardonnay",
+  "sauvignon blanc",
+  "riesling",
+  "pinot grigio",
+  "pinot gris",
+  "gewürztraminer",
+  "gewurztraminer",
+  "viognier",
+  "chenin blanc",
+  "semillon",
+  "muscat",
+  "moscato",
+  "moscatel",
+  "fruit wine",
+  "apple wine",
+  "berry wine",
+  "honey wine",
+  "mead",
+  "sake",
+  "rice wine",
 ];
 
 const SPIRITS_DESIGNATIONS = [
-  "whiskey", "whisky", "bourbon", "rye whiskey", "corn whiskey",
-  "kentucky straight bourbon", "kentucky straight bourbon whiskey",
-  "straight bourbon whiskey", "straight bourbon", "straight rye whiskey",
-  "tennessee whiskey", "scotch whisky", "scotch", "irish whiskey",
-  "canadian whisky", "blended whiskey", "blended whisky",
-  "single malt", "single malt scotch whisky", "single malt whiskey",
-  "vodka", "flavored vodka",
-  "gin", "london dry gin", "dry gin", "old tom gin",
-  "rum", "white rum", "gold rum", "dark rum", "aged rum", "spiced rum",
-  "tequila", "blanco tequila", "reposado tequila", "añejo tequila", "anejo tequila",
-  "mezcal", "sotol", "raicilla",
-  "brandy", "cognac", "armagnac", "grappa", "pisco", "eau de vie",
-  "liqueur", "cordial", "cream liqueur",
-  "absinthe", "aquavit", "baijiu", "cachaça", "cachaca", "soju", "shochu",
+  "whiskey",
+  "whisky",
+  "bourbon",
+  "rye whiskey",
+  "corn whiskey",
+  "kentucky straight bourbon",
+  "kentucky straight bourbon whiskey",
+  "straight bourbon whiskey",
+  "straight bourbon",
+  "straight rye whiskey",
+  "tennessee whiskey",
+  "scotch whisky",
+  "scotch",
+  "irish whiskey",
+  "canadian whisky",
+  "blended whiskey",
+  "blended whisky",
+  "single malt",
+  "single malt scotch whisky",
+  "single malt whiskey",
+  "vodka",
+  "flavored vodka",
+  "gin",
+  "london dry gin",
+  "dry gin",
+  "old tom gin",
+  "rum",
+  "white rum",
+  "gold rum",
+  "dark rum",
+  "aged rum",
+  "spiced rum",
+  "tequila",
+  "blanco tequila",
+  "reposado tequila",
+  "añejo tequila",
+  "anejo tequila",
+  "mezcal",
+  "sotol",
+  "raicilla",
+  "brandy",
+  "cognac",
+  "armagnac",
+  "grappa",
+  "pisco",
+  "eau de vie",
+  "liqueur",
+  "cordial",
+  "cream liqueur",
+  "absinthe",
+  "aquavit",
+  "baijiu",
+  "cachaça",
+  "cachaca",
+  "soju",
+  "shochu",
 ];
 
-function validateClassType(
-  text: string | undefined,
-  category: BeverageCategory
-): ValidationResult[] {
+function validateClassType(text: string | undefined, category: BeverageCategory): ValidationResult[] {
   const results: ValidationResult[] = [];
   const id = "class_type";
 
@@ -614,9 +734,7 @@ function validateClassType(
 
   const normalized = text.toLowerCase().trim();
   const designations =
-    category === "beer" ? BEER_DESIGNATIONS
-    : category === "wine" ? WINE_DESIGNATIONS
-    : SPIRITS_DESIGNATIONS;
+    category === "beer" ? BEER_DESIGNATIONS : category === "wine" ? WINE_DESIGNATIONS : SPIRITS_DESIGNATIONS;
 
   const matched = designations.some((d) => normalized.includes(d));
 
@@ -653,7 +771,10 @@ function validateClassType(
         checklistItemId: id,
         severity: "warning",
         message: `"${text}" is not in the standard TTB designation list for ${category}. This may still be valid — verify against TTB guidelines.`,
-        suggestion: `Common ${category} designations include: ${designations.slice(0, 6).map(d => `"${d}"`).join(", ")}, etc.`,
+        suggestion: `Common ${category} designations include: ${designations
+          .slice(0, 6)
+          .map((d) => `"${d}"`)
+          .join(", ")}, etc.`,
         pass: false,
         citation: citationFor("class_type_unrecognized"),
       });
@@ -670,7 +791,7 @@ function validateClassType(
 function validateCrossFieldRules(
   fields: ExtractedFields,
   category: BeverageCategory,
-  labelPosition: "front" | "back" | "other"
+  labelPosition: "front" | "back" | "other",
 ): ValidationResult[] {
   const results: ValidationResult[] = [];
 
@@ -714,7 +835,7 @@ function validateCrossFieldRules(
 export function validateExtractedFields(
   fields: ExtractedFields,
   category: BeverageCategory,
-  labelPosition: "front" | "back" | "other"
+  labelPosition: "front" | "back" | "other",
 ): ValidationResult[] {
   const results: ValidationResult[] = [];
 
@@ -779,10 +900,7 @@ export function validateExtractedFields(
  * Apply validation results to checklist items.
  * Updates status and note fields based on rule outcomes.
  */
-export function applyValidationResults(
-  checklist: ChecklistItem[],
-  results: ValidationResult[]
-): ChecklistItem[] {
+export function applyValidationResults(checklist: ChecklistItem[], results: ValidationResult[]): ChecklistItem[] {
   return checklist.map((item) => {
     const itemResults = results.filter((r) => r.checklistItemId === item.id);
     if (itemResults.length === 0) return item;

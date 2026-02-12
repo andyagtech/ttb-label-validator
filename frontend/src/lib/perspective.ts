@@ -21,10 +21,7 @@ export interface Point {
  * Compute the 3x3 homography matrix that maps src points to dst points.
  * Uses the DLT (Direct Linear Transform) algorithm.
  */
-export function computeHomography(
-  src: [Point, Point, Point, Point],
-  dst: [Point, Point, Point, Point]
-): number[] {
+export function computeHomography(src: [Point, Point, Point, Point], dst: [Point, Point, Point, Point]): number[] {
   // Build the 8x8 matrix A for Ah = 0
   const A: number[][] = [];
   for (let i = 0; i < 4; i++) {
@@ -92,7 +89,7 @@ export function applyPerspectiveTransform(
   sourceCanvas: HTMLCanvasElement,
   corners: [Point, Point, Point, Point],
   outputWidth: number,
-  outputHeight: number
+  outputHeight: number,
 ): HTMLCanvasElement {
   const output = document.createElement("canvas");
   output.width = outputWidth;
@@ -101,12 +98,7 @@ export function applyPerspectiveTransform(
   const outData = ctx.createImageData(outputWidth, outputHeight);
 
   const srcCtx = sourceCanvas.getContext("2d")!;
-  const srcData = srcCtx.getImageData(
-    0,
-    0,
-    sourceCanvas.width,
-    sourceCanvas.height
-  );
+  const srcData = srcCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
 
   // Destination rectangle corners (TL, TR, BR, BL)
   const dst: [Point, Point, Point, Point] = [
@@ -151,7 +143,7 @@ export function applyPerspectiveTransform(
           srcData.data[idx00 + c] * (1 - fx) * (1 - fy) +
             srcData.data[idx10 + c] * fx * (1 - fy) +
             srcData.data[idx01 + c] * (1 - fx) * fy +
-            srcData.data[idx11 + c] * fx * fy
+            srcData.data[idx11 + c] * fx * fy,
         );
       }
     }
@@ -181,15 +173,10 @@ export function applyCylindricalUnwrap(
   outputHeight: number,
   curvature: number = 0.5,
   axis: CylinderAxis = "vertical",
-  crossCurvature: number = 0
+  crossCurvature: number = 0,
 ): HTMLCanvasElement {
   // Step 1: Flat homography to get a rough rectangle
-  const intermediate = applyPerspectiveTransform(
-    sourceCanvas,
-    corners,
-    outputWidth,
-    outputHeight
-  );
+  const intermediate = applyPerspectiveTransform(sourceCanvas, corners, outputWidth, outputHeight);
 
   // Step 2: Cylindrical correction on the intermediate result
   const output = document.createElement("canvas");
@@ -241,8 +228,7 @@ export function applyCylindricalUnwrap(
       const x1 = x0 + 1;
       const y1 = y0 + 1;
 
-      if (x0 < 0 || y0 < 0 || x1 >= outputWidth || y1 >= outputHeight)
-        continue;
+      if (x0 < 0 || y0 < 0 || x1 >= outputWidth || y1 >= outputHeight) continue;
 
       const fx = sx - x0;
       const fy = sy - y0;
@@ -258,7 +244,7 @@ export function applyCylindricalUnwrap(
           intData.data[idx00 + c] * (1 - fx) * (1 - fy) +
             intData.data[idx10 + c] * fx * (1 - fy) +
             intData.data[idx01 + c] * (1 - fx) * fy +
-            intData.data[idx11 + c] * fx * fy
+            intData.data[idx11 + c] * fx * fy,
         );
       }
     }
@@ -279,37 +265,19 @@ export function applyTransform(
   mode: SurfaceMode = "flat",
   curvature: number = 0.5,
   axis: CylinderAxis = "vertical",
-  crossCurvature: number = 0
+  crossCurvature: number = 0,
 ): HTMLCanvasElement {
   if (mode === "curved") {
-    return applyCylindricalUnwrap(
-      sourceCanvas,
-      corners,
-      outputWidth,
-      outputHeight,
-      curvature,
-      axis,
-      crossCurvature
-    );
+    return applyCylindricalUnwrap(sourceCanvas, corners, outputWidth, outputHeight, curvature, axis, crossCurvature);
   }
-  return applyPerspectiveTransform(
-    sourceCanvas,
-    corners,
-    outputWidth,
-    outputHeight
-  );
+  return applyPerspectiveTransform(sourceCanvas, corners, outputWidth, outputHeight);
 }
 
 /**
  * Generate points along the curved top/bottom edges for visualization.
  * Returns an array of points that trace the barrel-distorted edge.
  */
-export function getCurvedEdgePoints(
-  p1: Point,
-  p2: Point,
-  curvature: number,
-  numPoints: number = 30
-): Point[] {
+export function getCurvedEdgePoints(p1: Point, p2: Point, curvature: number, numPoints: number = 30): Point[] {
   const alpha = Math.max(0.05, Math.min(1.5, curvature));
   const sinAlpha = Math.sin(alpha);
   const points: Point[] = [];
@@ -338,7 +306,7 @@ export function getCurvedGrid(
   axis: CylinderAxis = "vertical",
   gridRows: number = 8,
   gridCols: number = 8,
-  crossCurvature: number = 0
+  crossCurvature: number = 0,
 ): Point[][] {
   const alpha = Math.max(0.05, Math.min(1.5, curvature));
   const sinAlpha = Math.sin(alpha);
@@ -402,28 +370,16 @@ export function getCurvedGrid(
  */
 export function computeOutputDimensions(
   corners: [Point, Point, Point, Point],
-  maxDimension: number = 2000
+  maxDimension: number = 2000,
 ): { width: number; height: number } {
   // Average width = avg of top edge and bottom edge
-  const topWidth = Math.hypot(
-    corners[1].x - corners[0].x,
-    corners[1].y - corners[0].y
-  );
-  const bottomWidth = Math.hypot(
-    corners[2].x - corners[3].x,
-    corners[2].y - corners[3].y
-  );
+  const topWidth = Math.hypot(corners[1].x - corners[0].x, corners[1].y - corners[0].y);
+  const bottomWidth = Math.hypot(corners[2].x - corners[3].x, corners[2].y - corners[3].y);
   const avgWidth = (topWidth + bottomWidth) / 2;
 
   // Average height = avg of left edge and right edge
-  const leftHeight = Math.hypot(
-    corners[3].x - corners[0].x,
-    corners[3].y - corners[0].y
-  );
-  const rightHeight = Math.hypot(
-    corners[2].x - corners[1].x,
-    corners[2].y - corners[1].y
-  );
+  const leftHeight = Math.hypot(corners[3].x - corners[0].x, corners[3].y - corners[0].y);
+  const rightHeight = Math.hypot(corners[2].x - corners[1].x, corners[2].y - corners[1].y);
   const avgHeight = (leftHeight + rightHeight) / 2;
 
   // Scale to fit within maxDimension

@@ -26,18 +26,17 @@ describe("fetchExplanation", () => {
       }),
     });
 
-    const result = await fetchExplanation(
-      "health_warning_caps",
-      "health_warning",
-      "Government Warning: ...",
-    );
+    const result = await fetchExplanation("health_warning_caps", "health_warning", "Government Warning: ...");
 
     expect(result).toBe("The health warning must be in ALL CAPS per 27 CFR Part 16.");
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith("/api/explain", expect.objectContaining({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    }));
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/explain",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
   });
 
   it("caches results — second call with same args does not fetch", async () => {

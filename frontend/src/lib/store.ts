@@ -6,14 +6,7 @@
  * database (Postgres, DynamoDB, etc.).
  */
 
-import {
-  Submission,
-  SubmissionStatus,
-  ReviewRecord,
-  ReviewFinding,
-  BeverageCategory,
-  SubmissionLabel,
-} from "./types";
+import { Submission, SubmissionStatus, ReviewRecord, ReviewFinding, BeverageCategory, SubmissionLabel } from "./types";
 
 // ---------------------------------------------------------------------------
 // Store
@@ -86,10 +79,7 @@ export function createSubmission(data: {
 }
 
 /** Update a submission's status (e.g. "in_review" → "approved"). */
-export function updateSubmissionStatus(
-  id: string,
-  status: SubmissionStatus
-): Submission | undefined {
+export function updateSubmissionStatus(id: string, status: SubmissionStatus): Submission | undefined {
   ensureSeeded();
   const sub = submissions.find((s) => s.id === id);
   if (!sub) return undefined;
@@ -107,10 +97,7 @@ export function updateSubmissionStatus(
  *   needs_revision → "needs_revision"
  *   escalate       → "in_review" (stays in review for senior agent)
  */
-export function addReview(
-  submissionId: string,
-  review: ReviewRecord
-): Submission | undefined {
+export function addReview(submissionId: string, review: ReviewRecord): Submission | undefined {
   ensureSeeded();
   const sub = submissions.find((s) => s.id === submissionId);
   if (!sub) return undefined;
@@ -148,12 +135,12 @@ function makeLabelSvg(
   textColor: string,
   productName: string,
   labelType: string,
-  fields: string[]
+  fields: string[],
 ): string {
   const lines = fields
     .map(
       (f, i) =>
-        `<text x="200" y="${130 + i * 24}" text-anchor="middle" font-size="13" fill="${textColor}" opacity="0.8">${f}</text>`
+        `<text x="200" y="${130 + i * 24}" text-anchor="middle" font-size="13" fill="${textColor}" opacity="0.8">${f}</text>`,
     )
     .join("");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
@@ -485,48 +472,66 @@ function generateMockSubmissions(): Submission[] {
       productName: m.productName,
       labels: m.labels.map((l, li) => {
         const fieldTexts = l.checklistSnapshot.map((c) => {
-          const val = m.ocrFields?.[
-            c.id === "health_warning" ? "healthWarning" :
-            c.id === "name_address" ? "nameAddress" :
-            c.id === "country_origin" ? "countryOfOrigin" :
-            c.id === "sulfite_declaration" ? "sulfiteDeclaration" :
-            c.id === "alcohol_content" ? "alcoholContent" :
-            c.id === "net_contents" ? "netContents" :
-            c.id === "brand_name" ? "brandName" :
-            c.id === "class_type" ? "classType" :
-            c.id
-          ];
+          const val =
+            m.ocrFields?.[
+              c.id === "health_warning"
+                ? "healthWarning"
+                : c.id === "name_address"
+                  ? "nameAddress"
+                  : c.id === "country_origin"
+                    ? "countryOfOrigin"
+                    : c.id === "sulfite_declaration"
+                      ? "sulfiteDeclaration"
+                      : c.id === "alcohol_content"
+                        ? "alcoholContent"
+                        : c.id === "net_contents"
+                          ? "netContents"
+                          : c.id === "brand_name"
+                            ? "brandName"
+                            : c.id === "class_type"
+                              ? "classType"
+                              : c.id
+            ];
           return val ? `${c.label}: ${val}` : c.label;
         });
         const imgUrl = makeLabelSvg(bgC, txtC, m.productName, l.slotName, fieldTexts);
         return {
-        slotId: `slot-${idx}-${li}`,
-        slotName: l.slotName,
-        originalImageUrl: imgUrl,
-        correctedImageUrl: imgUrl,
-        checklist: l.checklistSnapshot.map((c) => ({
-          id: c.id,
-          label: c.label,
-          description: "",
-          appliesTo: ["front"] as ("front" | "back" | "any")[],
-          categories: "all" as const,
-          autoDetectable: "both" as const,
-          mandatory: true,
-          extractable: true,
-          status: c.status as "auto_pass" | "auto_fail" | "unchecked",
-          detectedValue: m.ocrFields?.[
-            c.id === "health_warning" ? "healthWarning" :
-            c.id === "name_address" ? "nameAddress" :
-            c.id === "country_origin" ? "countryOfOrigin" :
-            c.id === "sulfite_declaration" ? "sulfiteDeclaration" :
-            c.id === "alcohol_content" ? "alcoholContent" :
-            c.id === "net_contents" ? "netContents" :
-            c.id === "brand_name" ? "brandName" :
-            c.id === "class_type" ? "classType" :
-            c.id
-          ],
-        })),
-      };
+          slotId: `slot-${idx}-${li}`,
+          slotName: l.slotName,
+          originalImageUrl: imgUrl,
+          correctedImageUrl: imgUrl,
+          checklist: l.checklistSnapshot.map((c) => ({
+            id: c.id,
+            label: c.label,
+            description: "",
+            appliesTo: ["front"] as ("front" | "back" | "any")[],
+            categories: "all" as const,
+            autoDetectable: "both" as const,
+            mandatory: true,
+            extractable: true,
+            status: c.status as "auto_pass" | "auto_fail" | "unchecked",
+            detectedValue:
+              m.ocrFields?.[
+                c.id === "health_warning"
+                  ? "healthWarning"
+                  : c.id === "name_address"
+                    ? "nameAddress"
+                    : c.id === "country_origin"
+                      ? "countryOfOrigin"
+                      : c.id === "sulfite_declaration"
+                        ? "sulfiteDeclaration"
+                        : c.id === "alcohol_content"
+                          ? "alcoholContent"
+                          : c.id === "net_contents"
+                            ? "netContents"
+                            : c.id === "brand_name"
+                              ? "brandName"
+                              : c.id === "class_type"
+                                ? "classType"
+                                : c.id
+              ],
+          })),
+        };
       }),
       reviews: [],
       serverValidation: m.ocrFields

@@ -9,12 +9,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSubmission, updateSubmissionStatus, addReview } from "@/lib/store";
 import { ReviewRecord } from "@/lib/types";
+import { log } from "@/lib/logger";
 
 /** GET /api/queue/{id} — return full submission detail including labels, reviews, and OCR data. */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const sub = getSubmission(params.id);
   if (!sub) {
     return NextResponse.json({ error: "Submission not found" }, { status: 404 });
@@ -23,10 +21,7 @@ export async function GET(
 }
 
 /** PATCH /api/queue/{id} — update a submission's status (e.g. "submitted" → "in_review"). */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await request.json();
     const { status } = body;
@@ -41,7 +36,8 @@ export async function PATCH(
     }
 
     return NextResponse.json({ submission: sub });
-  } catch {
+  } catch (err) {
+    log.error("QueueAPI", `PATCH /api/queue/${params.id} failed`, err);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }
@@ -52,20 +48,14 @@ export async function PATCH(
  * Creates a ReviewRecord and auto-transitions the submission status
  * based on the decision (approve → approved, reject → rejected, etc.).
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await request.json();
     const { decision, reviewerId, notes, findings } = body;
 
     // Both decision and reviewerId are required to create a valid review
     if (!decision || !reviewerId) {
-      return NextResponse.json(
-        { error: "decision and reviewerId are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "decision and reviewerId are required" }, { status: 400 });
     }
 
     const review: ReviewRecord = {
@@ -87,7 +77,8 @@ export async function POST(
     }
 
     return NextResponse.json({ submission: sub, review });
-  } catch {
+  } catch (err) {
+    log.error("QueueAPI", `POST /api/queue/${params.id} review failed`, err);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }

@@ -14,13 +14,7 @@
  * point at 0° or 90°. We maximize the fraction of strong edges at those angles.
  */
 
-import {
-  Point,
-  CylinderAxis,
-  SurfaceMode,
-  applyPerspectiveTransform,
-  computeOutputDimensions,
-} from "./perspective";
+import { Point, CylinderAxis, SurfaceMode, applyPerspectiveTransform, computeOutputDimensions } from "./perspective";
 
 // Low-res size for fast parameter search
 const SEARCH_MAX_DIM = 300;
@@ -33,7 +27,7 @@ function applyBarrelOnly(
   source: HTMLCanvasElement,
   curvature: number,
   axis: CylinderAxis,
-  crossCurvature: number = 0
+  crossCurvature: number = 0,
 ): HTMLCanvasElement {
   const w = source.width;
   const h = source.height;
@@ -93,7 +87,7 @@ function applyBarrelOnly(
           srcData.data[i00 + c] * (1 - fx) * (1 - fy) +
             srcData.data[i10 + c] * fx * (1 - fy) +
             srcData.data[i01 + c] * (1 - fx) * fy +
-            srcData.data[i11 + c] * fx * fy
+            srcData.data[i11 + c] * fx * fy,
         );
       }
     }
@@ -120,10 +114,7 @@ function computeHVScore(canvas: HTMLCanvasElement): number {
   // Grayscale
   const gray = new Float32Array(w * h);
   for (let i = 0; i < w * h; i++) {
-    gray[i] =
-      0.299 * data[i * 4] +
-      0.587 * data[i * 4 + 1] +
-      0.114 * data[i * 4 + 2];
+    gray[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
   }
 
   let hvWeighted = 0;
@@ -159,8 +150,7 @@ function computeHVScore(canvas: HTMLCanvasElement): number {
       totalWeighted += mag;
 
       // Gradient angle: atan2(|gy|, |gx|) → 0° = vertical edge, 90° = horizontal edge
-      const angle =
-        Math.atan2(Math.abs(gy), Math.abs(gx)) * (180 / Math.PI);
+      const angle = Math.atan2(Math.abs(gy), Math.abs(gx)) * (180 / Math.PI);
 
       // Near 0° (vertical edge) or near 90° (horizontal edge) = well-aligned
       if (angle < ANGLE_TOLERANCE || angle > 90 - ANGLE_TOLERANCE) {
@@ -193,25 +183,16 @@ export interface AutoFitResult {
  */
 export function autoEstimateCurvature(
   sourceCanvas: HTMLCanvasElement,
-  corners: [Point, Point, Point, Point]
+  corners: [Point, Point, Point, Point],
 ): AutoFitResult {
   // 1. Compute low-res output dimensions
   const { width: origW, height: origH } = computeOutputDimensions(corners);
-  const scale = Math.min(
-    SEARCH_MAX_DIM / origW,
-    SEARCH_MAX_DIM / origH,
-    1
-  );
+  const scale = Math.min(SEARCH_MAX_DIM / origW, SEARCH_MAX_DIM / origH, 1);
   const searchW = Math.max(50, Math.round(origW * scale));
   const searchH = Math.max(50, Math.round(origH * scale));
 
   // 2. Perspective correction at low res (flat — no barrel)
-  const flatCanvas = applyPerspectiveTransform(
-    sourceCanvas,
-    corners,
-    searchW,
-    searchH
-  );
+  const flatCanvas = applyPerspectiveTransform(sourceCanvas, corners, searchW, searchH);
 
   // 3. Score the flat version (baseline)
   const flatScore = computeHVScore(flatCanvas);
@@ -225,7 +206,7 @@ export function autoEstimateCurvature(
   const COARSE_STEP = 0.05;
 
   for (const axis of axes) {
-    for (let c = 0.05; c <= 0.80; c += COARSE_STEP) {
+    for (let c = 0.05; c <= 0.8; c += COARSE_STEP) {
       const corrected = applyBarrelOnly(flatCanvas, c, axis);
       const score = computeHVScore(corrected);
       if (score > bestScore) {
@@ -240,7 +221,7 @@ export function autoEstimateCurvature(
   if (bestCurvature > 0) {
     const FINE_STEP = 0.01;
     const lo = Math.max(0.01, bestCurvature - COARSE_STEP);
-    const hi = Math.min(0.90, bestCurvature + COARSE_STEP);
+    const hi = Math.min(0.9, bestCurvature + COARSE_STEP);
     for (let c = lo; c <= hi; c += FINE_STEP) {
       const corrected = applyBarrelOnly(flatCanvas, c, bestAxis);
       const score = computeHVScore(corrected);
@@ -254,13 +235,8 @@ export function autoEstimateCurvature(
   // 6. Quick cross-curvature search
   let bestCross = 0;
   if (bestCurvature > 0.03) {
-    for (let cc = 0.03; cc <= 0.40; cc += 0.03) {
-      const corrected = applyBarrelOnly(
-        flatCanvas,
-        bestCurvature,
-        bestAxis,
-        cc
-      );
+    for (let cc = 0.03; cc <= 0.4; cc += 0.03) {
+      const corrected = applyBarrelOnly(flatCanvas, bestCurvature, bestAxis, cc);
       const score = computeHVScore(corrected);
       if (score > bestScore) {
         bestScore = score;
@@ -273,12 +249,7 @@ export function autoEstimateCurvature(
       const lo = Math.max(0.01, bestCross - 0.03);
       const hi = Math.min(0.45, bestCross + 0.03);
       for (let cc = lo; cc <= hi; cc += 0.01) {
-        const corrected = applyBarrelOnly(
-          flatCanvas,
-          bestCurvature,
-          bestAxis,
-          cc
-        );
+        const corrected = applyBarrelOnly(flatCanvas, bestCurvature, bestAxis, cc);
         const score = computeHVScore(corrected);
         if (score > bestScore) {
           bestScore = score;
@@ -290,8 +261,7 @@ export function autoEstimateCurvature(
 
   // 7. Determine if curvature correction is worthwhile
   const isFlat = bestCurvature < 0.03;
-  const improvement =
-    flatScore > 0 ? ((bestScore - flatScore) / flatScore) * 100 : 0;
+  const improvement = flatScore > 0 ? ((bestScore - flatScore) / flatScore) * 100 : 0;
 
   return {
     curvature: Math.round(bestCurvature * 100) / 100,

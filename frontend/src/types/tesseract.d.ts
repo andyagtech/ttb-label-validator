@@ -14,6 +14,6 @@ declare module "tesseract.js" {
   export function recognize(
     image: string | HTMLCanvasElement | HTMLImageElement | Blob | File,
     lang?: string,
-    options?: { logger?: (m: Logger) => void }
+    options?: { logger?: (m: Logger) => void },
   ): Promise<RecognizeResult>;
 }

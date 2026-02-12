@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAllAgents, createAgent } from "@/lib/agentStore";
+import { log } from "@/lib/logger";
 
 /** GET /api/admin/agents — return all agents with their profiles and stats. */
 export async function GET() {
@@ -22,10 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields before creating
     if (!name || !title || !email) {
-      return NextResponse.json(
-        { error: "name, title, and email are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "name, title, and email are required" }, { status: 400 });
     }
 
     const agent = createAgent({
@@ -39,7 +37,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ agent }, { status: 201 });
-  } catch {
+  } catch (err) {
+    log.error("AdminAPI", "POST /api/admin/agents failed", err);
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }

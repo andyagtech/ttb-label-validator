@@ -14,8 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SAMPLE_LABELS, type LabelGeneration } from "@/lib/sampleData";
 
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
 
 // ---------------------------------------------------------------------------
 // Prompt builder
@@ -50,7 +49,8 @@ function buildPrompt(params: LabelParams): string {
   const categoryStyle: Record<string, string> = {
     beer: "a craft beer label with a modern, colorful design on a bottle or can. Include hops or grain artwork.",
     wine: "an elegant wine label with a classic vineyard illustration, serif fonts, and a refined color palette on a wine bottle.",
-    spirits: "a premium distilled spirits label with bold typography, a sophisticated design, gold accents, and a quality seal on a liquor bottle.",
+    spirits:
+      "a premium distilled spirits label with bold typography, a sophisticated design, gold accents, and a quality seal on a liquor bottle.",
   };
 
   const renderStyle = params.renderStyle || "bottle";
@@ -59,14 +59,16 @@ function buildPrompt(params: LabelParams): string {
   const flatStyle: Record<string, string> = {
     beer: "a flat, print-ready craft beer label design with a modern, colorful layout. Include hops or grain artwork. Show ONLY the label as a flat rectangle with no bottle or can — like a design file ready for printing.",
     wine: "a flat, print-ready wine label design with an elegant vineyard illustration, serif fonts, and a refined color palette. Show ONLY the label as a flat rectangle — like a design proof ready for printing.",
-    spirits: "a flat, print-ready premium spirits label design with bold typography, gold accents, and a quality seal. Show ONLY the label as a flat rectangle — like a design file ready for printing.",
+    spirits:
+      "a flat, print-ready premium spirits label design with bold typography, gold accents, and a quality seal. Show ONLY the label as a flat rectangle — like a design file ready for printing.",
   };
 
   const containerStyle: Record<string, Record<string, string>> = {
     bottle: {
       beer: "a craft beer label with a modern, colorful design on a beer bottle. Include hops or grain artwork.",
       wine: "an elegant wine label with a classic vineyard illustration, serif fonts, and a refined color palette on a wine bottle.",
-      spirits: "a premium distilled spirits label with bold typography, a sophisticated design, gold accents, and a quality seal on a liquor bottle.",
+      spirits:
+        "a premium distilled spirits label with bold typography, a sophisticated design, gold accents, and a quality seal on a liquor bottle.",
     },
     can: {
       beer: "a craft beer label with a modern, colorful, wrap-around design on an aluminum beer can.",
@@ -75,9 +77,10 @@ function buildPrompt(params: LabelParams): string {
     },
   };
 
-  const styleDesc = renderStyle === "flat"
-    ? (flatStyle[category] || flatStyle.spirits)
-    : ((containerStyle[renderStyle] || containerStyle.bottle)[category] || containerStyle.bottle.spirits);
+  const styleDesc =
+    renderStyle === "flat"
+      ? flatStyle[category] || flatStyle.spirits
+      : (containerStyle[renderStyle] || containerStyle.bottle)[category] || containerStyle.bottle.spirits;
 
   if (labelType === "front") {
     let prompt = `Generate a photorealistic ${renderStyle === "flat" ? "image" : "product photograph"} of ${styleDesc}
@@ -101,11 +104,12 @@ The text must be clearly legible and photographed straight-on. The label should 
   // Back label
   const govWarning = `GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.`;
 
-  const backContainer = renderStyle === "flat"
-    ? "a flat, print-ready back label design. Show ONLY the label as a flat rectangle — no bottle or can"
-    : renderStyle === "can"
-    ? `the BACK of a ${category} aluminum can`
-    : `the BACK label of a ${category} bottle`;
+  const backContainer =
+    renderStyle === "flat"
+      ? "a flat, print-ready back label design. Show ONLY the label as a flat rectangle — no bottle or can"
+      : renderStyle === "can"
+        ? `the BACK of a ${category} aluminum can`
+        : `the BACK label of a ${category} bottle`;
 
   let prompt = `Generate a photorealistic ${renderStyle === "flat" ? "image" : "photograph"} of ${backContainer}. The back label should be a simple white or cream rectangular label with black text, clearly readable.
 
@@ -132,9 +136,7 @@ The text must be clearly legible. Photographed straight-on with studio lighting.
 // Presets — derived from real TTB COLA records (see sampleData.ts)
 // ---------------------------------------------------------------------------
 
-const PRESETS: Record<string, LabelParams> = Object.fromEntries(
-  SAMPLE_LABELS.map((s) => [s.key, { ...s.generation }])
-);
+const PRESETS: Record<string, LabelParams> = Object.fromEntries(SAMPLE_LABELS.map((s) => [s.key, { ...s.generation }]));
 
 // ---------------------------------------------------------------------------
 // Handler
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: "GEMINI_API_KEY not configured. Set it in your environment variables.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -175,7 +177,7 @@ export async function POST(request: NextRequest) {
         category: fields.category || "spirits",
         brandName: fields.brandName || "SAMPLE BRAND",
         classType: fields.classType || "Distilled Spirits",
-        alcoholContent: fields.alcoholContent || '40% Alc./Vol.',
+        alcoholContent: fields.alcoholContent || "40% Alc./Vol.",
         netContents: fields.netContents || "750 mL",
         appellation: fields.appellation,
         vintage: fields.vintage,
@@ -211,7 +213,7 @@ export async function POST(request: NextRequest) {
           error: `Gemini API error: ${geminiResponse.status} ${errText}`,
           prompt,
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -238,7 +240,7 @@ export async function POST(request: NextRequest) {
           error: textResponse || "No image was generated. The model may have declined the request.",
           prompt,
         },
-        { status: 422 }
+        { status: 422 },
       );
     }
 
@@ -254,7 +256,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: `Server error: ${err instanceof Error ? err.message : "Unknown"}`,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -17,6 +17,7 @@ import {
 import WalkthroughPanel from "@/components/WalkthroughPanel";
 import { AGENT_QUEUE_STEPS, AGENT_REVIEW_STEPS } from "@/components/AgentWalkthroughSteps";
 import { STATUS_STYLES, CATEGORY_TEXT, timeAgo, cls } from "@/lib/styles";
+import type { SubmissionStatus } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Types (matches API response)
@@ -26,7 +27,7 @@ interface QueueItem {
   id: string;
   productName: string;
   beverageCategory: "beer" | "wine" | "spirits";
-  status: string;
+  status: SubmissionStatus;
   submitterId: string;
   createdAt: string;
   updatedAt: string;
@@ -72,8 +73,8 @@ export default function QueuePage() {
       const res = await fetch("/api/queue");
       const data = await res.json();
       setItems(data.submissions || []);
-    } catch {
-      console.error("Failed to fetch queue");
+    } catch (err) {
+      console.error("[LegacyQueue] Failed to fetch queue", err);
     }
     setLoading(false);
   }, []);
@@ -86,17 +87,10 @@ export default function QueuePage() {
     filter === "all"
       ? items
       : filter === "pending"
-      ? items.filter((i) => i.status === "submitted" || i.status === "in_review")
-      : items.filter(
-          (i) =>
-            i.status === "approved" ||
-            i.status === "rejected" ||
-            i.status === "needs_revision"
-        );
+        ? items.filter((i) => i.status === "submitted" || i.status === "in_review")
+        : items.filter((i) => i.status === "approved" || i.status === "rejected" || i.status === "needs_revision");
 
-  const pendingCount = items.filter(
-    (i) => i.status === "submitted" || i.status === "in_review"
-  ).length;
+  const pendingCount = items.filter((i) => i.status === "submitted" || i.status === "in_review").length;
   const approvedCount = items.filter((i) => i.status === "approved").length;
   const rejectedCount = items.filter((i) => i.status === "rejected").length;
   const [showWalkthrough, setShowWalkthrough] = useState(false);
@@ -130,6 +124,7 @@ export default function QueuePage() {
             </Link>
             <button
               onClick={fetchQueue}
+              aria-label="Refresh queue"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition"
             >
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -151,9 +146,7 @@ export default function QueuePage() {
             <p className="text-xs text-gray-500">Pending Review</p>
           </div>
           <div className="bg-white rounded-xl border border-emerald-200 p-4">
-            <p className="text-2xl font-bold text-emerald-600">
-              {approvedCount}
-            </p>
+            <p className="text-2xl font-bold text-emerald-600">{approvedCount}</p>
             <p className="text-xs text-gray-500">Approved</p>
           </div>
           <div className="bg-white rounded-xl border border-red-200 p-4">
@@ -175,9 +168,7 @@ export default function QueuePage() {
               key={key}
               onClick={() => setFilter(key)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
-                filter === key
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                filter === key ? "bg-gray-800 text-white" : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               {label}
@@ -188,6 +179,7 @@ export default function QueuePage() {
         {/* Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" data-walkthrough="queue-table">
           <table id="legacy-queue-table" className="w-full">
+            <caption className="sr-only">Submission review queue</caption>
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
@@ -215,19 +207,13 @@ export default function QueuePage() {
               {loading && items.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center">
-                    <RefreshCw
-                      size={20}
-                      className="animate-spin text-gray-400 mx-auto mb-2"
-                    />
+                    <RefreshCw size={20} className="animate-spin text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">Loading queue...</p>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-12 text-center text-sm text-gray-500"
-                  >
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-gray-500">
                     No submissions match this filter.
                   </td>
                 </tr>
@@ -236,18 +222,13 @@ export default function QueuePage() {
                   const sc = STATUS_STYLES[item.status] || STATUS_STYLES.draft;
                   const statusIcon = STATUS_ICONS[item.status] || STATUS_ICONS.draft;
                   return (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-gray-50/50 transition cursor-pointer group"
-                    >
+                    <tr key={item.id} className="hover:bg-gray-50/50 transition cursor-pointer group">
                       <td className="px-4 py-3">
                         <Link href={`/legacy/queue/${item.id}`} className="block">
                           <p className="text-sm font-medium text-gray-800 group-hover:text-blue-600 transition">
                             {item.productName}
                           </p>
-                          <p className="text-[10px] text-gray-400 font-mono">
-                            {item.id}
-                          </p>
+                          <p className="text-[10px] text-gray-400 font-mono">{item.id}</p>
                         </Link>
                       </td>
                       <td className="px-4 py-3">
@@ -264,23 +245,14 @@ export default function QueuePage() {
                           {sc.label}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-xs text-gray-600">{item.submitterId}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500">{timeAgo(item.createdAt)}</td>
                       <td className="px-4 py-3 text-xs text-gray-600">
-                        {item.submitterId}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
-                        {timeAgo(item.createdAt)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">
-                        {item.lastReviewer || (
-                          <span className="text-gray-400">—</span>
-                        )}
+                        {item.lastReviewer || <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         <Link href={`/legacy/queue/${item.id}`}>
-                          <ChevronRight
-                            size={14}
-                            className="text-gray-300 group-hover:text-blue-500 transition"
-                          />
+                          <ChevronRight size={14} className="text-gray-300 group-hover:text-blue-500 transition" />
                         </Link>
                       </td>
                     </tr>
@@ -294,11 +266,7 @@ export default function QueuePage() {
 
       {/* Walkthrough Panel */}
       {showWalkthrough && (
-        <WalkthroughPanel
-          onClose={() => setShowWalkthrough(false)}
-          steps={agentSteps}
-          title="Agent Review Guide"
-        />
+        <WalkthroughPanel onClose={() => setShowWalkthrough(false)} steps={agentSteps} title="Agent Review Guide" />
       )}
 
       {/* Walkthrough FAB */}

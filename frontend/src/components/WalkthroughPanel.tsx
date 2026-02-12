@@ -54,7 +54,7 @@ const STEPS: WalkthroughStep[] = [
     title: "Correct Perspective",
     description: "Use corner points or mesh warp to flatten the label.",
     detail:
-      "Drag the corner handles to align the label edges. For curved surfaces (bottles, cans), switch to Mesh mode and add control points along the curves. The \"Auto\" button estimates curvature automatically. This step improves OCR accuracy significantly.",
+      'Drag the corner handles to align the label edges. For curved surfaces (bottles, cans), switch to Mesh mode and add control points along the curves. The "Auto" button estimates curvature automatically. This step improves OCR accuracy significantly.',
     icon: <Move size={18} />,
     highlightSelector: "[data-walkthrough='editor']",
   },
@@ -81,7 +81,7 @@ const STEPS: WalkthroughStep[] = [
     title: "Inspect Data Tab",
     description: "View and edit all extracted fields, re-run validation.",
     detail:
-      "The Data tab shows every field extracted by OCR in editable text boxes. You can correct any misread values and click \"Re-validate\" to update the checklist. The raw OCR text and full JSON response are also available for inspection.",
+      'The Data tab shows every field extracted by OCR in editable text boxes. You can correct any misread values and click "Re-validate" to update the checklist. The raw OCR text and full JSON response are also available for inspection.',
     icon: <FileText size={18} />,
     highlightSelector: "[data-walkthrough='data']",
   },
@@ -90,7 +90,7 @@ const STEPS: WalkthroughStep[] = [
     title: "Compare with Application",
     description: "Enter form values and fuzzy-match against the label.",
     detail:
-      "Type the values from the COLA application form (brand name, ABV, etc.) and the system compares them against what OCR extracted from the label. It uses Levenshtein distance for fuzzy matching — so \"STONE'S THROW\" vs \"Stone's Throw\" scores as a match.",
+      'Type the values from the COLA application form (brand name, ABV, etc.) and the system compares them against what OCR extracted from the label. It uses Levenshtein distance for fuzzy matching — so "STONE\'S THROW" vs "Stone\'s Throw" scores as a match.',
     icon: <GitCompare size={18} />,
     highlightSelector: "[data-walkthrough='compare']",
   },
@@ -186,7 +186,6 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
         className="fixed top-0 right-0 w-[380px] h-full bg-white border-l border-gray-200 shadow-2xl z-40 flex flex-col"
         style={{ animation: "walkthroughSlideIn 0.3s ease-out" }}
       >
-
         {/* Header */}
         <div className="px-5 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -196,10 +195,7 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
                 Step {currentStep + 1} of {activeSteps.length}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition p-1"
-            >
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition p-1">
               <X size={18} />
             </button>
           </div>
@@ -224,8 +220,8 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
                   idx === currentStep
                     ? "bg-blue-50 text-blue-700 border border-blue-200"
                     : visitedSteps.has(idx)
-                    ? "text-gray-500 hover:bg-gray-50"
-                    : "text-gray-400 hover:bg-gray-50"
+                      ? "text-gray-500 hover:bg-gray-50"
+                      : "text-gray-400 hover:bg-gray-50"
                 }`}
                 title={s.title}
               >
@@ -248,16 +244,10 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
             <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
               {step.icon}
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              {step.title}
-            </h3>
-            <p className="text-sm text-gray-600 leading-relaxed mb-4">
-              {step.description}
-            </p>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">{step.title}</h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">{step.description}</p>
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-              <p className="text-xs text-gray-600 leading-relaxed">
-                {step.detail}
-              </p>
+              <p className="text-xs text-gray-600 leading-relaxed">{step.detail}</p>
             </div>
           </div>
 
@@ -267,7 +257,8 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
               <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
                 <p className="text-[11px] text-amber-700 font-medium mb-1">Tip</p>
                 <p className="text-[11px] text-amber-600">
-                  The category selector is in the top-right of the header bar. Click it before uploading to ensure correct validation rules.
+                  The category selector is in the top-right of the header bar. Click it before uploading to ensure
+                  correct validation rules.
                 </p>
               </div>
             )}
@@ -275,7 +266,8 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
               <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                 <p className="text-[11px] text-blue-700 font-medium mb-1">Performance</p>
                 <p className="text-[11px] text-blue-600">
-                  Quick Check: ~2-3 seconds (no network). AI Extract: ~3-5 seconds (requires server). AI Extract is recommended for accuracy.
+                  Quick Check: ~2-3 seconds (no network). AI Extract: ~3-5 seconds (requires server). AI Extract is
+                  recommended for accuracy.
                 </p>
               </div>
             )}
@@ -283,7 +275,8 @@ export default function WalkthroughPanel({ onClose, steps, title }: WalkthroughP
               <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
                 <p className="text-[11px] text-emerald-700 font-medium mb-1">Dave&apos;s Use Case</p>
                 <p className="text-[11px] text-emerald-600">
-                  The fuzzy matcher handles cases like &quot;STONE&apos;S THROW&quot; vs &quot;Stone&apos;s Throw&quot; — they&apos;ll score as a high match even with different capitalization and punctuation.
+                  The fuzzy matcher handles cases like &quot;STONE&apos;S THROW&quot; vs &quot;Stone&apos;s Throw&quot;
+                  — they&apos;ll score as a high match even with different capitalization and punctuation.
                 </p>
               </div>
             )}

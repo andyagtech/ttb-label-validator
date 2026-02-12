@@ -38,7 +38,12 @@ const SAMPLE_CHECKS = [
   { label: "Class/Type Designation", status: "pass", value: "Red Wine", citation: "27 CFR §4.34" },
   { label: "Alcohol Content", status: "pass", value: "13.5% by Volume", citation: "27 CFR §4.36" },
   { label: "Net Contents", status: "pass", value: "750 mL", citation: "27 CFR §4.37" },
-  { label: "Name & Address", status: "pass", value: "Produced by Mountain Creek Cellars, Napa, CA", citation: "27 CFR §4.35" },
+  {
+    label: "Name & Address",
+    status: "pass",
+    value: "Produced by Mountain Creek Cellars, Napa, CA",
+    citation: "27 CFR §4.35",
+  },
   { label: "Government Warning", status: "fail", value: "Not detected", citation: "27 CFR Part 16" },
   { label: "Sulfite Declaration", status: "warn", value: "Not detected", citation: "27 CFR §4.32(e)" },
   { label: "Appellation of Origin", status: "pass", value: "Napa Valley", citation: "27 CFR §4.25" },
@@ -93,19 +98,24 @@ export default function TTBStylePrototype() {
     reader.readAsDataURL(file);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
-  }, [handleFileSelect]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileSelect(file);
+    },
+    [handleFileSelect],
+  );
 
   return (
     <>
-      <Breadcrumbs items={[
-        { label: "Home", href: "/" },
-        { label: "ALFD", href: "/" },
-        { label: "Certificate of Label Approval (COLA)" },
-      ]} />
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "ALFD", href: "/" },
+          { label: "Certificate of Label Approval (COLA)" },
+        ]}
+      />
       <main id="home-main" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
         <AlertBanner />
 
@@ -132,15 +142,14 @@ export default function TTBStylePrototype() {
             lineHeight: 1.6,
           }}
         >
-          The COLA process ensures all alcohol beverage labels comply with federal
-          regulations before products enter the market. Upload label images below
-          for automated compliance checking.
+          The COLA process ensures all alcohol beverage labels comply with federal regulations before products enter the
+          market. Upload label images below for automated compliance checking.
         </p>
 
         {/* Two-column layout */}
         <div id="home-layout" style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 32 }}>
           {/* Left: Validation Results */}
-          <div id="home-validation-column">
+          <div id="home-validation-column" aria-live="polite">
             {/* Summary card */}
             <div
               style={{
@@ -209,12 +218,8 @@ export default function TTBStylePrototype() {
                       textAlign: "center",
                     }}
                   >
-                    <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>
-                      {s.n}
-                    </div>
-                    <div style={{ fontSize: 13, color: s.color, fontWeight: 600 }}>
-                      {s.label}
-                    </div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.n}</div>
+                    <div style={{ fontSize: 13, color: s.color, fontWeight: 600 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -231,9 +236,7 @@ export default function TTBStylePrototype() {
                   }}
                 >
                   <span>Compliance Score</span>
-                  <span style={{ fontWeight: 600 }}>
-                    {Math.round((passCount / SAMPLE_CHECKS.length) * 100)}%
-                  </span>
+                  <span style={{ fontWeight: 600 }}>{Math.round((passCount / SAMPLE_CHECKS.length) * 100)}%</span>
                 </div>
                 <div
                   style={{
@@ -281,25 +284,23 @@ export default function TTBStylePrototype() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
                 <thead>
                   <tr style={{ background: C.lightGray }}>
-                    {["Status", "Requirement", "Detected Value", "CFR Citation"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          style={{
-                            padding: "10px 16px",
-                            textAlign: "left",
-                            fontWeight: 700,
-                            fontSize: 12,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.05em",
-                            color: C.darkNavy,
-                            borderBottom: `2px solid ${C.border}`,
-                          }}
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
+                    {["Status", "Requirement", "Detected Value", "CFR Citation"].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: "10px 16px",
+                          textAlign: "left",
+                          fontWeight: 700,
+                          fontSize: 12,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          color: C.darkNavy,
+                          borderBottom: `2px solid ${C.border}`,
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -328,9 +329,7 @@ export default function TTBStylePrototype() {
                             {st.label}
                           </span>
                         </td>
-                        <td style={{ padding: "12px 16px", fontWeight: 600 }}>
-                          {check.label}
-                        </td>
+                        <td style={{ padding: "12px 16px", fontWeight: 600 }}>{check.label}</td>
                         <td
                           style={{
                             padding: "12px 16px",
@@ -411,7 +410,10 @@ export default function TTBStylePrototype() {
                     }}
                   />
                   <button
-                    onClick={() => { setUploadedImage(null); setUploadedName(""); }}
+                    onClick={() => {
+                      setUploadedImage(null);
+                      setUploadedName("");
+                    }}
                     style={{
                       position: "absolute",
                       top: 6,
@@ -457,16 +459,11 @@ export default function TTBStylePrototype() {
                     (e.currentTarget as HTMLElement).style.background = "transparent";
                   }}
                 >
-                  <Upload
-                    size={28}
-                    style={{ color: C.lightBlue, margin: "0 auto 8px" }}
-                  />
+                  <Upload size={28} style={{ color: C.lightBlue, margin: "0 auto 8px" }} />
                   <div style={{ fontSize: 14, fontWeight: 600, color: C.lightBlue }}>
                     Drag &amp; drop or click to upload
                   </div>
-                  <div style={{ fontSize: 12, marginTop: 4 }}>
-                    PNG, JPG, or PDF — max 10 MB
-                  </div>
+                  <div style={{ fontSize: 12, marginTop: 4 }}>PNG, JPG, or PDF — max 10 MB</div>
                 </div>
               )}
 
@@ -540,8 +537,14 @@ export default function TTBStylePrototype() {
                 Quick Links
               </h3>
               {[
-                { text: "COLA Application Form (TTB F 5100.31)", href: "https://www.ttb.gov/system/files/images/pdfs/forms/f510031.pdf" },
-                { text: "Beverage Alcohol Manual (BAM)", href: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola" },
+                {
+                  text: "COLA Application Form (TTB F 5100.31)",
+                  href: "https://www.ttb.gov/system/files/images/pdfs/forms/f510031.pdf",
+                },
+                {
+                  text: "Beverage Alcohol Manual (BAM)",
+                  href: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola",
+                },
                 { text: "COLAs Online Search", href: "https://www.ttb.gov/alfd/certificate-of-label-aproval-cola" },
                 { text: "Labeling Regulations", href: "https://www.ttb.gov/regulated-commodities/labeling" },
               ].map((link) => (
@@ -561,12 +564,8 @@ export default function TTBStylePrototype() {
                     fontSize: 14,
                     transition: "color 0.15s",
                   }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLElement).style.color = C.linkHover)
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLElement).style.color = C.lightBlue)
-                  }
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = C.linkHover)}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = C.lightBlue)}
                 >
                   <ExternalLink size={14} style={{ flexShrink: 0 }} />
                   {link.text}

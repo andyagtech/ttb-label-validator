@@ -64,7 +64,7 @@ export default function GeneratePage() {
   const [category, setCategory] = useState<Category>("spirits");
   const [brandName, setBrandName] = useState("JACK DANIEL'S");
   const [classType, setClassType] = useState("Tennessee Whiskey");
-  const [alcoholContent, setAlcoholContent] = useState('40% Alc./Vol. (80 Proof)');
+  const [alcoholContent, setAlcoholContent] = useState("40% Alc./Vol. (80 Proof)");
   const [netContents, setNetContents] = useState("750 mL");
   const [appellation, setAppellation] = useState("");
   const [vintage, setVintage] = useState("");
@@ -112,7 +112,7 @@ export default function GeneratePage() {
       setNameAddress(p.nameAddress || "");
       setCountryOfOrigin(p.countryOfOrigin || "");
     },
-    [presets]
+    [presets],
   );
 
   // Generate
@@ -208,10 +208,7 @@ export default function GeneratePage() {
   const sendToSimulator = useCallback(() => {
     if (!generatedImage) return;
     // Store in sessionStorage so the simulator can pick it up
-    sessionStorage.setItem(
-      "generated-label",
-      JSON.stringify({ imageBase64: generatedImage, mimeType: generatedMime })
-    );
+    sessionStorage.setItem("generated-label", JSON.stringify({ imageBase64: generatedImage, mimeType: generatedMime }));
     window.location.href = "/";
   }, [generatedImage, generatedMime]);
 
@@ -268,9 +265,7 @@ export default function GeneratePage() {
                       key={f}
                       onClick={() => setPresetFilter(f)}
                       className={`px-2 py-0.5 text-[10px] font-medium rounded-md transition ${
-                        presetFilter === f
-                          ? "bg-gray-800 text-white"
-                          : "text-gray-500 hover:bg-gray-100"
+                        presetFilter === f ? "bg-gray-800 text-white" : "text-gray-500 hover:bg-gray-100"
                       }`}
                     >
                       {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -282,24 +277,24 @@ export default function GeneratePage() {
                 {presets
                   .filter((p) => presetFilter === "all" || p.category === presetFilter)
                   .map((p) => (
-                  <button
-                    key={p.key}
-                    onClick={() => applyPreset(p.key)}
-                    className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition text-left ${
-                      selectedPreset === p.key
-                        ? CATEGORY_COLORS[p.category] + " border-2"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    {CATEGORY_ICON[p.category]}
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">{p.displayName || p.brandName}</div>
-                      <div className="text-[10px] text-gray-400">
-                        {p.classType} · {p.labelType}
+                    <button
+                      key={p.key}
+                      onClick={() => applyPreset(p.key)}
+                      className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition text-left ${
+                        selectedPreset === p.key
+                          ? CATEGORY_COLORS[p.category] + " border-2"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      {CATEGORY_ICON[p.category]}
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{p.displayName || p.brandName}</div>
+                        <div className="text-[10px] text-gray-400">
+                          {p.classType} · {p.labelType}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))}
               </div>
             </div>
 
@@ -374,13 +369,28 @@ export default function GeneratePage() {
                     <Field label="Alcohol Content" value={alcoholContent} onChange={setAlcoholContent} />
                     <Field label="Net Contents" value={netContents} onChange={setNetContents} />
                     {(category === "wine" || appellation) && (
-                      <Field label="Appellation" value={appellation} onChange={setAppellation} placeholder="e.g. Napa Valley" />
+                      <Field
+                        label="Appellation"
+                        value={appellation}
+                        onChange={setAppellation}
+                        placeholder="e.g. Napa Valley"
+                      />
                     )}
                     {(category === "wine" || vintage) && (
                       <Field label="Vintage" value={vintage} onChange={setVintage} placeholder="e.g. 2021" />
                     )}
-                    <Field label="Name & Address" value={nameAddress} onChange={setNameAddress} placeholder="Company, City, ST ZIP" />
-                    <Field label="Country of Origin" value={countryOfOrigin} onChange={setCountryOfOrigin} placeholder="e.g. France" />
+                    <Field
+                      label="Name & Address"
+                      value={nameAddress}
+                      onChange={setNameAddress}
+                      placeholder="Company, City, ST ZIP"
+                    />
+                    <Field
+                      label="Country of Origin"
+                      value={countryOfOrigin}
+                      onChange={setCountryOfOrigin}
+                      placeholder="e.g. France"
+                    />
                   </div>
                 </div>
               )}
@@ -406,9 +416,7 @@ export default function GeneratePage() {
             </button>
 
             {/* Used prompt (collapsible) */}
-            {usedPrompt && (
-              <PromptViewer prompt={usedPrompt} copied={copied} onCopy={copyPrompt} />
-            )}
+            {usedPrompt && <PromptViewer prompt={usedPrompt} copied={copied} onCopy={copyPrompt} />}
           </div>
 
           {/* RIGHT: Generated image + history */}
@@ -498,9 +506,7 @@ export default function GeneratePage() {
                         setGeneratedMime(h.mimeType);
                       }}
                       className={`aspect-square rounded-lg overflow-hidden border-2 transition hover:scale-105 ${
-                        generatedImage === h.imageBase64
-                          ? "border-purple-500 shadow-md"
-                          : "border-gray-200"
+                        generatedImage === h.imageBase64 ? "border-purple-500 shadow-md" : "border-gray-200"
                       }`}
                     >
                       <img
@@ -549,15 +555,7 @@ function Field({
   );
 }
 
-function PromptViewer({
-  prompt,
-  copied,
-  onCopy,
-}: {
-  prompt: string;
-  copied: boolean;
-  onCopy: () => void;
-}) {
+function PromptViewer({ prompt, copied, onCopy }: { prompt: string; copied: boolean; onCopy: () => void }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -570,10 +568,7 @@ function PromptViewer({
           <Wand2 size={12} className="text-purple-400" />
           Prompt Used
         </span>
-        <ChevronDown
-          size={14}
-          className={`text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
-        />
+        <ChevronDown size={14} className={`text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
       {expanded && (
         <div className="px-4 pb-3 relative">
@@ -585,11 +580,7 @@ function PromptViewer({
             className="absolute top-2 right-6 p-1.5 rounded-md bg-white border border-gray-200 hover:bg-gray-100 transition"
             title="Copy prompt"
           >
-            {copied ? (
-              <Check size={12} className="text-green-500" />
-            ) : (
-              <Copy size={12} className="text-gray-400" />
-            )}
+            {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} className="text-gray-400" />}
           </button>
         </div>
       )}
