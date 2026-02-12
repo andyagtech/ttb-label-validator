@@ -13,6 +13,8 @@
 import React, { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
+  BarChart3,
+  BookOpen,
   CheckCircle2,
   XCircle,
   AlertTriangle,
@@ -25,7 +27,6 @@ import {
   Pencil,
   X,
   Users,
-  BarChart3,
   FlaskConical,
 } from "lucide-react";
 import { C, AlertBanner, Breadcrumbs } from "@/components/TTBShell";
@@ -595,6 +596,25 @@ export default function TTBStylePrototype() {
                 This Application
               </h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <Link
+                  href="/overview"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 12px",
+                    borderRadius: 6,
+                    background: C.navy,
+                    color: C.white,
+                    textDecoration: "none",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  <BookOpen size={16} />
+                  Demo Overview
+                </Link>
                 <Link
                   href="/"
                   style={{
