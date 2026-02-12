@@ -1,3 +1,13 @@
+/**
+ * Component & Feature Demo — showcase page for all building blocks and features.
+ *
+ * Provides a tabbed gallery of: all application pages (with links), color tokens,
+ * typography scale, button variants, badge styles, card patterns, form elements,
+ * alert types, API endpoint reference, feature highlights, and the tech stack.
+ * Useful as a design reference and for verifying visual consistency.
+ *
+ * Route: /demo (via (main) route group)
+ */
 "use client";
 
 import React, { useState } from "react";

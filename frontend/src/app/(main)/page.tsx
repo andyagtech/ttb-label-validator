@@ -1,3 +1,13 @@
+/**
+ * Home / Label Validator — the primary landing page for the TTB Label Validator.
+ *
+ * Provides a label upload area with drag-and-drop support, a file picker,
+ * and a sidebar with quick navigation links to the queue, generator, API
+ * test console, agent profiles, and component demo. Uploaded images are
+ * displayed inline with compliance validation guidance.
+ *
+ * Route: / (via (main) route group)
+ */
 "use client";
 
 import React, { useState, useRef, useCallback } from "react";

@@ -1,3 +1,17 @@
+/**
+ * Submission Review Workspace — full agent review page for a single submission.
+ *
+ * Fetches submission detail from /api/queue/{id} and provides a 4-tab layout:
+ *   1. Label + Data — side-by-side label artwork and OCR-extracted fields
+ *   2. Checklist — per-label compliance checklist with auto_pass/auto_fail/manual
+ *   3. Form Comparison — fuzzy matching of COLA form fields vs. OCR-extracted values
+ *   4. History — audit trail of previous reviews with findings
+ *
+ * Includes a sticky decision panel (approve/reject/needs_revision/escalate),
+ * reviewer name input, findings editor, notes field, and a live review timer.
+ *
+ * Route: /queue/{id} (via (main) route group)
+ */
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";

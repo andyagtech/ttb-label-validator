@@ -1,3 +1,15 @@
+/**
+ * AI Test Label Generator — creates realistic alcohol label images via Gemini AI.
+ *
+ * Features 10 presets (bourbon, IPA, cabernet, vodka, malt beverage, rosé) with
+ * automatic prompt construction from structured label fields (brand, class/type,
+ * ABV, net contents, appellation, etc.). Supports front and back label types,
+ * custom freeform prompts, generation history (last 20), download, and one-click
+ * "Send to Simulator" transfer via sessionStorage.
+ *
+ * API: GET /api/generate-label (list presets), POST /api/generate-label (generate)
+ * Route: /generate (via (main) route group)
+ */
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";

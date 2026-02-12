@@ -1,3 +1,13 @@
+/**
+ * Review Queue Dashboard — agent-facing submission list with status filtering.
+ *
+ * Fetches all submissions from /api/queue and displays them in a filterable
+ * table with status badges (submitted, in_review, approved, rejected,
+ * needs_revision), category icons, submitter info, and timestamps.
+ * Clicking a row navigates to the full review workspace at /queue/{id}.
+ *
+ * Route: /queue (via (main) route group)
+ */
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";

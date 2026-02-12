@@ -1,3 +1,16 @@
+/**
+ * Review Agents — profiles and performance statistics for TTB compliance agents.
+ *
+ * Displays cards for each agent showing name, title, division, email,
+ * specialties, certifications, availability status, and lifetime performance
+ * stats (reviews, approvals, rejections, avg time). Also shows recent review
+ * activity fetched live from the queue API.
+ *
+ * Data: Agent profiles from hardcoded data (mirrors agentStore.ts seed data);
+ * recent activity fetched from /api/queue at runtime.
+ *
+ * Route: /agents (via (main) route group)
+ */
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";

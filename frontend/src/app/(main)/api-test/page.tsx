@@ -1,3 +1,16 @@
+/**
+ * API Test Console — interactive endpoint tester for all TTB Label Validator APIs.
+ *
+ * Presents a 3-step workflow: (1) pick an endpoint from the grouped sidebar,
+ * (2) configure parameters (path params, JSON body, or image upload from gallery
+ * or file picker), (3) send the request and view the formatted JSON response
+ * with status code, timing, and syntax highlighting.
+ *
+ * Endpoint groups: Queue, OCR & Processing, Generation, Admin.
+ * Supports dynamic path parameter replacement (e.g. {id}, {agentId}).
+ *
+ * Route: /api-test (via (main) route group)
+ */
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
