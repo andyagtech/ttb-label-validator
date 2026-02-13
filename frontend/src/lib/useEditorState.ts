@@ -306,6 +306,16 @@ export function useEditorState(): EditorStateReturn {
           correctedImage: null,
           viewMode: "edit",
           zoom: 1,
+          imageType: null,
+          multiLabelChoice: null,
+          surfaceMode: "flat",
+          curvature: 0.5,
+          crossCurvature: 0.15,
+          cylinderAxis: "vertical",
+          showGrid: true,
+          warpMode: "simple",
+          meshPointsPerEdge: 3,
+          extractedFields: null,
         });
       };
       img.src = dataUrl;

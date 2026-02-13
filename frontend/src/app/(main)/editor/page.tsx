@@ -290,7 +290,38 @@ export default function EditorPage() {
                   <button onClick={() => { e.applyCorrection(); setShowFlattenPicker(false); }} style={toolbarTab(e.activeSlot.viewMode === "preview")}>
                     <Eye size={16} /> Preview
                   </button>
-                  <button onClick={() => { e.updateSlot(e.activeSlotId, { viewMode: "original" }); setShowFlattenPicker(false); }} style={toolbarTab(e.activeSlot.viewMode === "original")}>
+                  <button onClick={() => {
+                    setShowFlattenPicker(false);
+                    // Reset to original: clear all edits but keep the source image
+                    const src = e.activeSlot.sourceCanvas;
+                    const inset = src ? Math.min(src.width, src.height) * 0.05 : 20;
+                    const w = src?.width ?? 400;
+                    const h = src?.height ?? 400;
+                    e.updateSlot(e.activeSlotId, {
+                      viewMode: "original",
+                      imageType: null,
+                      multiLabelChoice: null,
+                      correctedImage: null,
+                      surfaceMode: "flat",
+                      curvature: 0.5,
+                      crossCurvature: 0.15,
+                      cylinderAxis: "vertical",
+                      showGrid: true,
+                      warpMode: "simple",
+                      meshPointsPerEdge: 3,
+                      extractedFields: null,
+                      zoom: 1,
+                      corners: [
+                        { x: inset, y: inset },
+                        { x: w - inset, y: inset },
+                        { x: w - inset, y: h - inset },
+                        { x: inset, y: h - inset },
+                      ],
+                    });
+                    e.setAutoFitResult(null);
+                    e.setAiFlattenResult(null);
+                    e.setSmartCropDone(false);
+                  }} style={toolbarTab(e.activeSlot.viewMode === "original")}>
                     <RotateCcw size={16} /> Original
                   </button>
                   <button
@@ -477,10 +508,6 @@ export default function EditorPage() {
                           <strong style={{ color: C.navy }}>AI Flatten applied</strong>
                           {" — Mode: "}
                           <strong>{e.aiFlattenResult.mode === "cylindrical" ? "Bottle Unroll" : "Perspective Rectify"}</strong>
-                          {typeof e.aiFlattenResult.details?.focal_length === "number" && <> · Focal: {e.aiFlattenResult.details.focal_length}px</>}
-                          {Array.isArray(e.aiFlattenResult.details?.output_size) && (
-                            <> · {Number(e.aiFlattenResult.details.output_size[0])}×{Number(e.aiFlattenResult.details.output_size[1])}px</>
-                          )}
                         </span>
                       )}
                     </div>
