@@ -2,11 +2,11 @@
  * Decision Panel — sticky sidebar for the agent review workspace.
  *
  * Contains: reviewer name input, decision buttons (approve/reject/needs_revision/escalate),
- * findings editor, notes textarea, and submit button.
+ * findings editor with field typeahead, notes textarea, and submit button.
  * Also renders the "Review Submitted" confirmation state.
  */
 
-import React from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -16,7 +16,129 @@ import {
   Send,
 } from "lucide-react";
 import { ReviewDecision, ReviewFinding } from "@/lib/types";
-import { formatSeconds } from "@/lib/styles";
+import { formatSeconds, FIELD_LABELS } from "@/lib/styles";
+
+// ---------------------------------------------------------------------------
+// Field Typeahead — autocomplete for FIELD_LABELS in Findings
+// ---------------------------------------------------------------------------
+
+/** Build lookup: display label → field key, and field key → display label */
+const FIELD_OPTIONS = Object.entries(FIELD_LABELS).map(([key, label]) => ({ key, label }));
+
+function fieldKeyToLabel(key: string): string {
+  return FIELD_LABELS[key as keyof typeof FIELD_LABELS] || key;
+}
+
+function FieldTypeahead({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (fieldKey: string) => void;
+}) {
+  const [inputText, setInputText] = useState(() => fieldKeyToLabel(value) === value && !value ? "" : fieldKeyToLabel(value));
+  const [open, setOpen] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Filter options based on input text
+  const filtered = inputText.trim()
+    ? FIELD_OPTIONS.filter((o) => o.label.toLowerCase().includes(inputText.toLowerCase()))
+    : FIELD_OPTIONS;
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Reset highlight when filtered list changes
+  useEffect(() => {
+    setHighlightIdx(0);
+  }, [filtered.length]);
+
+  const selectOption = useCallback((opt: { key: string; label: string }) => {
+    setInputText(opt.label);
+    onChange(opt.key);
+    setOpen(false);
+  }, [onChange]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        setOpen(true);
+        e.preventDefault();
+        return;
+      }
+    }
+
+    if (open && filtered.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightIdx((prev) => (prev + 1) % filtered.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightIdx((prev) => (prev - 1 + filtered.length) % filtered.length);
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        selectOption(filtered[highlightIdx]);
+      } else if (e.key === "Escape") {
+        setOpen(false);
+      }
+    }
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative flex-1">
+      <input
+        ref={inputRef}
+        type="text"
+        value={inputText}
+        onChange={(e) => {
+          setInputText(e.target.value);
+          setOpen(true);
+          // If exact match, auto-set the key
+          const exact = FIELD_OPTIONS.find((o) => o.label.toLowerCase() === e.target.value.toLowerCase());
+          if (exact) {
+            onChange(exact.key);
+          } else {
+            onChange(e.target.value);
+          }
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={handleKeyDown}
+        placeholder="Field..."
+        className="w-full text-[10px] border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white border border-gray-200 rounded-lg shadow-lg max-h-[180px] overflow-y-auto">
+          {filtered.map((opt, idx) => (
+            <button
+              key={opt.key}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); selectOption(opt); }}
+              onMouseEnter={() => setHighlightIdx(idx)}
+              className={`w-full text-left px-2 py-1.5 text-[10px] transition ${
+                idx === highlightIdx
+                  ? "bg-blue-50 text-blue-700 font-medium"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const DECISION_OPTIONS: Array<{
   value: ReviewDecision;
@@ -171,12 +293,9 @@ export default function DecisionPanel({
                     <option value="warning">Warning</option>
                     <option value="info">Info</option>
                   </select>
-                  <input
-                    type="text"
+                  <FieldTypeahead
                     value={f.checklistItemId}
-                    onChange={(e) => updateFinding(fi, "checklistItemId", e.target.value)}
-                    placeholder="Field..."
-                    className="flex-1 text-[10px] border border-gray-200 rounded px-1.5 py-0.5"
+                    onChange={(val) => updateFinding(fi, "checklistItemId", val)}
                   />
                   <button onClick={() => removeFinding(fi)} className="text-gray-400 hover:text-red-500">
                     <XCircle size={12} />
