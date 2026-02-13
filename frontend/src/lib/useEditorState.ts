@@ -820,7 +820,18 @@ export function useEditorState(): EditorStateReturn {
     setSlots((prev) =>
       prev.map((s) => {
         const position = s.id === "front" ? "front" : s.id === "back" ? "back" : "other";
-        return { ...s, checklist: getChecklistTemplate(position, cat) };
+        let checklist = getChecklistTemplate(position, cat);
+        // Re-apply any existing OCR results to the new checklist template
+        if (s.extractedFields) {
+          checklist = applyExtractedFields(checklist, s.extractedFields);
+          const validationResults = validateExtractedFields(
+            s.extractedFields,
+            cat,
+            position,
+          );
+          checklist = applyValidationResults(checklist, validationResults);
+        }
+        return { ...s, checklist };
       }),
     );
   }, []);

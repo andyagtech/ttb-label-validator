@@ -23,6 +23,7 @@ interface MeshWarpEditorProps {
   showGrid?: boolean;
   zoom?: number;
   onZoomChange?: (zoom: number) => void;
+  resetViewTrigger?: number;
   maxDisplayWidth?: number;
   maxDisplayHeight?: number;
 }
@@ -34,6 +35,7 @@ export default function MeshWarpEditor({
   showGrid = true,
   zoom: externalZoom,
   onZoomChange,
+  resetViewTrigger,
   maxDisplayWidth = 700,
   maxDisplayHeight = 560,
 }: MeshWarpEditorProps) {
@@ -58,6 +60,14 @@ export default function MeshWarpEditor({
   );
 
   const effectiveScale = baseScale * zoom;
+
+  // Reset view when triggered externally (Center Image button)
+  useEffect(() => {
+    if (resetViewTrigger !== undefined && resetViewTrigger > 0) {
+      setPanOffset({ x: 0, y: 0 });
+      setZoom(1);
+    }
+  }, [resetViewTrigger, setZoom]);
 
   // Load image
   useEffect(() => {

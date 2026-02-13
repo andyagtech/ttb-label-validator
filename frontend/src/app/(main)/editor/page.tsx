@@ -45,6 +45,7 @@ import {
   Zap,
   RotateCcw,
   Info,
+  Maximize2,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/TTBShell";
 import ImageInput from "@/components/ImageInput";
@@ -79,6 +80,7 @@ export default function EditorPage() {
   const router = useRouter();
   const e = useEditorState();
   const [showFlattenPicker, setShowFlattenPicker] = useState(false);
+  const [resetViewTrigger, setResetViewTrigger] = useState(0);
   const flattenPickerRef = useRef<HTMLDivElement>(null);
   const flattenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -347,6 +349,29 @@ export default function EditorPage() {
                   >
                     <X size={14} /> Change Image
                   </button>
+                  <button
+                    onClick={() => {
+                      e.updateSlot(e.activeSlotId, { zoom: 1 });
+                      setResetViewTrigger((v) => v + 1);
+                    }}
+                    disabled={!e.activeSlot.sourceCanvas}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "6px 10px",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      background: "none",
+                      border: "none",
+                      color: e.activeSlot.sourceCanvas ? C.navy : C.medGray,
+                      cursor: e.activeSlot.sourceCanvas ? "pointer" : "default",
+                      whiteSpace: "nowrap",
+                    }}
+                    title="Reset zoom and center image"
+                  >
+                    <Maximize2 size={14} /> Center Image
+                  </button>
                   <div style={{ flex: 1 }} />
 
                   {e.activeSlot.imageType === "graphic" ? (
@@ -531,6 +556,7 @@ export default function EditorPage() {
                       showGrid={e.activeSlot.showGrid}
                       zoom={e.activeSlot.zoom}
                       onZoomChange={(z) => e.updateSlot(e.activeSlotId, { zoom: z })}
+                      resetViewTrigger={resetViewTrigger}
                     />
                   ) : e.activeSlot.viewMode === "edit" && e.activeSlot.corners ? (
                     <CornerEditor
@@ -544,6 +570,7 @@ export default function EditorPage() {
                       showGrid={e.activeSlot.showGrid}
                       zoom={e.activeSlot.zoom}
                       onZoomChange={(z) => e.updateSlot(e.activeSlotId, { zoom: z })}
+                      resetViewTrigger={resetViewTrigger}
                     />
                   ) : e.activeSlot.viewMode === "preview" && e.activeSlot.correctedImage ? (
                     <img
