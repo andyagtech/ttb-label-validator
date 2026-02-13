@@ -400,7 +400,7 @@ function generateMockSubmissions(): Submission[] {
     },
   ];
 
-  return products.map((product, idx) => {
+  const subs = products.map((product, idx) => {
     const o = overrides[idx] || { status: "submitted", submitter: "Unknown", daysAgo: 0, includeOcr: false };
     const created = daysAgo(o.daysAgo);
 
@@ -451,4 +451,72 @@ function generateMockSubmissions(): Submission[] {
 
     return sub;
   });
+
+  // -----------------------------------------------------------------------
+  // Additional submissions (beyond sampleData) for pagination testing
+  // -----------------------------------------------------------------------
+  const extras: Array<{
+    productName: string;
+    category: BeverageCategory;
+    status: SubmissionStatus;
+    submitter: string;
+    daysAgo: number;
+    review?: { decision: string; reviewer: string; notes: string; findings: ReviewFinding[] };
+  }> = [
+    { productName: "Bell's Two Hearted Ale", category: "beer", status: "submitted", submitter: "Bell's Brewery, Inc.", daysAgo: 0 },
+    { productName: "Caymus Cabernet Sauvignon 2021", category: "wine", status: "submitted", submitter: "Caymus Vineyards", daysAgo: 1 },
+    { productName: "Woodford Reserve Double Oaked", category: "spirits", status: "in_review", submitter: "Brown-Forman Corporation", daysAgo: 2 },
+    { productName: "Founders All Day IPA", category: "beer", status: "submitted", submitter: "Founders Brewing Co.", daysAgo: 0 },
+    { productName: "Josh Cellars Chardonnay 2022", category: "wine", status: "submitted", submitter: "Deutsch Family Wine & Spirits", daysAgo: 1 },
+    { productName: "Casamigos Blanco Tequila", category: "spirits", status: "approved", submitter: "Diageo North America", daysAgo: 8,
+      review: { decision: "approve", reviewer: "Jenny Park", notes: "All fields compliant. Approved.", findings: [] } },
+    { productName: "Yuengling Traditional Lager", category: "beer", status: "submitted", submitter: "D.G. Yuengling & Son, Inc.", daysAgo: 0 },
+    { productName: "Whispering Angel Rosé 2023", category: "wine", status: "needs_revision", submitter: "Sacha Lichine", daysAgo: 3,
+      review: { decision: "needs_revision", reviewer: "Dave Morrison", notes: "Vintage date not visible on front label. Resubmit with legible date.", findings: [{ checklistItemId: "vintage_date", severity: "warning", message: "Vintage date is illegible or missing from front label." }] } },
+    { productName: "Grey Goose Vodka", category: "spirits", status: "submitted", submitter: "Bacardi Limited", daysAgo: 1 },
+    { productName: "New Belgium Fat Tire Amber Ale", category: "beer", status: "submitted", submitter: "New Belgium Brewing Company", daysAgo: 0 },
+  ];
+
+  extras.forEach((ex, i) => {
+    const idx = products.length + i;
+    const created = daysAgo(ex.daysAgo);
+    const [bgC, txtC] = COLOR_MAP[ex.category];
+
+    const frontImg = makeLabelSvg(bgC, txtC, ex.productName, "Front Label", ["Brand Name", "Class/Type", "Net Contents"]);
+    const backImg = makeLabelSvg(bgC, txtC, ex.productName, "Back Label", ["Government Warning", "Name & Address"]);
+
+    const sub: Submission = {
+      id: `SUB-${(1000 + idx).toString(36).toUpperCase()}`,
+      submitterId: ex.submitter,
+      createdAt: created,
+      updatedAt: created,
+      status: ex.status,
+      beverageCategory: ex.category,
+      productName: ex.productName,
+      labels: [
+        { slotId: `slot-${idx}-0`, slotName: "Front Label", originalImageUrl: frontImg, correctedImageUrl: frontImg, checklist: [] },
+        { slotId: `slot-${idx}-1`, slotName: "Back Label", originalImageUrl: backImg, correctedImageUrl: backImg, checklist: [] },
+      ],
+      reviews: [],
+    };
+
+    if (ex.review) {
+      sub.reviews.push({
+        id: `REV-${idx}`,
+        submissionId: sub.id,
+        reviewerId: ex.review.reviewer,
+        startedAt: created,
+        completedAt: new Date(new Date(created).getTime() + 300_000).toISOString(),
+        activeSeconds: 180 + Math.floor(Math.random() * 120),
+        decision: ex.review.decision as ReviewRecord["decision"],
+        findings: ex.review.findings,
+        notes: ex.review.notes,
+        reviewType: "primary",
+      });
+    }
+
+    subs.push(sub);
+  });
+
+  return subs;
 }
