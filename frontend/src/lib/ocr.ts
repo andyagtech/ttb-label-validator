@@ -239,20 +239,51 @@ export function parseOcrText(rawText: string): ExtractedFields {
   }
 
   // --- Name & address ---
-  // Look for patterns like "City, STATE" or "City, ST ZIPCODE"
-  const addressMatch = text.match(/[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
-  if (addressMatch) {
-    // Grab some context before the zip
-    const idx = text.indexOf(addressMatch[0]);
-    const start = Math.max(0, idx - 60);
-    fields.nameAddress = text.slice(start, idx + addressMatch[0].length).trim();
-  } else {
-    // Fallback: "City, ST" pattern
-    const cityStateMatch = text.match(/([\w\s]+,\s*[A-Z]{2})\b/);
-    if (cityStateMatch) {
-      const idx = text.indexOf(cityStateMatch[0]);
-      const start = Math.max(0, idx - 60);
-      fields.nameAddress = text.slice(start, idx + cityStateMatch[0].length).trim();
+  // Strategy 1: Look for explicit "Imported by..." / "Bottled by..." / etc.
+  // These patterns are the most reliable and avoid health warning bleed.
+  const naPatterns = [
+    /((?:imported|bottled|produced|distributed|blended|distilled|brewed|made|packed|canned)\s+(?:by|for|in)\s+[^.]+?,\s*[A-Z]{2}\s*\d{5})/i,
+    /((?:imported|bottled|produced|distributed|blended|distilled|brewed|made|packed|canned)\s+(?:by|for|in)\s+[^.]+?,\s*[A-Z]{2})\b/i,
+  ];
+  for (const pat of naPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      fields.nameAddress = m[1].trim();
+      break;
+    }
+  }
+  // Strategy 2: Fallback — find "City, STATE ZIPCODE" and grab context before it,
+  // but stop at sentence boundaries to avoid health warning bleed.
+  if (!fields.nameAddress) {
+    const addressMatch = text.match(/[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
+    if (addressMatch) {
+      const idx = text.indexOf(addressMatch[0]);
+      const start = Math.max(0, idx - 80);
+      let grabbed = text.slice(start, idx + addressMatch[0].length).trim();
+      // Clean up: if the grabbed text starts mid-sentence (from health warning etc.),
+      // look for the start of the actual company/importer line
+      const importerStart = grabbed.search(/(?:imported|bottled|produced|distributed|blended|distilled|brewed|made|packed|canned)\s+(?:by|for|in)\s/i);
+      if (importerStart > 0) {
+        grabbed = grabbed.slice(importerStart).trim();
+      } else {
+        // If no importer keyword, try to find a clean sentence start (capital letter after break)
+        const cleanStart = grabbed.search(/[A-Z][\w\s&',.-]+,\s*[A-Z]{2}/);
+        if (cleanStart > 0) {
+          grabbed = grabbed.slice(cleanStart).trim();
+        }
+      }
+      fields.nameAddress = grabbed;
+    } else {
+      // Fallback: "City, ST" pattern
+      const cityStateMatch = text.match(/([\w\s]+,\s*[A-Z]{2})\b/);
+      if (cityStateMatch) {
+        const idx = text.indexOf(cityStateMatch[0]);
+        const start = Math.max(0, idx - 80);
+        let grabbed = text.slice(start, idx + cityStateMatch[0].length).trim();
+        const importerStart = grabbed.search(/(?:imported|bottled|produced|distributed)\s+(?:by|for|in)\s/i);
+        if (importerStart > 0) grabbed = grabbed.slice(importerStart).trim();
+        fields.nameAddress = grabbed;
+      }
     }
   }
 

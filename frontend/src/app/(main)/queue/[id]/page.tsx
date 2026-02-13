@@ -119,6 +119,8 @@ export default function TTBReviewPage() {
   const [detectedFields, setDetectedFields] = useState<ExtractedFields | null>(null);
   const [detecting, setDetecting] = useState(false);
   const [detectError, setDetectError] = useState<string | null>(null);
+  // Track which label (Front/Back) each field was detected from
+  const [fieldSources, setFieldSources] = useState<Record<string, string>>({});
 
   // Interactive checklist — agent checks off each field as verified
   const [checkStates, setCheckStates] = useState<Record<string, boolean>>({});
@@ -157,18 +159,17 @@ export default function TTBReviewPage() {
     fetchSubmission();
   }, [fetchSubmission]);
 
-  // Run Text Detect (Tesseract.js) on label images
+  // Run Text Detect (Tesseract.js) on label images — parse per-label to track sources
   const runTextDetect = useCallback(async () => {
     if (!submission) return;
     setDetecting(true);
     setDetectError(null);
     try {
       const Tesseract = await import("tesseract.js");
-      const allText: string[] = [];
+      const perLabel: { name: string; text: string; fields: ExtractedFields }[] = [];
       for (const label of submission.labels) {
         const imgUrl = label.correctedImageUrl || label.originalImageUrl;
         if (!imgUrl) continue;
-        // Load image into an offscreen canvas
         const img = new window.Image();
         img.crossOrigin = "anonymous";
         await new Promise<void>((resolve, reject) => {
@@ -183,11 +184,23 @@ export default function TTBReviewPage() {
         ctx.drawImage(img, 0, 0);
         const dataUrl = canvas.toDataURL("image/png");
         const result = await Tesseract.recognize(dataUrl, "eng");
-        allText.push(result.data.text);
+        const parsed = parseOcrText(result.data.text);
+        perLabel.push({ name: label.slotName, text: result.data.text, fields: parsed });
       }
-      const combined = allText.join("\n\n");
-      const parsed = parseOcrText(combined);
-      setDetectedFields(parsed);
+      // Merge fields from all labels, tracking which label each field came from
+      const merged: ExtractedFields = { rawText: perLabel.map((l) => l.text).join("\n\n") };
+      const sources: Record<string, string> = {};
+      for (const { name, fields: f } of perLabel) {
+        for (const [k, v] of Object.entries(f)) {
+          if (k === "rawText" || !v) continue;
+          if (!merged[k as keyof ExtractedFields]) {
+            (merged as Record<string, string>)[k] = v;
+            sources[k] = name;
+          }
+        }
+      }
+      setDetectedFields(merged);
+      setFieldSources(sources);
     } catch (err) {
       console.error("[TextDetect] Error:", err);
       setDetectError(err instanceof Error ? err.message : "OCR failed");
@@ -220,6 +233,19 @@ export default function TTBReviewPage() {
     }
     return merged;
   }, [submission, detectedFields]);
+
+  // Flag a field as a finding (for the 🛑 stop sign button)
+  const handleFlagField = useCallback((fieldKey: string, fieldLabel: string, formValue: string | undefined, detectedValue: string | undefined) => {
+    const msg = detectedValue
+      ? `${fieldLabel}: submitted "${formValue || '(empty)'}" but label shows "${detectedValue}"`
+      : `${fieldLabel}: submitted "${formValue || '(empty)'}" — not found on label`;
+    setFindings((prev) => {
+      // Don't add duplicate findings for the same field
+      if (prev.some((f) => f.checklistItemId === fieldKey)) return prev;
+      return [...prev, { checklistItemId: fieldKey, severity: "error", message: msg }];
+    });
+    setDecision((prev) => prev || "reject");
+  }, []);
 
   // Auto-run form comparison — works with merged OCR data
   const comparisonResults = useMemo(() => {
@@ -529,6 +555,8 @@ export default function TTBReviewPage() {
                   detectedFields={detectedFields}
                   checkStates={checkStates}
                   onToggleCheck={toggleCheck}
+                  fieldSources={fieldSources}
+                  onFlagField={handleFlagField}
                 />
               </div>
             </div>

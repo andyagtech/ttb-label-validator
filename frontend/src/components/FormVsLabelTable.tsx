@@ -6,9 +6,10 @@
  *
  *   - Each field shows form value, detected value, and match explanation
  *   - Proximate matches show WHY they matched (containment, token overlap, etc.)
- *     so the agent can verify visually rather than re-checking
+ *   - Label source badge shows which label (Front/Back) the detection came from
+ *   - Checkbox on RIGHT side — agent's eyes scan left→right, click at the end
+ *   - 🛑 Stop sign button to flag a field as a disqualifying discrepancy
  *   - Color coding: green = agrees, amber = review needed, red = mismatch
- *   - Interactive checkboxes for agent sign-off per field
  *   - OCR confidence banner reminds agents that parsing is approximate
  */
 
@@ -23,6 +24,7 @@ import {
   Minus,
   Info,
   ScanSearch,
+  OctagonX,
 } from "lucide-react";
 import { MatchResult } from "@/lib/fuzzyMatch";
 import { FIELD_LABELS } from "@/lib/styles";
@@ -77,6 +79,10 @@ interface FormVsLabelTableProps {
   detectedFields: ExtractedFields | null;
   checkStates: Record<string, boolean>;
   onToggleCheck: (fieldKey: string) => void;
+  /** Which label (e.g. "Front Label", "Back Label") each field was detected from */
+  fieldSources?: Record<string, string>;
+  /** Callback when agent clicks the 🛑 stop sign to flag a field as a finding */
+  onFlagField?: (fieldKey: string, fieldLabel: string, formValue: string | undefined, detectedValue: string | undefined) => void;
 }
 
 export default function FormVsLabelTable({
@@ -87,6 +93,8 @@ export default function FormVsLabelTable({
   detectedFields,
   checkStates,
   onToggleCheck,
+  fieldSources,
+  onFlagField,
 }: FormVsLabelTableProps) {
   const hasOcr = detectedFields || Object.keys(mergedOcr).length > 0;
 
@@ -145,6 +153,8 @@ export default function FormVsLabelTable({
           const matchResult = comparisonResults?.[key];
           const isRequired = REQUIRED_FIELDS.has(key);
           const isChecked = checkStates[key] || false;
+          const source = fieldSources?.[key];
+          const fieldLabel = FIELD_LABELS[key as keyof typeof FIELD_LABELS] || key;
 
           // Skip fields that have neither submitted nor detected values
           if (!formVal && !detectedVal && !isRequired) return null;
@@ -165,29 +175,24 @@ export default function FormVsLabelTable({
           return (
             <div
               key={key}
-              className={`border-l-[3px] ${borderColor} ${rowBg} hover:bg-gray-50/60 transition cursor-pointer`}
-              onClick={() => onToggleCheck(key)}
+              className={`border-l-[3px] ${borderColor} ${rowBg} hover:bg-gray-50/60 transition`}
             >
-              {/* Main row: checkbox + field name + badge + values */}
+              {/* Main row: content + actions on right */}
               <div className="flex items-start gap-2 px-3 py-2.5">
-                {/* Checkbox */}
-                <div className="flex items-center justify-center pt-0.5 shrink-0">
-                  {isChecked ? (
-                    <CheckSquare size={16} className="text-emerald-600" />
-                  ) : (
-                    <Square size={16} className="text-gray-300" />
-                  )}
-                </div>
-
-                {/* Content */}
+                {/* Content (takes up most space) */}
                 <div className="flex-1 min-w-0">
-                  {/* Field name row with badge */}
-                  <div className="flex items-center gap-2 mb-1.5">
+                  {/* Field name row with source badge and score badge */}
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                     <span className="text-[11px] font-semibold text-gray-800">
-                      {FIELD_LABELS[key as keyof typeof FIELD_LABELS]}
+                      {fieldLabel}
                     </span>
                     {isRequired && (
                       <span className="text-[8px] font-bold text-red-500 bg-red-50 px-1 py-0.5 rounded uppercase">REQ</span>
+                    )}
+                    {source && (
+                      <span className="text-[8px] font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                        {source}
+                      </span>
                     )}
                     {matchResult && matchResult.verdict !== "missing" && (
                       <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${scoreBadgeColor(matchResult.verdict)} flex items-center gap-1 ml-auto`}>
@@ -207,7 +212,7 @@ export default function FormVsLabelTable({
                       </p>
                     </div>
                     <div>
-                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Detected</p>
+                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Detected{source ? ` (${source})` : ""}</p>
                       <p className="text-[11px] text-gray-700 break-words leading-snug">
                         {detectedVal || (
                           <span className="text-gray-400 italic text-[10px]">
@@ -229,6 +234,36 @@ export default function FormVsLabelTable({
                     }`}>
                       {matchResult.message}
                     </div>
+                  )}
+                </div>
+
+                {/* Right side: Checkbox + Flag button */}
+                <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                  {/* Checkbox — agent clicks to mark field as verified */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onToggleCheck(key); }}
+                    className="p-0.5 rounded hover:bg-gray-100 transition"
+                    title={isChecked ? "Unmark as verified" : "Mark as verified"}
+                  >
+                    {isChecked ? (
+                      <CheckSquare size={18} className="text-emerald-600" />
+                    ) : (
+                      <Square size={18} className="text-gray-300 hover:text-gray-400" />
+                    )}
+                  </button>
+
+                  {/* 🛑 Flag button — agent clicks to add field as a finding */}
+                  {onFlagField && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFlagField(key, fieldLabel, formVal, detectedVal);
+                      }}
+                      className="p-0.5 rounded hover:bg-red-50 transition group"
+                      title="Flag as disqualifying discrepancy — adds to Findings"
+                    >
+                      <OctagonX size={18} className="text-red-300 group-hover:text-red-500 transition" />
+                    </button>
                   )}
                 </div>
               </div>
