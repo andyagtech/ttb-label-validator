@@ -25,9 +25,6 @@ import {
   Clock,
   User,
   FileText,
-  Send,
-  ChevronDown,
-  ChevronUp,
   Wine,
   Beer,
   GlassWater,
@@ -38,28 +35,23 @@ import {
   ClipboardCheck,
   SplitSquareHorizontal,
   ScanSearch,
-  Square,
-  CheckSquare,
   Loader2,
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
 import { parseOcrText, type ExtractedFields } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
+import FormVsLabelTable from "@/components/FormVsLabelTable";
+import QuickRejectButton from "@/components/QuickRejectButton";
+import DecisionPanel from "@/components/DecisionPanel";
 import {
   STATUS_STYLES,
   CATEGORY_TEXT,
   VERDICT_COLORS,
-  VERDICT_TEXT,
   FIELD_LABELS,
   formatDate,
   formatSeconds,
 } from "@/lib/styles";
-
-// ---------------------------------------------------------------------------
-// Required fields by law (mandatory on all labels)
-// ---------------------------------------------------------------------------
-const REQUIRED_FIELDS = new Set(["brandName", "classType", "netContents", "healthWarning", "nameAddress"]);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,24 +63,6 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
   spirits: <GlassWater size={16} className={CATEGORY_TEXT.spirits} />,
 };
 
-const DECISION_OPTIONS: Array<{
-  value: ReviewDecision;
-  label: string;
-  icon: React.ReactNode;
-  color: string;
-  bg: string;
-}> = [
-  { value: "approve", label: "Approve", icon: <CheckCircle2 size={15} />, color: "text-white", bg: "bg-emerald-500" },
-  { value: "reject", label: "Reject", icon: <XCircle size={15} />, color: "text-white", bg: "bg-red-500" },
-  {
-    value: "needs_revision",
-    label: "Needs Revision",
-    icon: <AlertTriangle size={15} />,
-    color: "text-white",
-    bg: "bg-orange-500",
-  },
-  { value: "escalate", label: "Escalate", icon: <User size={15} />, color: "text-white", bg: "bg-indigo-500" },
-];
 
 function verdictIcon(verdict: MatchResult["verdict"]) {
   switch (verdict) {
@@ -270,19 +244,6 @@ export default function TTBReviewPage() {
     const missing = items.filter((r) => r.verdict === "missing").length;
     return { matches, issues, missing, total: items.length };
   }, [comparisonResults]);
-
-  // Finding helpers
-  const addFinding = useCallback(() => {
-    setFindings((prev) => [...prev, { checklistItemId: "", severity: "warning", message: "" }]);
-  }, []);
-
-  const updateFinding = useCallback((idx: number, field: keyof ReviewFinding, value: string) => {
-    setFindings((prev) => prev.map((f, i) => (i === idx ? { ...f, [field]: value } : f)));
-  }, []);
-
-  const removeFinding = useCallback((idx: number) => {
-    setFindings((prev) => prev.filter((_, i) => i !== idx));
-  }, []);
 
   // Submit review
   const submitReview = useCallback(async () => {
@@ -560,129 +521,15 @@ export default function TTBReviewPage() {
                 </div>
 
                 {/* Right: Submitted vs Detected comparison table */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ClipboardCheck size={13} className="text-gray-400" />
-                      <span className="text-xs font-medium text-gray-700">Form vs. Label Verification</span>
-                    </div>
-                    {comparisonSummary && (
-                      <div className="flex items-center gap-2 text-[10px]">
-                        <span className="text-emerald-600">{comparisonSummary.matches} match</span>
-                        {comparisonSummary.issues > 0 && (
-                          <span className="text-red-600">{comparisonSummary.issues} issue{comparisonSummary.issues > 1 ? "s" : ""}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="divide-y divide-gray-100">
-                    {/* Header row */}
-                    <div className="grid grid-cols-[28px_1fr_1fr_1fr] gap-2 px-3 py-2 bg-gray-50 text-[9px] font-semibold text-gray-500 uppercase tracking-wider">
-                      <div></div>
-                      <div>Field</div>
-                      <div>Submitted (Form)</div>
-                      <div>Detected (Label)</div>
-                    </div>
-
-                    {/* Field rows */}
-                    {Object.keys(FIELD_LABELS).map((key) => {
-                      const formVal = submission.formFields?.[key];
-                      const detectedVal = mergedOcr[key];
-                      const matchResult = comparisonResults?.[key];
-                      const isRequired = REQUIRED_FIELDS.has(key);
-                      const isChecked = checkStates[key] || false;
-
-                      // Skip fields that have neither submitted nor detected values
-                      if (!formVal && !detectedVal && !isRequired) return null;
-
-                      // Determine row styling
-                      let rowBg = "bg-white";
-                      if (matchResult) {
-                        if (matchResult.verdict === "exact" || matchResult.verdict === "match") rowBg = "bg-emerald-50/50";
-                        else if (matchResult.verdict === "close") rowBg = "bg-amber-50/50";
-                        else if (matchResult.verdict === "mismatch") rowBg = "bg-red-50/50";
-                      }
-                      if (isRequired && !formVal && !detectedVal) rowBg = "bg-red-50/50";
-
-                      return (
-                        <div
-                          key={key}
-                          className={`grid grid-cols-[28px_1fr_1fr_1fr] gap-2 px-3 py-2.5 items-start ${rowBg} hover:bg-gray-50/80 transition cursor-pointer`}
-                          onClick={() => toggleCheck(key)}
-                        >
-                          {/* Checkbox */}
-                          <div className="flex items-center justify-center pt-0.5">
-                            {isChecked ? (
-                              <CheckSquare size={16} className="text-emerald-600" />
-                            ) : (
-                              <Square size={16} className="text-gray-300" />
-                            )}
-                          </div>
-
-                          {/* Field name */}
-                          <div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-[11px] font-medium text-gray-700">
-                                {FIELD_LABELS[key as keyof typeof FIELD_LABELS]}
-                              </span>
-                              {isRequired && (
-                                <span className="text-[8px] font-bold text-red-500 uppercase">REQ</span>
-                              )}
-                            </div>
-                            {matchResult && matchResult.verdict !== "exact" && matchResult.verdict !== "missing" && (
-                              <span className={`text-[9px] ${
-                                matchResult.verdict === "match" ? "text-emerald-600" :
-                                matchResult.verdict === "close" ? "text-amber-600" : "text-red-600"
-                              }`}>
-                                {matchResult.score}% match
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Submitted (form) value */}
-                          <div>
-                            <p className="text-[11px] text-gray-700 break-words leading-tight">
-                              {formVal || <span className="text-gray-400 italic text-[10px]">{isRequired ? "⚠ Missing" : "—"}</span>}
-                            </p>
-                          </div>
-
-                          {/* Detected (label) value */}
-                          <div className="flex items-start gap-1">
-                            {matchResult && (
-                              <span className="shrink-0 mt-0.5">{verdictIcon(matchResult.verdict)}</span>
-                            )}
-                            <p className="text-[11px] text-gray-700 break-words leading-tight">
-                              {detectedVal || (
-                                <span className="text-gray-400 italic text-[10px]">
-                                  {(detectedFields || Object.keys(mergedOcr).length > 0) ? "Not found" : "Run Text Detect →"}
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Government Warning special check */}
-                  {mergedOcr.healthWarning && (
-                    <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
-                          ? <CheckCircle2 size={12} className="text-emerald-500" />
-                          : <XCircle size={12} className="text-red-500" />
-                        }
-                        <span className="text-[10px] font-medium text-gray-600">
-                          {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
-                            ? '"GOVERNMENT WARNING:" is in ALL CAPS ✓'
-                            : '"GOVERNMENT WARNING:" is NOT in ALL CAPS — will be rejected'
-                          }
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <FormVsLabelTable
+                  formFields={submission.formFields}
+                  mergedOcr={mergedOcr}
+                  comparisonResults={comparisonResults}
+                  comparisonSummary={comparisonSummary}
+                  detectedFields={detectedFields}
+                  checkStates={checkStates}
+                  onToggleCheck={toggleCheck}
+                />
               </div>
             </div>
           )}
@@ -885,189 +732,35 @@ export default function TTBReviewPage() {
         {/* RIGHT: Review Decision Panel (fixed width) */}
         {/* ============================================================== */}
         <div id="review-decision-panel" className="w-[320px] shrink-0 space-y-4" data-walkthrough="decision-panel">
-          {submitted ? (
-            <div className="bg-white rounded-xl border border-emerald-200 p-6 text-center sticky top-20">
-              <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-800 mb-1">Review Submitted</h3>
-              <p className="text-xs text-gray-500 mb-4">
-                Decision: {decision} · Time: {formatSeconds(elapsed)}
-              </p>
-              <Link
-                href="/queue"
-                className="block w-full px-4 py-2 text-xs font-medium rounded-lg bg-[#1a4480] text-white hover:bg-[#162e51] transition text-center"
-              >
-                Back to Queue
-              </Link>
-            </div>
-          ) : (
-            <div className="sticky top-20 space-y-4">
-              {/* Reviewer name */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider block mb-2">
-                  Reviewer Name
-                </label>
-                <input
-                  id="reviewer-name-input"
-                  type="text"
-                  value={reviewerName}
-                  onChange={(e) => setReviewerName(e.target.value)}
-                  placeholder="e.g. Jenny Park"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                />
-              </div>
-
-              {/* Decision buttons */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider block mb-3">
-                  Decision
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {DECISION_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setDecision(opt.value)}
-                      className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition border-2 ${
-                        decision === opt.value
-                          ? `${opt.bg} ${opt.color} border-transparent shadow-sm`
-                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      {opt.icon}
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Reject — auto-populate findings from mismatches */}
-              {comparisonResults && isPending && (
-                <button
-                  onClick={() => {
-                    const autoFindings: ReviewFinding[] = [];
-                    // Check mismatches
-                    for (const [key, result] of Object.entries(comparisonResults)) {
-                      const fieldLabel = FIELD_LABELS[key as keyof typeof FIELD_LABELS] || key;
-                      if (result.verdict === "mismatch") {
-                        const formVal = submission.formFields?.[key] || "N/A";
-                        const ocrVal = mergedOcr[key] || "not detected";
-                        autoFindings.push({
-                          checklistItemId: key,
-                          severity: "error",
-                          message: `${fieldLabel} mismatch: form says "${formVal}" but label shows "${ocrVal}"`,
-                        });
-                      } else if (result.verdict === "close") {
-                        autoFindings.push({
-                          checklistItemId: key,
-                          severity: "warning",
-                          message: `${fieldLabel} is a close but imperfect match (${result.score}% similar). Verify manually.`,
-                        });
-                      }
-                    }
-                    // Check required fields that are missing from the label
-                    for (const reqKey of Array.from(REQUIRED_FIELDS)) {
-                      if (!mergedOcr[reqKey] && submission.formFields?.[reqKey]) {
-                        const fieldLabel = FIELD_LABELS[reqKey as keyof typeof FIELD_LABELS] || reqKey;
-                        if (!autoFindings.some((f) => f.checklistItemId === reqKey)) {
-                          autoFindings.push({
-                            checklistItemId: reqKey,
-                            severity: "error",
-                            message: `Required field "${fieldLabel}" was not detected on the label.`,
-                          });
-                        }
-                      }
-                    }
-                    if (autoFindings.length > 0) {
-                      setFindings(autoFindings);
-                      setDecision("reject");
-                      setNotes(`Rejected: ${autoFindings.length} issue(s) found during form-vs-label verification.`);
-                    }
+          <DecisionPanel
+            reviewerName={reviewerName}
+            decision={decision}
+            notes={notes}
+            findings={findings}
+            submitting={submitting}
+            submitted={submitted}
+            isPending={isPending}
+            elapsed={elapsed}
+            onReviewerNameChange={setReviewerName}
+            onDecisionChange={setDecision}
+            onNotesChange={setNotes}
+            onFindingsChange={setFindings}
+            onSubmit={submitReview}
+            quickRejectSlot={
+              comparisonResults && isPending ? (
+                <QuickRejectButton
+                  comparisonResults={comparisonResults}
+                  formFields={submission.formFields}
+                  mergedOcr={mergedOcr}
+                  onReject={(autoFindings, dec, autoNotes) => {
+                    setFindings(autoFindings);
+                    setDecision(dec);
+                    setNotes(autoNotes);
                   }}
-                  disabled={!Object.values(comparisonResults).some(
-                    (r) => r.verdict === "mismatch" || r.verdict === "close"
-                  ) && !Array.from(REQUIRED_FIELDS).some((k) => !mergedOcr[k] && submission.formFields?.[k])}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-xl border-2 border-red-200 text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
-                >
-                  <XCircle size={14} />
-                  Quick Reject — Auto-fill from Mismatches
-                </button>
-              )}
-
-              {/* Findings */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Findings</label>
-                  <button onClick={addFinding} className="text-[11px] text-blue-500 hover:text-blue-600 font-medium">
-                    + Add
-                  </button>
-                </div>
-
-                {findings.length === 0 ? (
-                  <p className="text-[11px] text-gray-400 italic">No findings yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {findings.map((f, fi) => (
-                      <div key={fi} className="border border-gray-100 rounded-lg p-2 space-y-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <select
-                            value={f.severity}
-                            onChange={(e) => updateFinding(fi, "severity", e.target.value)}
-                            className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5"
-                          >
-                            <option value="error">Error</option>
-                            <option value="warning">Warning</option>
-                            <option value="info">Info</option>
-                          </select>
-                          <input
-                            type="text"
-                            value={f.checklistItemId}
-                            onChange={(e) => updateFinding(fi, "checklistItemId", e.target.value)}
-                            placeholder="Field..."
-                            className="flex-1 text-[10px] border border-gray-200 rounded px-1.5 py-0.5"
-                          />
-                          <button onClick={() => removeFinding(fi)} className="text-gray-400 hover:text-red-500">
-                            <XCircle size={12} />
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={f.message}
-                          onChange={(e) => updateFinding(fi, "message", e.target.value)}
-                          placeholder="Describe the issue..."
-                          className="w-full text-[11px] border border-gray-200 rounded px-2 py-1"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider block mb-2">
-                  Notes
-                </label>
-                <textarea
-                  id="review-notes-input"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Optional notes..."
-                  rows={2}
-                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                 />
-              </div>
-
-              {/* Submit */}
-              <button
-                id="submit-review-button"
-                onClick={submitReview}
-                disabled={!decision || !reviewerName.trim() || submitting || !isPending}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl bg-[#1a4480] text-white hover:bg-[#162e51] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
-              >
-                <Send size={14} />
-                {submitting ? "Submitting..." : !isPending ? "Already Reviewed" : "Submit Review"}
-              </button>
-            </div>
-          )}
+              ) : undefined
+            }
+          />
         </div>
       </div>
     </>
