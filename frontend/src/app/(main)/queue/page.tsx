@@ -10,8 +10,9 @@
  */
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   XCircle,
@@ -20,6 +21,9 @@ import {
   FileText,
   RefreshCw,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
   Wine,
   Beer,
   GlassWater,
@@ -68,11 +72,28 @@ type FilterStatus = "all" | "pending" | "reviewed";
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
+type SortKey = "productName" | "beverageCategory" | "status" | "submitterId" | "createdAt" | "lastReviewer";
+type SortDir = "asc" | "desc";
+
 export default function TTBQueuePage() {
+  const router = useRouter();
   const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [filter, setFilter] = useState<FilterStatus>("all");
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const handleSort = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        return key;
+      }
+      setSortDir("asc");
+      return key;
+    });
+  }, []);
 
   const fetchQueue = useCallback(async () => {
     setLoading(true);
@@ -101,14 +122,39 @@ export default function TTBQueuePage() {
     fetchQueue();
   }, [fetchQueue]);
 
-  // Completed statuses sink to the bottom
-  const COMPLETED = new Set(["approved", "rejected", "needs_revision"]);
-  const sorted = [...items].sort((a, b) => {
-    const aCompleted = COMPLETED.has(a.status) ? 1 : 0;
-    const bCompleted = COMPLETED.has(b.status) ? 1 : 0;
-    if (aCompleted !== bCompleted) return aCompleted - bCompleted;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  // Sort and filter
+  const sorted = useMemo(() => {
+    const arr = [...items];
+    if (sortKey) {
+      arr.sort((a, b) => {
+        let aVal: string;
+        let bVal: string;
+        if (sortKey === "createdAt") {
+          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return sortDir === "asc" ? diff : -diff;
+        }
+        if (sortKey === "lastReviewer") {
+          aVal = a.lastReviewer || "";
+          bVal = b.lastReviewer || "";
+        } else {
+          aVal = String(a[sortKey]).toLowerCase();
+          bVal = String(b[sortKey]).toLowerCase();
+        }
+        const cmp = aVal.localeCompare(bVal);
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    } else {
+      // Default: completed statuses sink to the bottom
+      const COMPLETED = new Set(["approved", "rejected", "needs_revision"]);
+      arr.sort((a, b) => {
+        const aCompleted = COMPLETED.has(a.status) ? 1 : 0;
+        const bCompleted = COMPLETED.has(b.status) ? 1 : 0;
+        if (aCompleted !== bCompleted) return aCompleted - bCompleted;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    }
+    return arr;
+  }, [items, sortKey, sortDir]);
 
   const filtered =
     filter === "all"
@@ -261,9 +307,18 @@ export default function TTBQueuePage() {
             <caption className="sr-only">Submission review queue</caption>
             <thead>
               <tr style={{ background: C.lightGray }}>
-                {["Submission", "Category", "Status", "Submitter", "Submitted", "Reviewer", ""].map((h) => (
+                {([
+                  { label: "Submission", key: "productName" as SortKey },
+                  { label: "Category", key: "beverageCategory" as SortKey },
+                  { label: "Status", key: "status" as SortKey },
+                  { label: "Submitter", key: "submitterId" as SortKey },
+                  { label: "Submitted", key: "createdAt" as SortKey },
+                  { label: "Reviewer", key: "lastReviewer" as SortKey },
+                  { label: "", key: null },
+                ] as { label: string; key: SortKey | null }[]).map((col) => (
                   <th
-                    key={h}
+                    key={col.label || "_arrow"}
+                    onClick={col.key ? () => handleSort(col.key!) : undefined}
                     style={{
                       padding: "10px 16px",
                       textAlign: "left",
@@ -273,9 +328,20 @@ export default function TTBQueuePage() {
                       letterSpacing: "0.05em",
                       color: C.darkNavy,
                       borderBottom: `2px solid ${C.border}`,
+                      cursor: col.key ? "pointer" : "default",
+                      userSelect: "none",
                     }}
                   >
-                    {h}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      {col.label}
+                      {col.key && (
+                        sortKey === col.key
+                          ? sortDir === "asc"
+                            ? <ChevronUp size={12} style={{ color: C.navy }} />
+                            : <ChevronDown size={12} style={{ color: C.navy }} />
+                          : <ChevronsUpDown size={12} style={{ color: C.medGray, opacity: 0.5 }} />
+                      )}
+                    </span>
                   </th>
                 ))}
               </tr>
@@ -336,6 +402,7 @@ export default function TTBQueuePage() {
                   return (
                     <tr
                       key={item.id}
+                      onClick={() => router.push(`/queue/${item.id}`)}
                       style={{
                         background: i % 2 === 1 ? "#fafafa" : C.white,
                         borderBottom: `1px solid ${C.border}`,
@@ -348,10 +415,8 @@ export default function TTBQueuePage() {
                       }
                     >
                       <td style={{ padding: "12px 16px" }}>
-                        <Link href={`/queue/${item.id}`} style={{ textDecoration: "none", display: "block" }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: C.darkNavy }}>{item.productName}</div>
-                          <div style={{ fontSize: 10, color: C.lightGrayText, fontFamily: "monospace" }}>{item.id}</div>
-                        </Link>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: C.darkNavy }}>{item.productName}</div>
+                        <div style={{ fontSize: 10, color: C.lightGrayText, fontFamily: "monospace" }}>{item.id}</div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <span
@@ -380,13 +445,14 @@ export default function TTBQueuePage() {
                       <td style={{ padding: "12px 16px", fontSize: 13, color: C.medGray }}>
                         {timeAgo(item.createdAt)}
                       </td>
-                      <td style={{ padding: "12px 16px", fontSize: 13, color: C.darkGray }}>
+                      <td
+                        style={{ padding: "12px 16px", fontSize: 13, color: C.darkGray }}
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
                         {item.lastReviewer || <span style={{ color: C.lightGrayText }}>—</span>}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
-                        <Link href={`/queue/${item.id}`}>
-                          <ChevronRight size={14} style={{ color: C.medGray }} />
-                        </Link>
+                        <ChevronRight size={14} style={{ color: C.medGray }} />
                       </td>
                     </tr>
                   );
