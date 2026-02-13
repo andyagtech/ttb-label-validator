@@ -56,6 +56,7 @@ export async function uploadLabelImage(
     access: "public",
     contentType: mimeType,
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
 
   return blob.url;
@@ -73,6 +74,7 @@ export async function saveManifest(manifest: LabelManifest): Promise<string> {
     access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
   return blob.url;
 }
