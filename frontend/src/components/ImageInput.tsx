@@ -70,24 +70,6 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
         return;
       }
 
-      // Check permission state if the Permissions API is available
-      try {
-        if (navigator.permissions) {
-          const perm = await navigator.permissions.query({ name: "camera" as PermissionName });
-          if (perm.state === "denied") {
-            setCameraError(
-              "Camera access was previously denied. Please allow camera access in your browser settings:\n\n" +
-                "• Click the lock/site-info icon in the address bar\n" +
-                "• Find \"Camera\" and change it to \"Allow\"\n" +
-                "• Then reload the page",
-            );
-            return;
-          }
-        }
-      } catch {
-        // Permissions API not supported for camera — continue to getUserMedia
-      }
-
       try {
         // Stop existing stream
         if (stream) {
