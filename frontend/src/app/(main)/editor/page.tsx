@@ -84,6 +84,19 @@ export default function EditorPage() {
   const flattenPickerRef = useRef<HTMLDivElement>(null);
   const flattenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Auto-load image from landing page (via sessionStorage)
+  useEffect(() => {
+    try {
+      const landingImage = sessionStorage.getItem("ttb_landing_image");
+      if (landingImage) {
+        sessionStorage.removeItem("ttb_landing_image");
+        e.handleImageLoaded(landingImage);
+      }
+    } catch {
+      // sessionStorage not available
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-dismiss the AI Flatten picker after 4 seconds
   useEffect(() => {
     if (showFlattenPicker) {

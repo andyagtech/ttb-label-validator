@@ -11,7 +11,9 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   BarChart3,
   BookOpen,
@@ -35,21 +37,22 @@ import { C, AlertBanner, Breadcrumbs } from "@/components/TTBShell";
 // Sample data for the prototype
 // ---------------------------------------------------------------------------
 const SAMPLE_CHECKS = [
-  { label: "Brand Name", status: "pass", value: "Mountain Creek Cellars", citation: "27 CFR §7.24" },
-  { label: "Class/Type Designation", status: "pass", value: "Red Wine", citation: "27 CFR §4.34" },
-  { label: "Alcohol Content", status: "pass", value: "13.5% by Volume", citation: "27 CFR §4.36" },
-  { label: "Net Contents", status: "pass", value: "750 mL", citation: "27 CFR §4.37" },
+  { label: "Brand Name", status: "pass", value: "Mountain Creek Cellars", citation: "27 CFR §4.33", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.33" },
+  { label: "Class/Type Designation", status: "pass", value: "Red Wine", citation: "27 CFR §4.34", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.34" },
+  { label: "Alcohol Content", status: "pass", value: "13.5% by Volume", citation: "27 CFR §4.36", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.36" },
+  { label: "Net Contents", status: "pass", value: "750 mL", citation: "27 CFR §4.37", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.37" },
   {
     label: "Name & Address",
     status: "pass",
     value: "Produced by Mountain Creek Cellars, Napa, CA",
     citation: "27 CFR §4.35",
+    url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.35",
   },
-  { label: "Government Warning", status: "fail", value: "Not detected", citation: "27 CFR Part 16" },
-  { label: "Sulfite Declaration", status: "warn", value: "Not detected", citation: "27 CFR §4.32(e)" },
-  { label: "Appellation of Origin", status: "pass", value: "Napa Valley", citation: "27 CFR §4.25" },
-  { label: "Vintage Date", status: "pass", value: "2021", citation: "27 CFR §4.27" },
-  { label: "Varietal Designation", status: "pass", value: "Cabernet Sauvignon", citation: "27 CFR §4.23" },
+  { label: "Government Warning", status: "fail", value: "Not detected", citation: "27 CFR Part 16", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-16" },
+  { label: "Sulfite Declaration", status: "warn", value: "Not detected", citation: "27 CFR §4.32(e)", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.32" },
+  { label: "Appellation of Origin", status: "pass", value: "Napa Valley", citation: "27 CFR §4.25", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-C/section-4.25" },
+  { label: "Vintage Date", status: "pass", value: "2021", citation: "27 CFR §4.27", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-C/section-4.27" },
+  { label: "Varietal Designation", status: "pass", value: "Cabernet Sauvignon", citation: "27 CFR §4.23", url: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-C/section-4.23" },
 ];
 
 const STATUS_MAP: Record<string, { icon: React.ReactNode; color: string; bg: string; label: string }> = {
@@ -77,6 +80,7 @@ const STATUS_MAP: Record<string, { icon: React.ReactNode; color: string; bg: str
 // Main Page
 // ---------------------------------------------------------------------------
 export default function TTBStylePrototype() {
+  const router = useRouter();
   const passCount = SAMPLE_CHECKS.filter((c) => c.status === "pass").length;
   const failCount = SAMPLE_CHECKS.filter((c) => c.status === "fail").length;
   const warnCount = SAMPLE_CHECKS.filter((c) => c.status === "warn").length;
@@ -146,6 +150,43 @@ export default function TTBStylePrototype() {
           The COLA process ensures all alcohol beverage labels comply with federal regulations before products enter the
           market. Upload label images below for automated compliance checking.
         </p>
+
+        {/* Sample label image */}
+        <div
+          style={{
+            marginBottom: 32,
+            background: C.white,
+            borderRadius: 8,
+            padding: 20,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: C.darkNavy,
+              marginBottom: 4,
+              fontFamily: "'Merriweather', Georgia, serif",
+            }}
+          >
+            Sample Label — Mountain Creek Cellars (Wine)
+          </h2>
+          <p style={{ fontSize: 13, color: C.medGray, marginBottom: 16 }}>
+            This wine label is <strong>missing a Government Health Warning</strong> and has <strong>no Sulfite Declaration</strong>. 
+            The validation results below show what our automated checker detects.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Image
+              src="/samples/wine_noncompliant.jpg"
+              alt="Mountain Creek Cellars wine label — front and back, missing government warning and sulfite declaration"
+              width={800}
+              height={400}
+              style={{ maxWidth: "100%", height: "auto", borderRadius: 6, border: `1px solid ${C.border}` }}
+              priority
+            />
+          </div>
+        </div>
 
         {/* Two-column layout */}
         <div id="home-layout" style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 32 }}>
@@ -343,7 +384,9 @@ export default function TTBStylePrototype() {
                         </td>
                         <td style={{ padding: "12px 16px" }}>
                           <a
-                            href="#"
+                            href={check.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             style={{
                               color: C.lightBlue,
                               textDecoration: "underline",
@@ -383,7 +426,7 @@ export default function TTBStylePrototype() {
                   fontFamily: "'Merriweather', Georgia, serif",
                 }}
               >
-                Upload Label Image
+                Upload Your Label Image
               </h3>
               <input
                 ref={fileInputRef}
@@ -469,6 +512,16 @@ export default function TTBStylePrototype() {
               )}
 
               <button
+                onClick={() => {
+                  if (uploadedImage) {
+                    try {
+                      sessionStorage.setItem("ttb_landing_image", uploadedImage);
+                    } catch {
+                      // sessionStorage may fail if image is too large
+                    }
+                    router.push("/editor");
+                  }
+                }}
                 style={{
                   width: "100%",
                   marginTop: 16,
@@ -499,7 +552,7 @@ export default function TTBStylePrototype() {
               {/* Link to full editor with camera/perspective tools */}
               <div style={{ marginTop: 12, textAlign: "center" }}>
                 <Link
-                  href="/"
+                  href="/editor"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
