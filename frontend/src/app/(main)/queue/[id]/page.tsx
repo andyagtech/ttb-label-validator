@@ -139,6 +139,16 @@ export default function TTBReviewPage() {
     fetchSubmission();
   }, [fetchSubmission]);
 
+  // Auto-run Text Detect shortly after submission loads (Tesseract.js is in-browser, no API cost)
+  useEffect(() => {
+    if (!submission || detectedFields || detecting) return;
+    const timer = setTimeout(() => {
+      runTextDetect();
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submission]);
+
   // Run Text Detect (Tesseract.js) on label images — parse per-label to track sources
   const runTextDetect = useCallback(async () => {
     if (!submission) return;
