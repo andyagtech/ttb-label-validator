@@ -84,13 +84,18 @@ export default function EditorPage() {
   const flattenPickerRef = useRef<HTMLDivElement>(null);
   const flattenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-load image from landing page (via sessionStorage)
+  // Auto-load image(s) from landing page / generator (via sessionStorage)
   useEffect(() => {
     try {
       const landingImage = sessionStorage.getItem("ttb_landing_image");
       if (landingImage) {
         sessionStorage.removeItem("ttb_landing_image");
-        e.handleImageLoaded(landingImage);
+        e.loadImageToSlot("front", landingImage);
+      }
+      const backImage = sessionStorage.getItem("ttb_landing_back_image");
+      if (backImage) {
+        sessionStorage.removeItem("ttb_landing_back_image");
+        e.loadImageToSlot("back", backImage);
       }
     } catch {
       // sessionStorage not available

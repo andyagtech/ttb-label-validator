@@ -261,13 +261,19 @@ export default function TTBGeneratePage() {
   const sendToEditor = useCallback(() => {
     if (!generatedImage) return;
     try {
-      const dataUrl = `data:${generatedMime};base64,${generatedImage}`;
-      sessionStorage.setItem("ttb_landing_image", dataUrl);
+      const frontUrl = `data:${generatedMime};base64,${generatedImage}`;
+      sessionStorage.setItem("ttb_landing_image", frontUrl);
+      if (generatedBackImage) {
+        const backUrl = `data:${generatedBackMime};base64,${generatedBackImage}`;
+        sessionStorage.setItem("ttb_landing_back_image", backUrl);
+      } else {
+        sessionStorage.removeItem("ttb_landing_back_image");
+      }
     } catch {
       // sessionStorage may fail if image is too large
     }
     router.push("/editor");
-  }, [generatedImage, generatedMime, router]);
+  }, [generatedImage, generatedMime, generatedBackImage, generatedBackMime, router]);
 
   return (
     <>

@@ -82,6 +82,8 @@ export interface EditorStateReturn {
   hasAnyImage: boolean;
   /** Handle a new image being uploaded to the active slot. */
   handleImageLoaded: (dataUrl: string) => void;
+  /** Load an image into a specific slot by ID (not bound to activeSlotId). */
+  loadImageToSlot: (slotId: string, dataUrl: string) => void;
   /** Handle the multi-label split choice. */
   handleMultiLabelSplit: (choice: MultiLabelChoice) => void;
   /** Update corner positions for the active slot. */
@@ -280,8 +282,8 @@ export function useEditorState(): EditorStateReturn {
 
   // ── Image lifecycle ───────────────────────────────────────────────
 
-  const handleImageLoaded = useCallback(
-    (dataUrl: string) => {
+  const loadImageToSlot = useCallback(
+    (slotId: string, dataUrl: string) => {
       const img = new Image();
       img.onload = () => {
         const inset = Math.min(img.width, img.height) * 0.05;
@@ -298,7 +300,7 @@ export function useEditorState(): EditorStateReturn {
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0);
 
-        updateSlot(activeSlotId, {
+        updateSlot(slotId, {
           imageSrc: dataUrl,
           corners,
           meshEdges: createMeshEdgesFromCorners(corners, 3),
@@ -320,7 +322,12 @@ export function useEditorState(): EditorStateReturn {
       };
       img.src = dataUrl;
     },
-    [activeSlotId, updateSlot],
+    [updateSlot],
+  );
+
+  const handleImageLoaded = useCallback(
+    (dataUrl: string) => loadImageToSlot(activeSlotId, dataUrl),
+    [activeSlotId, loadImageToSlot],
   );
 
   const handleMultiLabelSplit = useCallback(
@@ -925,6 +932,7 @@ export function useEditorState(): EditorStateReturn {
     handleCategoryChange,
     hasAnyImage,
     handleImageLoaded,
+    loadImageToSlot,
     handleMultiLabelSplit,
     handleCornersChange,
     handleMeshEdgesChange,
