@@ -56,8 +56,38 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
     [handleFile],
   );
 
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
   const openCamera = useCallback(
     async (facing: "environment" | "user" = facingMode) => {
+      setCameraError(null);
+
+      // Check browser support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError(
+          "Camera is not supported in this browser. Please use a modern browser (Chrome, Safari, Firefox) or upload an image instead.",
+        );
+        return;
+      }
+
+      // Check permission state if the Permissions API is available
+      try {
+        if (navigator.permissions) {
+          const perm = await navigator.permissions.query({ name: "camera" as PermissionName });
+          if (perm.state === "denied") {
+            setCameraError(
+              "Camera access was previously denied. Please allow camera access in your browser settings:\n\n" +
+                "• Click the lock/site-info icon in the address bar\n" +
+                "• Find \"Camera\" and change it to \"Allow\"\n" +
+                "• Then reload the page",
+            );
+            return;
+          }
+        }
+      } catch {
+        // Permissions API not supported for camera — continue to getUserMedia
+      }
+
       try {
         // Stop existing stream
         if (stream) {
@@ -81,8 +111,28 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
           }
         }, 50);
       } catch (err) {
-        console.error("Camera access denied:", err);
-        alert("Could not access camera. Please check permissions and try again.");
+        console.error("Camera access error:", err);
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotAllowedError") {
+          setCameraError(
+            "Camera permission was denied. To enable it:\n\n" +
+              "• Click the lock/site-info icon in the address bar\n" +
+              "• Find \"Camera\" and change it to \"Allow\"\n" +
+              "• Then reload the page and try again",
+          );
+        } else if (name === "NotFoundError") {
+          setCameraError(
+            "No camera was found on this device. Please upload an image instead.",
+          );
+        } else if (name === "NotReadableError") {
+          setCameraError(
+            "Camera is in use by another application. Please close other apps using the camera and try again.",
+          );
+        } else {
+          setCameraError(
+            "Could not access the camera. Please check your browser permissions or upload an image instead.",
+          );
+        }
       }
     },
     [stream, facingMode],
@@ -220,6 +270,25 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
         <Camera size={24} />
         <span className="font-medium">Use Camera</span>
       </button>
+
+      {/* Camera error message */}
+      {cameraError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <Camera size={18} className="text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-800 mb-1">Camera Access Issue</p>
+              <p className="text-xs text-amber-700 whitespace-pre-line">{cameraError}</p>
+            </div>
+            <button
+              onClick={() => setCameraError(null)}
+              className="text-amber-400 hover:text-amber-600 shrink-0"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
