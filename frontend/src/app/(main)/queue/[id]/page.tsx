@@ -1,11 +1,9 @@
 /**
  * Submission Review Workspace — full agent review page for a single submission.
  *
- * Fetches submission detail from /api/queue/{id} and provides a 4-tab layout:
+ * Fetches submission detail from /api/queue/{id} and provides a 2-tab layout:
  *   1. Label + Data — side-by-side label artwork and OCR-extracted fields
- *   2. Checklist — per-label compliance checklist with auto_pass/auto_fail/manual
- *   3. Form Comparison — fuzzy matching of COLA form fields vs. OCR-extracted values
- *   4. History — audit trail of previous reviews with findings
+ *   2. History — audit trail of previous reviews with findings
  *
  * Includes a sticky decision panel (approve/reject/needs_revision/escalate),
  * reviewer name input, findings editor, notes field, and a live review timer.
@@ -24,18 +22,17 @@ import {
   ArrowLeft,
   Clock,
   User,
-  FileText,
   Wine,
   Beer,
   GlassWater,
   Image as ImageIcon,
   Minus,
-  Scale,
   History,
-  ClipboardCheck,
   SplitSquareHorizontal,
   ScanSearch,
   Loader2,
+  ZoomIn,
+  X,
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
@@ -47,7 +44,6 @@ import DecisionPanel from "@/components/DecisionPanel";
 import {
   STATUS_STYLES,
   CATEGORY_TEXT,
-  VERDICT_COLORS,
   FIELD_LABELS,
   formatDate,
   formatSeconds,
@@ -63,29 +59,10 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
   spirits: <GlassWater size={16} className={CATEGORY_TEXT.spirits} />,
 };
 
-
-function verdictIcon(verdict: MatchResult["verdict"]) {
-  switch (verdict) {
-    case "exact":
-    case "match":
-      return <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />;
-    case "close":
-      return <AlertTriangle size={13} className="text-amber-500 shrink-0" />;
-    case "mismatch":
-      return <XCircle size={13} className="text-red-500 shrink-0" />;
-    case "missing":
-      return <Minus size={13} className="text-gray-400 shrink-0" />;
-  }
-}
-
-function verdictBg(verdict: MatchResult["verdict"]) {
-  return VERDICT_COLORS[verdict] || "bg-gray-50 border-gray-200";
-}
-
 // ---------------------------------------------------------------------------
 // Tabs for left panel
 // ---------------------------------------------------------------------------
-type LeftTab = "side-by-side" | "checklist" | "comparison" | "history";
+type LeftTab = "side-by-side" | "history";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -128,6 +105,9 @@ export default function TTBReviewPage() {
   const toggleCheck = useCallback((fieldKey: string) => {
     setCheckStates((prev) => ({ ...prev, [fieldKey]: !prev[fieldKey] }));
   }, []);
+
+  // Zoom modal for label images
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
 
   // Timer tick
   useEffect(() => {
@@ -330,14 +310,8 @@ export default function TTBReviewPage() {
 
   const sb = STATUS_STYLES[submission.status] || STATUS_STYLES.draft;
   const isPending = submission.status === "submitted" || submission.status === "in_review";
-  const ocrResults = submission.serverValidation?.ocrResults;
   const selectedLabel = submission.labels[selectedLabelIdx];
-
-  // Count checklist stats
-  const allCheckItems = submission.labels.flatMap((l) => l.checklist);
-  const passCount = allCheckItems.filter((c) => c.status === "auto_pass").length;
-  const failCount = allCheckItems.filter((c) => c.status === "auto_fail").length;
-  const uncheckedCount = allCheckItems.filter((c) => c.status === "unchecked").length;
+  const labelImageUrl = selectedLabel?.correctedImageUrl || selectedLabel?.originalImageUrl;
 
   return (
     <>
@@ -382,22 +356,17 @@ export default function TTBReviewPage() {
           {/* Stats badges */}
           <div id="review-stats-bar" className="flex items-center gap-4" data-walkthrough="stats-bar">
             <div className="flex items-center gap-3 text-[11px]">
-              <span className="flex items-center gap-1 text-emerald-600">
-                <CheckCircle2 size={12} /> {passCount} pass
-              </span>
-              {failCount > 0 && (
-                <span className="flex items-center gap-1 text-red-600">
-                  <XCircle size={12} /> {failCount} fail
-                </span>
-              )}
-              {uncheckedCount > 0 && (
-                <span className="flex items-center gap-1 text-gray-400">{uncheckedCount} manual</span>
-              )}
-              {comparisonSummary && comparisonSummary.issues > 0 && (
-                <span className="flex items-center gap-1 text-amber-600">
-                  <AlertTriangle size={12} /> {comparisonSummary.issues} mismatch
-                  {comparisonSummary.issues > 1 ? "es" : ""}
-                </span>
+              {comparisonSummary && (
+                <>
+                  <span className="flex items-center gap-1 text-emerald-600">
+                    <CheckCircle2 size={12} /> {comparisonSummary.matches} match{comparisonSummary.matches !== 1 ? "es" : ""}
+                  </span>
+                  {comparisonSummary.issues > 0 && (
+                    <span className="flex items-center gap-1 text-amber-600">
+                      <AlertTriangle size={12} /> {comparisonSummary.issues} issue{comparisonSummary.issues !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </>
               )}
             </div>
             <div className="h-4 w-px bg-gray-200" />
@@ -419,18 +388,6 @@ export default function TTBReviewPage() {
               icon: <SplitSquareHorizontal size={13} />,
               wt: "tab-label-data",
             },
-            {
-              key: "checklist" as LeftTab,
-              label: "Checklist",
-              icon: <ClipboardCheck size={13} />,
-              wt: "tab-checklist",
-            },
-            {
-              key: "comparison" as LeftTab,
-              label: "Form Comparison",
-              icon: <Scale size={13} />,
-              wt: "tab-form-comparison",
-            },
             { key: "history" as LeftTab, label: "History", icon: <History size={13} />, wt: "tab-history" },
           ].map((tab) => (
             <button
@@ -445,11 +402,6 @@ export default function TTBReviewPage() {
             >
               {tab.icon}
               {tab.label}
-              {tab.key === "comparison" && comparisonSummary && comparisonSummary.issues > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700">
-                  {comparisonSummary.issues}
-                </span>
-              )}
               {tab.key === "history" && submission.reviews.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-600">
                   {submission.reviews.length}
@@ -468,22 +420,32 @@ export default function TTBReviewPage() {
           {/* ---- SIDE-BY-SIDE TAB ---- */}
           {leftTab === "side-by-side" && (
             <div className="space-y-4">
-              {/* Label selector + Text Detect button */}
+              {/* Label selector + Zoom + Text Detect — all same size */}
               <div className="flex items-center gap-2">
                 {submission.labels.map((l, i) => (
                   <button
                     key={l.slotId}
                     onClick={() => setSelectedLabelIdx(i)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition shadow-sm ${
                       selectedLabelIdx === i
                         ? "bg-gray-800 text-white"
-                        : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+                        : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:shadow"
                     }`}
                   >
-                    <ImageIcon size={12} />
+                    <ImageIcon size={15} />
                     {l.slotName}
                   </button>
                 ))}
+
+                {labelImageUrl && (
+                  <button
+                    onClick={() => setZoomUrl(labelImageUrl)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition shadow-sm bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:shadow"
+                  >
+                    <ZoomIn size={15} />
+                    Zoom
+                  </button>
+                )}
 
                 <button
                   onClick={runTextDetect}
@@ -559,125 +521,6 @@ export default function TTBReviewPage() {
                   onFlagField={handleFlagField}
                 />
               </div>
-            </div>
-          )}
-
-          {/* ---- CHECKLIST TAB ---- */}
-          {leftTab === "checklist" && (
-            <div className="space-y-4">
-              {submission.labels.map((label) => (
-                <div key={label.slotId} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-                    <FileText size={14} className="text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700">{label.slotName}</span>
-                    <span className="text-[10px] text-gray-400">{label.checklist.length} items</span>
-                  </div>
-                  <div className="p-4 space-y-1.5">
-                    {label.checklist.map((item) => (
-                      <div key={item.id} className="flex items-start gap-3 px-3 py-2 rounded-lg bg-gray-50">
-                        <div className="mt-0.5">
-                          {item.status === "auto_pass" ? (
-                            <CheckCircle2 size={15} className="text-emerald-500" />
-                          ) : item.status === "auto_fail" ? (
-                            <XCircle size={15} className="text-red-500" />
-                          ) : (
-                            <div className="w-[15px] h-[15px] rounded-full border-2 border-gray-300" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-700">{item.label}</p>
-                          {item.detectedValue && (
-                            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
-                              Detected: &ldquo;{item.detectedValue}&rdquo;
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ---- FORM COMPARISON TAB ---- */}
-          {leftTab === "comparison" && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h3 className="text-sm font-medium text-gray-700">COLA Application Form vs. Label OCR</h3>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  Comparing what the applicant entered on TTB Form 5100.31 against what was extracted from the label
-                  artwork.
-                </p>
-              </div>
-
-              {comparisonResults ? (
-                <div className="p-4 space-y-3">
-                  {comparisonSummary && (
-                    <div
-                      className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-3 ${
-                        comparisonSummary.issues === 0
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-amber-50 text-amber-700 border border-amber-200"
-                      }`}
-                    >
-                      <span>
-                        {comparisonSummary.matches} match{comparisonSummary.matches !== 1 ? "es" : ""}
-                      </span>
-                      <span className="text-gray-300">·</span>
-                      <span>
-                        {comparisonSummary.issues} issue{comparisonSummary.issues !== 1 ? "s" : ""}
-                      </span>
-                      {comparisonSummary.missing > 0 && (
-                        <>
-                          <span className="text-gray-300">·</span>
-                          <span className="text-gray-500">{comparisonSummary.missing} not compared</span>
-                        </>
-                      )}
-                      {comparisonSummary.issues === 0 && <span className="ml-auto">All compared fields agree</span>}
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    {Object.entries(comparisonResults).map(([key, result]) => (
-                      <div key={key} className={`rounded-lg border p-3 ${verdictBg(result.verdict)}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          {verdictIcon(result.verdict)}
-                          <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                            {FIELD_LABELS[key as keyof typeof FIELD_LABELS] || key}
-                          </span>
-                          <span className="text-[10px] text-gray-400 ml-auto">{result.score}%</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <p className="text-[9px] font-medium text-gray-400 uppercase mb-0.5">Application Form</p>
-                            <p className="text-xs text-gray-700">
-                              {submission.formFields?.[key] || (
-                                <span className="text-gray-400 italic">Not provided</span>
-                              )}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-medium text-gray-400 uppercase mb-0.5">Label (OCR)</p>
-                            <p className="text-xs text-gray-700">
-                              {ocrResults?.[key] || <span className="text-gray-400 italic">Not detected</span>}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-gray-500 mt-1.5">{result.message}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-8 text-center">
-                  <Scale size={32} className="text-gray-300 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500">No form data available for this submission.</p>
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    In production, form fields would be imported from the COLA application.
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
@@ -791,6 +634,28 @@ export default function TTBReviewPage() {
           />
         </div>
       </div>
+      {/* ============================================================== */}
+      {/* ZOOM MODAL — full-screen lightbox for label images */}
+      {/* ============================================================== */}
+      {zoomUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8 cursor-zoom-out"
+          onClick={() => setZoomUrl(null)}
+        >
+          <button
+            onClick={() => setZoomUrl(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={zoomUrl}
+            alt="Label zoom view"
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   );
 }
