@@ -1,8 +1,17 @@
 # TTB Label Validator
 
-AI-powered alcohol label verification tool for TTB (Alcohol and Tobacco Tax and Trade Bureau) compliance. Upload label images, correct perspective distortion, and automatically extract and validate required label fields.
+AI-powered alcohol label verification tool for TTB (Alcohol and Tobacco Tax and Trade Bureau) compliance. Agents review label submissions by comparing what the applicant claimed on their COLA form against what's actually printed on the label — with OCR-powered pre-verification to speed up the process.
 
-**Live Demo:** [https://ttb-demo-pipeline.vercel.app](https://ttb-demo-pipeline.vercel.app)
+## Deliverables
+
+| Deliverable | Status | Location |
+|-------------|--------|----------|
+| Source Code Repository | ✅ | [github.com/andyagtech/ttb-label-validator](https://github.com/andyagtech/ttb-label-validator) |
+| All source code | ✅ | `frontend/`, `backend/`, `docs/` |
+| README with setup & run instructions | ✅ | This file |
+| Documentation of approach & assumptions | ✅ | [Approach & Core Concept](#approach--core-concept) below, plus `docs/INFRASTRUCTURE_JUSTIFICATION.md` |
+| Deployed Application URL | ✅ | **[https://ttb-demo-pipeline.vercel.app](https://ttb-demo-pipeline.vercel.app)** |
+| Working prototype | ✅ | Live at the URL above — 24 pre-loaded submissions ready to review |
 
 ## Quick Start
 
@@ -20,22 +29,117 @@ npm run dev
 # → http://localhost:3000
 ```
 
+The app runs with **zero configuration** — the review queue, Text Detect (Tesseract.js), form-vs-label verification, and all UI features work out of the box. Optional API keys unlock additional capabilities:
+
 ### Environment Variables
 
 Create `frontend/.env.local`:
 
 ```env
-# Browser-side OCR — Tesseract.js for Quick Check
+# ── Required: none! The app runs without any env vars. ──
+# All core features (review queue, Text Detect, validation) work immediately.
+
+# ── Optional: unlock additional AI features ──
+
+# Browser-side OCR — Tesseract.js (enabled by default in production)
 NEXT_PUBLIC_TESSERACT_ENABLED=true
 
-# Server-side OCR — Claude 3.5 Sonnet via OpenRouter for AI Extract
+# Server-side OCR — Claude 3.5 Sonnet via OpenRouter
+# Enables the "AI Extract" button for higher-accuracy structured field extraction.
 OCR_ENABLED=true
 OPENROUTER_API_KEY=sk-or-...
 OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
 
-# Optional: Lambda proxy (production). If unset, uses local /api/ocr route.
+# AI Test Label Generation — Google Gemini
+# Enables the /generate page to create photorealistic label images for testing.
+GEMINI_API_KEY=your-gemini-api-key
+
+# AI Image Flatten — AWS Lambda (Python/OpenCV)
+# Enables the "AI Flatten" button for cylindrical unwrap and perspective correction.
+FLATTEN_ENABLED=true
+FLATTEN_LAMBDA_URL=https://your-flatten-lambda-url.lambda-url.us-east-1.on.aws
+
+# Production OCR proxy — AWS Lambda (optional, falls back to /api/ocr)
 NEXT_PUBLIC_LAMBDA_URL=https://your-lambda-url.lambda-url.us-east-1.on.aws
+
+# Vercel Blob Storage — persists AI-generated label images across deploys
+BLOB_READ_WRITE_TOKEN=vercel_blob_...
 ```
+
+### Run Tests
+
+```bash
+cd frontend
+npm test          # 77 tests across 3 suites
+```
+
+## Approach & Core Concept
+
+### The Problem
+
+TTB agents review ~150,000 label applications per year. For each one, they compare what the applicant wrote on their COLA form (brand name, ABV, net contents, etc.) against what's actually printed on the label artwork. This is largely manual data-entry verification — "matching" in the agents' own words.
+
+### Our Solution: Pre-Verification Pipeline
+
+We built a tool that **pre-verifies** submissions before an agent even looks at them:
+
+1. **Submitter** uploads label images and fills out their COLA form fields (brand name, class/type, ABV, net contents, etc.)
+2. **System** runs OCR on the label images to extract what's actually printed on them
+3. **Agent** opens the submission and sees a side-by-side comparison: *"What the user submitted"* vs. *"What we detected on the label"* — with match/mismatch indicators on every field
+4. **Agent** clicks checkboxes to confirm each field, or clicks **Quick Reject** to auto-generate findings from all mismatches
+
+This turns a 5–10 minute manual review into a quick scan of pre-populated results. The agent's job shifts from "read every field on the label and compare it to the form" to "verify the system's pre-check and handle edge cases."
+
+### Key Design Decisions
+
+- **Tesseract.js (browser-side OCR)** for the "Text Detect" button — runs entirely in-browser, no API key needed, ~2-3 seconds. Used by agents to extract text from label images on demand.
+- **Claude 3.5 Sonnet (server-side OCR)** for "AI Extract" — higher accuracy structured extraction when available, but requires an API key.
+- **Levenshtein fuzzy matching** for form-vs-label comparison — handles real-world differences like "STONE'S THROW" vs "Stone's Throw" (a real case from the senior agent's experience).
+- **Category-aware validation rules** — different checks for beer, wine, and spirits per TTB regulations (e.g., ABV is optional for malt beverages per 27 CFR 7.71).
+- **Client-side image processing** — perspective correction, mesh warping, and sharpening all run in the browser. No upload latency, works offline for the editing workflow.
+- **In-memory store** — prototype uses a server-side singleton; designed for easy swap to PostgreSQL/DynamoDB in production (same API surface).
+
+### Assumptions
+
+- This is a standalone proof-of-concept, not integrated with the actual COLA system
+- No authentication required for the prototype (production would use Cognito/Azure AD)
+- Label images are either AI-generated test labels or uploaded photos — no direct camera capture
+- The 24 mock submissions use realistic data from the TTB Public COLA Registry
+
+## Testing the Agent Workflow
+
+The fastest way to see the core functionality:
+
+### 1. Open the Review Queue
+
+Go to **[/queue](https://ttb-demo-pipeline.vercel.app/queue)** — you'll see 24 pre-loaded submissions with status badges, typeahead search, and pagination.
+
+### 2. Pick a Submission
+
+Click any **"Submitted"** item (e.g., Sierra Nevada Pale Ale). This opens the agent review workspace.
+
+### 3. Run Text Detect
+
+Click the orange **"Text Detect"** button. This runs Tesseract.js on both front and back label images, extracts text, and parses it into structured fields (brand name, ABV, net contents, government warning, etc.).
+
+### 4. Review Form vs. Label
+
+The right panel shows a side-by-side table:
+- **Submitted (Form)** — what the applicant claimed on their COLA application
+- **Detected (Label)** — what was actually found on the label image
+- **Checkboxes** — click each row to confirm you've verified it
+- **Color coding** — green = match, yellow = close, red = mismatch
+- **REQ badge** — legally required fields (brand name, class/type, net contents, health warning, name & address)
+
+### 5. Make a Decision
+
+Use the decision panel on the right: **Approve**, **Reject**, **Needs Revision**, or **Escalate**. The **Quick Reject** button auto-populates findings from all detected mismatches and missing required fields.
+
+### Also Try
+
+- **Search**: type "bourbon" or "beer" in the queue search bar — filters instantly as you type
+- **Pre-reviewed items**: click Patron Silver Tequila (rejected — missing country of origin) or Maker's Mark (needs revision — government warning in title case instead of ALL CAPS)
+- **Submission Simulator** (`/`): upload your own label image, run through the full correction → OCR → validation pipeline, then submit to the agent queue
 
 ## Architecture
 
@@ -337,18 +441,19 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Auth** — `GEMINI_API_KEY` env var, never exposed to the browser
 
 ### Review Queue (Agent View)
-- **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed). Labeled "Agent View" with cross-navigation to Submission Simulator.
+- **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed). **Typeahead search** filters instantly as you type across product name, submitter, category, and ID. Pagination for large queues.
 - **`/queue/[id]` review page** — full agent review workspace with 4-tab layout:
-  - **Label + Data** (side-by-side) — label artwork on the left, OCR-extracted fields with match indicators + checklist on the right. Multi-label selector for front/back labels.
+  - **Label + Data** (side-by-side) — label artwork on the left; **Form vs. Label Verification** table on the right showing submitted form data vs. detected OCR data with interactive checkboxes, match/mismatch color coding, and **REQ** badges on legally required fields. Multi-label selector for front/back labels.
   - **Checklist** — per-label compliance checklist with auto_pass/auto_fail/manual status
   - **Form Comparison** — auto-computed fuzzy matching of COLA application form fields vs. label OCR, with field-by-field verdicts (exact/match/close/mismatch/missing), percentage scores, and summary bar
   - **History** — full audit trail of previous reviews with findings
-- **Header stats bar** — at-a-glance pass/fail/manual counts + mismatch alerts
+- **Text Detect** — orange button runs **Tesseract.js** on front + back label images, parses raw OCR into structured fields (brand name, class/type, ABV, net contents, government warning, name & address, etc.), and populates the comparison table. No API key required.
+- **Government Warning check** — verifies "GOVERNMENT WARNING:" is in ALL CAPS (title case is rejected per TTB rules)
+- **Quick Reject** — one-click button that auto-populates findings from all detected mismatches and missing required fields, sets the decision to "Reject", and writes a summary note
 - **Decision panel** — sticky sidebar with reviewer name, decision buttons (Approve / Reject / Needs Revision / Escalate), findings editor, and notes
 - **Live timer** — tracks active review time per session
-- **Label images** — displayed on the review page from submission data (corrected images from the Submission Simulator flow through)
 - **End-to-end flow** — "Submit to Agent Queue" button on the Submission Simulator sends processed images, checklists, and OCR-extracted fields to the agent review queue. Agent sees the actual corrected label artwork.
-- **Mock seed data** — 8 realistic submissions across beer/wine/spirits with various statuses, pre-populated form fields, and label images
+- **Mock seed data** — 24 realistic submissions across beer/wine/spirits with various statuses, pre-populated COLA form fields, and label images
 - **REST API** — `GET /api/queue`, `POST /api/queue`, `GET /api/queue/[id]`, `PATCH /api/queue/[id]`, `POST /api/queue/[id]` (submit review)
 
 ## Technical Stack
@@ -430,7 +535,7 @@ ttb_cola_project/
 │   │   │   ├── validation.ts    # TTB validation rules engine (category-aware)
 │   │   │   ├── fuzzyMatch.ts    # Levenshtein fuzzy matching for form comparison
 │   │   │   ├── types.ts         # TypeScript types — checklist, review, submission
-│   │   │   ├── store.ts         # In-memory submission store + 8 mock seed submissions
+│   │   │   ├── store.ts         # In-memory submission store + 24 mock seed submissions
 │   │   │   ├── agentStore.ts    # In-memory agent store + 5 seed agents + stats helpers
 │   │   │   ├── styles.ts        # Shared design tokens, color maps, utility formatters
 │   │   │   └── __tests__/       # Unit tests (Vitest) — 77 tests
@@ -512,60 +617,18 @@ Full OpenAPI 3.1 specification: [`docs/openapi.yaml`](docs/openapi.yaml)
 - **Admin agents endpoint** accepts `{ name, title, email, division?, specialties?, certifications?, status? }` for POST; returns `{ agents, total }` for GET.
 - **Admin stats endpoint** returns `{ stats: { totalSubmissions, byStatus, byCategory, totalReviews, avgReviewTimeSeconds, ... } }`.
 
-## Approach & Design Decisions
+## Error Handling & Trade-offs
 
-### Why client-side image processing?
-All perspective correction, mesh warping, and curvature compensation run in the browser using the Canvas API. This means:
-- **No upload latency** for the image processing pipeline
-- **Privacy** — label images don't leave the browser unless the user explicitly runs AI Extract
-- **Works offline** for the editing workflow (Quick Check with Tesseract.js also works offline when enabled)
+### Error Handling
 
-### Why a Lambda proxy instead of direct API calls?
-- **API key security** — the OpenRouter key stays server-side, never exposed to the browser
-- **CORS control** — restrict which origins can call the API
-- **Cost control** — single point to add rate limiting, usage tracking, or key rotation
-- **Matches existing infrastructure** — follows the same pattern used in production
-
-### Why two OCR tiers?
-Different use cases need different trade-offs:
-- **Submitters** need fast feedback to catch obvious issues — Tesseract.js is free, instant, and runs locally
-- **Reviewers** need accurate structured extraction — a vision model is slower but far more reliable for field-level extraction
-
-### Error Handling Strategy
-
-Every layer of the application has structured error handling with user-friendly feedback:
-
-| Layer | Strategy | User Experience |
-|-------|----------|----------------|
-| **API routes** | `try/catch` around all external calls; typed error responses with HTTP status codes (400, 404, 422, 429, 500, 502, 503) | Errors returned as `{ success: false, error: "..." }` with actionable messages |
-| **OCR (Quick Check)** | `try/catch` with fallback to server OCR if Tesseract disabled | Status bar: "Quick Check failed. Try AI Extract instead." |
-| **OCR (AI Extract)** | `try/catch`; checks `res.ok`; JSON parse with regex fallback | Status bar: "AI extraction failed. Check your connection and try again." |
-| **AI Flatten** | `try/catch`; error result shown in banner with red styling; shorter cooldown (5s vs 10s) on error | Error banner with details; automatic retry available after cooldown |
-| **Rate limiting** | In-memory token bucket (5 req/min/IP); `X-RateLimit-*` response headers | "Rate limit exceeded. Try again in N seconds." (HTTP 429) |
-| **Label generation** | Missing API key → 500; Gemini API failure → 502; no image in response → 422; network error → catch | Red error panel with icon + message; prompt still shown for debugging |
-| **Review queue** | Fetch failure → error state with "Not found" message + back link; submission failure → `console.error` | Full-page error state with XCircle icon; loading spinner while fetching |
-| **Batch upload** | Per-item `try/catch`; items marked `"error"` status individually; abort support via `abortRef` | Red XCircle per failed item; other items continue processing |
-| **Submit to queue** | `try/catch`; guards against empty slot list | Console error on failure; button disabled during submission |
-| **Image loading** | `img.onerror` handlers for Canvas operations; graceful fallback for thumbnails | Silent fallback (empty thumbnail) rather than crashing |
-| **JSON parsing** | OCR route: regex extraction `/{[\s\S]*}/` with fallback to `{ rawText: content }` | Partial results preferred over total failure |
-| **Env var guards** | Every API route checks required env vars before proceeding | Clear message: "X not configured. Set it in your environment variables." |
-| **Service unavailable** | Flatten returns 503 with hint when Lambda not configured | Includes deployment instructions in response body |
-
-**Design principles:**
-- **Graceful degradation** — if Tesseract.js is disabled, Quick Check falls back to server OCR; if server OCR fails, heuristic parsing is attempted
-- **Never crash silently** — all `catch` blocks either set user-visible error state or log to console
-- **Actionable messages** — error text tells the user what to do next ("Try AI Extract instead", "Check your connection", "Set X in environment")
-- **Partial success** — batch processing continues past individual failures; OCR returns partial fields rather than nothing
-- **Cooldown on error** — AI Flatten uses shorter cooldown (5s) on failure so users can retry faster
-- **Loading states everywhere** — spinners for fetch, processing, and generation; disabled buttons during async operations
-- **No data loss** — in-memory state is preserved across errors; only a full page refresh loses progress (documented trade-off)
+Every layer has structured error handling: API routes return typed `{ success: false, error: "..." }` responses with HTTP status codes. Browser OCR falls back gracefully if Tesseract.js is disabled. Batch processing continues past individual failures. All `catch` blocks set user-visible error state with actionable messages ("Try AI Extract instead", "Check your connection"). Env var guards provide clear instructions when configuration is missing.
 
 ### Trade-offs & Limitations
 - **Bold detection** — OCR can't reliably detect bold text, so the "GOVERNMENT WARNING:" bold requirement is flagged for manual review
-- **Tesseract.js accuracy** — browser OCR is significantly less accurate than the vision model, especially for curved or low-contrast labels. It's a quick sanity check, not a substitute for AI Extract.
-- **No persistent storage** — all state is in-memory; refreshing the page loses progress
+- **Tesseract.js accuracy** — browser OCR is less accurate than the vision model, especially for curved or low-contrast labels. It's a quick sanity check, not a substitute for AI Extract.
+- **No persistent storage** — the in-memory store resets on redeploy (production would use PostgreSQL/DynamoDB)
 - **ABV type size** — 27 CFR mandates max type size for malt beverage ABV (3mm/4mm); can't validate via OCR, noted as manual check
-- **Domestic vs. imported** — name & address placement rules differ; currently checks both positions but doesn't distinguish domestic/imported
+- **Domestic vs. imported** — name & address placement rules differ; currently checks both positions but doesn't distinguish
 
 ## Deployment
 
