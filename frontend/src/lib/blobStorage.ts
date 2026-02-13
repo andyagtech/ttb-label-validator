@@ -80,19 +80,53 @@ export async function saveManifest(manifest: LabelManifest): Promise<string> {
 }
 
 /**
- * Load the manifest from Vercel Blob.
- * Returns null if it doesn't exist yet.
+ * Load the manifest by scanning actual blobs in storage.
+ *
+ * Instead of reading a manifest.json file (which suffers from
+ * read-modify-write race conditions across serverless instances),
+ * we scan the blob listing and reconstruct the manifest from the
+ * actual image files present.
  */
 export async function loadManifest(): Promise<LabelManifest | null> {
   try {
-    // List blobs with the manifest prefix to find its URL
-    const { blobs } = await list({ prefix: "sample-labels/manifest" });
-    const manifestBlob = blobs.find((b) => b.pathname.includes("manifest.json"));
-    if (!manifestBlob) return null;
+    const { blobs } = await list({ prefix: "sample-labels/" });
+    const imageBlobs = blobs.filter((b) => !b.pathname.endsWith("manifest.json"));
+    if (imageBlobs.length === 0) return null;
 
-    const res = await fetch(manifestBlob.url);
-    if (!res.ok) return null;
-    return (await res.json()) as LabelManifest;
+    // Lazy-import to avoid circular dependency at module load time
+    const { getSampleProducts } = await import("./sampleData");
+    const products = getSampleProducts();
+    const productMap = new Map(products.map((p) => [p.productKey, p]));
+
+    // Group blobs by product key
+    const grouped = new Map<string, { frontUrl?: string; backUrl?: string; uploadedAt?: string }>();
+    for (const blob of imageBlobs) {
+      const match = blob.pathname.match(/sample-labels\/(.+)-(front|back)\./);
+      if (!match) continue;
+      const [, productKey, side] = match;
+      if (!grouped.has(productKey)) grouped.set(productKey, {});
+      const entry = grouped.get(productKey)!;
+      if (side === "front") entry.frontUrl = blob.url;
+      else entry.backUrl = blob.url;
+      entry.uploadedAt = typeof blob.uploadedAt === "string" ? blob.uploadedAt : blob.uploadedAt?.toISOString?.() || "";
+    }
+
+    // Build manifest entries (only include products with both front+back)
+    const labels: LabelBlobEntry[] = [];
+    for (const [productKey, urls] of Array.from(grouped)) {
+      if (!urls.frontUrl || !urls.backUrl) continue;
+      const product = productMap.get(productKey);
+      labels.push({
+        productKey,
+        productName: product?.productName || productKey,
+        category: product?.category || "spirits",
+        frontUrl: urls.frontUrl,
+        backUrl: urls.backUrl,
+        generatedAt: urls.uploadedAt || "",
+      });
+    }
+
+    return { updatedAt: new Date().toISOString(), labels };
   } catch {
     return null;
   }
