@@ -6,11 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAllSubmissions, createSubmission } from "@/lib/store";
+import { getAllSubmissions, createSubmission, ensureManifestApplied } from "@/lib/store";
 import { log } from "@/lib/logger";
 
 /** GET /api/queue — list all submissions, optionally filtered by comma-separated statuses. */
 export async function GET(request: NextRequest) {
+  await ensureManifestApplied();
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
 

@@ -8,6 +8,7 @@
 
 import { Submission, SubmissionStatus, ReviewRecord, ReviewFinding, BeverageCategory, SubmissionLabel } from "./types";
 import { getSampleProducts, type SampleProduct } from "./sampleData";
+import { loadManifest } from "./blobStorage";
 
 // ---------------------------------------------------------------------------
 // Store
@@ -15,11 +16,55 @@ import { getSampleProducts, type SampleProduct } from "./sampleData";
 
 let submissions: Submission[] = [];
 let seeded = false;
+let manifestApplied = false;
 
 function ensureSeeded() {
   if (seeded) return;
   seeded = true;
   submissions = generateMockSubmissions();
+}
+
+/**
+ * Load persisted Blob URLs from the manifest and apply them to matching
+ * submissions. Called lazily on first getAllSubmissions / getSubmission if
+ * not already applied, and eagerly after populate generates new images.
+ */
+export async function applyManifestToSubmissions(): Promise<number> {
+  ensureSeeded();
+  const manifest = await loadManifest();
+  if (!manifest) return 0;
+
+  let applied = 0;
+  for (const entry of manifest.labels) {
+    const sub = submissions.find((s) => s.productName === entry.productName);
+    if (!sub) continue;
+    const front = sub.labels.find((l) => l.slotName === "Front Label");
+    const back = sub.labels.find((l) => l.slotName === "Back Label");
+    if (front) {
+      front.originalImageUrl = entry.frontUrl;
+      front.correctedImageUrl = entry.frontUrl;
+    }
+    if (back) {
+      back.originalImageUrl = entry.backUrl;
+      back.correctedImageUrl = entry.backUrl;
+    }
+    applied++;
+  }
+  manifestApplied = true;
+  return applied;
+}
+
+/**
+ * Ensure manifest Blob URLs are applied (idempotent, runs once).
+ * Non-blocking — if the fetch fails, we fall back to SVG placeholders.
+ */
+export async function ensureManifestApplied() {
+  if (manifestApplied) return;
+  try {
+    await applyManifestToSubmissions();
+  } catch {
+    manifestApplied = true; // don't retry on error
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -29,6 +74,7 @@ function ensureSeeded() {
 /** Reset the store and re-generate all mock submissions. Used by the seed API. */
 export function reseedSubmissions(): Submission[] {
   seeded = true;
+  manifestApplied = false; // re-apply manifest on next access
   submissions = generateMockSubmissions();
   return submissions;
 }

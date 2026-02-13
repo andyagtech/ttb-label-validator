@@ -7,12 +7,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSubmission, updateSubmissionStatus, addReview } from "@/lib/store";
+import { getSubmission, updateSubmissionStatus, addReview, ensureManifestApplied } from "@/lib/store";
 import { ReviewRecord } from "@/lib/types";
 import { log } from "@/lib/logger";
 
 /** GET /api/queue/{id} — return full submission detail including labels, reviews, and OCR data. */
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+  await ensureManifestApplied();
   const sub = getSubmission(params.id);
   if (!sub) {
     return NextResponse.json({ error: "Submission not found" }, { status: 404 });
