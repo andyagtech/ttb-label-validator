@@ -769,3 +769,83 @@ export function getFrontSamples(): SampleLabel[] {
 export function toLabelParams(sample: SampleLabel) {
   return { ...sample.generation };
 }
+
+// ---------------------------------------------------------------------------
+// Product pairs — groups front + back for each product
+// ---------------------------------------------------------------------------
+
+/** Default name+address for products missing a back-label entry */
+const DEFAULT_NAME_ADDRESS: Record<string, string> = {
+  "DOGFISH HEAD": "Dogfish Head Craft Brewery, Milton, DE 19968",
+  "GOOSE ISLAND": "Goose Island Beer Co., Chicago, IL 60608",
+  "BLUE MOON": "Blue Moon Brewing Company, Golden, CO 80401",
+  "LAGUNITAS": "Lagunitas Brewing Company, Petaluma, CA 94954",
+  "BAREFOOT": "Barefoot Cellars, Modesto, CA 95354",
+  "OPUS ONE": "Opus One Winery, Oakville, CA 94562",
+  "TITO'S HANDMADE VODKA": "Fifth Generation, Inc., Austin, TX 78702",
+  "PATRON": "Patron Spirits International AG, Imported by The Patron Spirits Company, Coral Gables, FL 33134",
+};
+
+export interface SampleProduct {
+  /** Unique product key (derived from front key minus "-front") */
+  productKey: string;
+  /** Human-readable product name */
+  productName: string;
+  category: "beer" | "wine" | "spirits";
+  front: LabelGeneration;
+  back: LabelGeneration;
+  expectedFrontFields: ExpectedFields;
+  expectedBackFields: ExpectedFields;
+}
+
+/**
+ * Group samples into front+back product pairs.
+ * Products missing an explicit back label get one auto-generated.
+ */
+export function getSampleProducts(): SampleProduct[] {
+  const frontSamples = SAMPLE_LABELS.filter((s) => s.generation.labelType === "front");
+
+  return frontSamples.map((front) => {
+    const productKey = front.key.replace(/-front$/, "");
+    const backKey = `${productKey}-back`;
+    const backSample = SAMPLE_LABELS.find((s) => s.key === backKey);
+
+    const backGeneration: LabelGeneration = backSample
+      ? backSample.generation
+      : {
+          labelType: "back",
+          category: front.generation.category,
+          brandName: front.generation.brandName,
+          classType: front.generation.classType,
+          alcoholContent: front.generation.alcoholContent,
+          netContents: front.generation.netContents,
+          nameAddress: DEFAULT_NAME_ADDRESS[front.generation.brandName] || `${front.generation.brandName} Beverage Co., City, ST 00000`,
+          countryOfOrigin: front.generation.countryOfOrigin,
+        };
+
+    const backExpected: ExpectedFields = backSample
+      ? backSample.expectedFields
+      : {
+          brand_name: front.expectedFields.brand_name,
+          class_type: front.expectedFields.class_type,
+          net_contents: front.expectedFields.net_contents,
+          health_warning: GOV_WARNING,
+          name_address: backGeneration.nameAddress || "",
+          ...(backGeneration.countryOfOrigin ? { country_origin: backGeneration.countryOfOrigin } : {}),
+          ...(front.generation.category === "wine" ? { sulfite_declaration: "Contains Sulfites" } : {}),
+        };
+
+    // Build a display name from the brand
+    const displayName = front.displayName.replace(" (Front)", "");
+
+    return {
+      productKey,
+      productName: displayName,
+      category: front.generation.category,
+      front: front.generation,
+      back: backGeneration,
+      expectedFrontFields: front.expectedFields,
+      expectedBackFields: backExpected,
+    };
+  });
+}

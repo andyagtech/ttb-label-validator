@@ -7,6 +7,7 @@
  */
 
 import { Submission, SubmissionStatus, ReviewRecord, ReviewFinding, BeverageCategory, SubmissionLabel } from "./types";
+import { getSampleProducts, type SampleProduct } from "./sampleData";
 
 // ---------------------------------------------------------------------------
 // Store
@@ -76,6 +77,28 @@ export function createSubmission(data: {
   };
   submissions.unshift(submission);
   return submission;
+}
+
+/**
+ * Replace label images on a submission (used by populate endpoint to swap
+ * SVG placeholders with AI-generated images).
+ */
+export function updateSubmissionLabels(
+  id: string,
+  labelUpdates: Array<{ slotName: string; imageUrl: string }>,
+): Submission | undefined {
+  ensureSeeded();
+  const sub = submissions.find((s) => s.id === id);
+  if (!sub) return undefined;
+  for (const update of labelUpdates) {
+    const label = sub.labels.find((l) => l.slotName === update.slotName);
+    if (label) {
+      label.originalImageUrl = update.imageUrl;
+      label.correctedImageUrl = update.imageUrl;
+    }
+  }
+  sub.updatedAt = new Date().toISOString();
+  return sub;
 }
 
 /** Update a submission's status (e.g. "in_review" → "approved"). */
@@ -154,34 +177,95 @@ function makeLabelSvg(
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 
+// Category-specific color schemes for SVG label placeholders
+const COLOR_MAP: Record<BeverageCategory, [string, string]> = {
+  spirits: ["#2d1b0e", "#d4a76a"],
+  beer: ["#f5e6c8", "#5c3d1e"],
+  wine: ["#3b0a1e", "#e8c4d0"],
+};
+
+/** Map checklist id to the expected-fields key */
+function fieldKey(id: string): string {
+  const map: Record<string, string> = {
+    health_warning: "health_warning",
+    name_address: "name_address",
+    country_origin: "country_origin",
+    sulfite_declaration: "sulfite_declaration",
+    alcohol_content: "alcohol_content",
+    net_contents: "net_contents",
+    brand_name: "brand_name",
+    class_type: "class_type",
+    appellation: "appellation",
+    vintage_date: "vintage_date",
+    varietal: "varietal",
+    age_statement: "age_statement",
+  };
+  return map[id] || id;
+}
+
+/** Build a SubmissionLabel from a product's expected fields */
+function buildLabel(
+  slotId: string,
+  slotName: string,
+  product: SampleProduct,
+  side: "front" | "back",
+  includeOcr: boolean,
+): SubmissionLabel {
+  const expected = side === "front" ? product.expectedFrontFields : product.expectedBackFields;
+  const [bgC, txtC] = COLOR_MAP[product.category];
+
+  // Build checklist items from expected fields
+  const checklistIds = Object.keys(expected);
+  const fieldTexts = checklistIds.map((id) => {
+    const val = (expected as unknown as Record<string, string | undefined>)[id];
+    const label = id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return val ? `${label}: ${val}` : label;
+  });
+
+  const imgUrl = makeLabelSvg(bgC, txtC, product.productName, slotName, fieldTexts.slice(0, 6));
+
+  return {
+    slotId,
+    slotName,
+    originalImageUrl: imgUrl,
+    correctedImageUrl: imgUrl,
+    checklist: checklistIds.map((id) => ({
+      id,
+      label: id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      description: "",
+      appliesTo: [side] as ("front" | "back" | "any")[],
+      categories: "all" as const,
+      autoDetectable: "both" as const,
+      mandatory: ["brand_name", "class_type", "net_contents", "health_warning", "name_address"].includes(id),
+      extractable: true,
+      status: "unchecked" as const,
+      detectedValue: includeOcr ? (expected as unknown as Record<string, string | undefined>)[id] : undefined,
+    })),
+  };
+}
+
 /**
- * Generate 8 realistic mock submissions spanning beer, wine, and spirits.
+ * Generate 14 realistic mock submissions from the sampleData product catalog.
  *
- * Each submission includes:
- * - Product details matching real TTB label scenarios
- * - OCR-extracted fields and COLA form fields for comparison testing
- * - Pre-populated checklists with auto_pass / auto_fail statuses
- * - SVG placeholder label images color-coded by beverage category
- * - Review records for submissions that have already been reviewed
+ * Every submission has BOTH front and back labels. Most have no OCR
+ * extracted fields yet — suitable for testing Tesseract.js field extraction.
  *
- * Notable test cases:
- * - "Stone's Throw" — Dave's fuzzy matching case (STONE'S THROW vs Stone's Throw)
- * - "Blue Agave" — rejected for prohibited "ABV" abbreviation
- * - "Velvet Reserve" — needs revision for title-case government warning
- * - "Sunset Rosé" — flagged class/type (Rosé not in TTB lookup table)
+ * Status distribution:
+ *   - 8 submitted (no OCR — Tesseract testing targets)
+ *   - 2 in_review (with OCR)
+ *   - 2 approved (with review)
+ *   - 1 rejected (with review)
+ *   - 1 needs_revision (with review)
  */
 function generateMockSubmissions(): Submission[] {
-  const mockData: Array<{
-    productName: string;
-    category: BeverageCategory;
+  const products = getSampleProducts();
+
+  // Per-product overrides: status, submitter, daysAgo, review, OCR inclusion
+  const overrides: Array<{
     status: SubmissionStatus;
     submitter: string;
     daysAgo: number;
-    labels: Array<{
-      slotName: string;
-      checklistSnapshot: Array<{ id: string; label: string; status: string }>;
-    }>;
-    ocrFields?: Record<string, string>;
+    includeOcr: boolean;
     formFields?: Record<string, string>;
     review?: {
       decision: string;
@@ -190,253 +274,71 @@ function generateMockSubmissions(): Submission[] {
       findings: ReviewFinding[];
     };
   }> = [
+    // 0: Sierra Nevada Pale Ale — submitted, no OCR
+    { status: "submitted", submitter: "Sierra Nevada Brewing Co.", daysAgo: 0, includeOcr: false },
+    // 1: Dogfish Head 60 Minute IPA — submitted, no OCR
+    { status: "submitted", submitter: "Dogfish Head Craft Brewery", daysAgo: 1, includeOcr: false },
+    // 2: Goose Island Bourbon County Stout — in_review, with OCR
+    { status: "in_review", submitter: "Anheuser-Busch InBev", daysAgo: 2, includeOcr: true },
+    // 3: Blue Moon Belgian White — submitted, no OCR
+    { status: "submitted", submitter: "Blue Moon Brewing Company", daysAgo: 0, includeOcr: false },
+    // 4: Lagunitas IPNA — approved, with review
     {
-      productName: "Old Tom Kentucky Straight Bourbon",
-      category: "spirits",
-      status: "submitted",
-      submitter: "Acme Spirits Inc.",
-      daysAgo: 0,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_pass" },
-            { id: "alcohol_content", label: "Alcohol content", status: "auto_pass" },
-            { id: "net_contents", label: "Net contents", status: "auto_pass" },
-          ],
-        },
-        {
-          slotName: "Back Label",
-          checklistSnapshot: [
-            { id: "health_warning", label: "Government health warning", status: "auto_pass" },
-            { id: "name_address", label: "Name and address", status: "auto_pass" },
-          ],
-        },
-      ],
-      ocrFields: {
-        brandName: "OLD TOM DISTILLERY",
-        classType: "Kentucky Straight Bourbon Whiskey",
-        alcoholContent: "45% Alc./Vol. (90 Proof)",
-        netContents: "750 mL",
-        healthWarning: "GOVERNMENT WARNING: (1) According to the Surgeon General...",
-        nameAddress: "Old Tom Distillery, Louisville, KY 40202",
-      },
-      formFields: {
-        brandName: "Old Tom",
-        classType: "Kentucky Straight Bourbon Whiskey",
-        alcoholContent: "45% Alc./Vol.",
-        netContents: "750 mL",
-        nameAddress: "Old Tom Distillery, Louisville, KY 40202",
-      },
-    },
-    {
-      productName: "Stone's Throw Pale Ale",
-      category: "beer",
-      status: "submitted",
-      submitter: "Stone's Throw Brewing Co.",
-      daysAgo: 1,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_pass" },
-            { id: "net_contents", label: "Net contents", status: "auto_pass" },
-          ],
-        },
-      ],
-      ocrFields: {
-        brandName: "STONE'S THROW",
-        classType: "Pale Ale",
-        netContents: "12 FL OZ (355 mL)",
-      },
-      formFields: {
-        brandName: "Stone's Throw",
-        classType: "Pale Ale",
-        netContents: "12 FL. OZ.",
-      },
-    },
-    {
-      productName: "Château Margaux 2019 Bordeaux",
-      category: "wine",
-      status: "in_review",
-      submitter: "Margaux Imports LLC",
-      daysAgo: 2,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_pass" },
-            { id: "alcohol_content", label: "Alcohol content", status: "auto_pass" },
-            { id: "net_contents", label: "Net contents", status: "auto_pass" },
-          ],
-        },
-        {
-          slotName: "Back Label",
-          checklistSnapshot: [
-            { id: "health_warning", label: "Government health warning", status: "auto_pass" },
-            { id: "name_address", label: "Name and address", status: "auto_pass" },
-            { id: "country_origin", label: "Country of origin", status: "auto_pass" },
-            { id: "sulfite_declaration", label: "Sulfite declaration", status: "auto_pass" },
-          ],
-        },
-      ],
-      ocrFields: {
-        brandName: "CHÂTEAU MARGAUX",
-        classType: "Red Wine",
-        alcoholContent: "Alcohol 13.5% by volume",
-        netContents: "750 mL",
-        healthWarning: "GOVERNMENT WARNING: (1) According to the Surgeon General...",
-        nameAddress: "Margaux Imports LLC, New York, NY 10001",
-        countryOfOrigin: "Product of France",
-        sulfiteDeclaration: "Contains Sulfites",
-      },
-      formFields: {
-        brandName: "Chateau Margaux",
-        classType: "Red Wine",
-        alcoholContent: "13.5% Alc. by Vol.",
-        netContents: "750 mL",
-        nameAddress: "Margaux Imports LLC, New York, NY 10001",
-        countryOfOrigin: "Product of France",
-      },
-    },
-    {
-      productName: "Sunset Rosé 2023",
-      category: "wine",
-      status: "submitted",
-      submitter: "Napa Valley Vintners",
-      daysAgo: 0,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_fail" },
-            { id: "alcohol_content", label: "Alcohol content", status: "auto_pass" },
-            { id: "net_contents", label: "Net contents", status: "auto_pass" },
-          ],
-        },
-      ],
-      ocrFields: {
-        brandName: "SUNSET",
-        classType: "Rosé",
-        alcoholContent: "12.5% Alc. By Vol.",
-        netContents: "750 mL",
-      },
-    },
-    {
-      productName: "Mountain Creek IPA",
-      category: "beer",
-      status: "approved",
-      submitter: "Mountain Creek Brewing",
-      daysAgo: 5,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_pass" },
-            { id: "net_contents", label: "Net contents", status: "auto_pass" },
-          ],
-        },
-      ],
+      status: "approved", submitter: "Heineken USA Inc.", daysAgo: 5, includeOcr: true,
       review: {
         decision: "approve",
         reviewer: "Jenny Park",
-        notes: "All fields match application. Clean label.",
+        notes: "All fields match application. Non-alcoholic labeling is compliant.",
         findings: [],
       },
     },
+    // 5: Robert Mondavi Cabernet — submitted, no OCR
+    { status: "submitted", submitter: "Constellation Brands, Inc.", daysAgo: 0, includeOcr: false },
+    // 6: Barefoot Moscato — submitted, no OCR
+    { status: "submitted", submitter: "E. & J. Gallo Winery", daysAgo: 1, includeOcr: false },
+    // 7: Kim Crawford Sauvignon Blanc — in_review, with OCR
+    { status: "in_review", submitter: "Constellation Brands, Inc.", daysAgo: 3, includeOcr: true },
+    // 8: Opus One — submitted, no OCR
+    { status: "submitted", submitter: "Opus One Winery", daysAgo: 0, includeOcr: false },
+    // 9: Jack Daniel's Tennessee Whiskey — submitted, no OCR
+    { status: "submitted", submitter: "Brown-Forman Corporation", daysAgo: 1, includeOcr: false },
+    // 10: Tito's Handmade Vodka — approved, with review
     {
-      productName: "Blue Agave Silver Tequila",
-      category: "spirits",
-      status: "rejected",
-      submitter: "Agave Spirits Corp.",
-      daysAgo: 3,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_pass" },
-            { id: "alcohol_content", label: "Alcohol content", status: "auto_fail" },
-            { id: "net_contents", label: "Net contents", status: "auto_pass" },
-          ],
-        },
-      ],
-      ocrFields: {
-        brandName: "BLUE AGAVE",
-        classType: "Tequila",
-        alcoholContent: "40% ABV",
-        netContents: "750 mL",
+      status: "approved", submitter: "Fifth Generation, Inc.", daysAgo: 7, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "Clean label, all fields verified. Approved.",
+        findings: [],
       },
+    },
+    // 11: Hennessy V.S Cognac — submitted, no OCR
+    { status: "submitted", submitter: "Moet Hennessy USA, Inc.", daysAgo: 0, includeOcr: false },
+    // 12: Patron Silver Tequila — rejected, with review
+    {
+      status: "rejected", submitter: "The Patron Spirits Company", daysAgo: 4, includeOcr: true,
       formFields: {
-        brandName: "Blue Agave",
-        classType: "Tequila",
+        brandName: "Patron",
+        classType: "Tequila Silver",
         alcoholContent: "40% Alc./Vol.",
         netContents: "750 mL",
       },
       review: {
         decision: "reject",
         reviewer: "Dave Morrison",
-        notes: 'ABV uses prohibited "ABV" abbreviation instead of "Alc./Vol." or "Alcohol by Volume".',
+        notes: "Country of origin missing from back label. Required for imported product.",
         findings: [
           {
-            checklistItemId: "alcohol_content",
+            checklistItemId: "country_origin",
             severity: "error",
-            message: '"ABV" abbreviation is not an acceptable format per TTB regulations.',
+            message: "Country of origin statement is required for imported spirits (27 CFR 5.63).",
           },
         ],
       },
     },
+    // 13: Maker's Mark Bourbon — needs_revision, with review
     {
-      productName: "Golden Harvest Wheat Beer",
-      category: "beer",
-      status: "submitted",
-      submitter: "Harvest Brewing Co.",
-      daysAgo: 0,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_pass" },
-            { id: "net_contents", label: "Net contents", status: "auto_fail" },
-          ],
-        },
-      ],
-      ocrFields: {
-        brandName: "GOLDEN HARVEST",
-        classType: "Wheat Beer",
-        netContents: "355 mL",
-      },
-    },
-    {
-      productName: "Velvet Reserve Cabernet Sauvignon 2020",
-      category: "wine",
-      status: "needs_revision",
-      submitter: "Velvet Vineyards",
-      daysAgo: 4,
-      labels: [
-        {
-          slotName: "Front Label",
-          checklistSnapshot: [
-            { id: "brand_name", label: "Brand name", status: "auto_pass" },
-            { id: "class_type", label: "Class/type designation", status: "auto_pass" },
-            { id: "alcohol_content", label: "Alcohol content", status: "auto_pass" },
-            { id: "net_contents", label: "Net contents", status: "auto_pass" },
-          ],
-        },
-        {
-          slotName: "Back Label",
-          checklistSnapshot: [
-            { id: "health_warning", label: "Government health warning", status: "auto_fail" },
-            { id: "name_address", label: "Name and address", status: "auto_pass" },
-          ],
-        },
-      ],
+      status: "needs_revision", submitter: "Beam Suntory Inc.", daysAgo: 6, includeOcr: true,
       review: {
         decision: "needs_revision",
         reviewer: "Jenny Park",
@@ -452,109 +354,51 @@ function generateMockSubmissions(): Submission[] {
     },
   ];
 
-  // Transform raw mock data into fully-typed Submission objects
-  return mockData.map((m, idx) => {
-    const created = daysAgo(m.daysAgo);
-    // Category-specific color schemes for SVG label placeholders
-    const colorMap: Record<BeverageCategory, [string, string]> = {
-      spirits: ["#2d1b0e", "#d4a76a"],
-      beer: ["#f5e6c8", "#5c3d1e"],
-      wine: ["#3b0a1e", "#e8c4d0"],
-    };
-    const [bgC, txtC] = colorMap[m.category];
+  return products.map((product, idx) => {
+    const o = overrides[idx] || { status: "submitted", submitter: "Unknown", daysAgo: 0, includeOcr: false };
+    const created = daysAgo(o.daysAgo);
+
+    const frontLabel = buildLabel(`slot-${idx}-0`, "Front Label", product, "front", o.includeOcr);
+    const backLabel = buildLabel(`slot-${idx}-1`, "Back Label", product, "back", o.includeOcr);
+
+    // Build OCR results map from expected fields if OCR is included
+    let serverValidation: Submission["serverValidation"];
+    if (o.includeOcr) {
+      const ocrResults: Record<string, string> = {};
+      for (const [k, v] of Object.entries(product.expectedFrontFields)) {
+        if (v) ocrResults[k] = v;
+      }
+      for (const [k, v] of Object.entries(product.expectedBackFields)) {
+        if (v) ocrResults[k] = v;
+      }
+      serverValidation = { completedAt: created, findings: [], ocrResults };
+    }
+
     const sub: Submission = {
       id: `SUB-${(1000 + idx).toString(36).toUpperCase()}`,
-      submitterId: m.submitter,
+      submitterId: o.submitter,
       createdAt: created,
       updatedAt: created,
-      status: m.status,
-      beverageCategory: m.category,
-      productName: m.productName,
-      labels: m.labels.map((l, li) => {
-        const fieldTexts = l.checklistSnapshot.map((c) => {
-          const val =
-            m.ocrFields?.[
-              c.id === "health_warning"
-                ? "healthWarning"
-                : c.id === "name_address"
-                  ? "nameAddress"
-                  : c.id === "country_origin"
-                    ? "countryOfOrigin"
-                    : c.id === "sulfite_declaration"
-                      ? "sulfiteDeclaration"
-                      : c.id === "alcohol_content"
-                        ? "alcoholContent"
-                        : c.id === "net_contents"
-                          ? "netContents"
-                          : c.id === "brand_name"
-                            ? "brandName"
-                            : c.id === "class_type"
-                              ? "classType"
-                              : c.id
-            ];
-          return val ? `${c.label}: ${val}` : c.label;
-        });
-        const imgUrl = makeLabelSvg(bgC, txtC, m.productName, l.slotName, fieldTexts);
-        return {
-          slotId: `slot-${idx}-${li}`,
-          slotName: l.slotName,
-          originalImageUrl: imgUrl,
-          correctedImageUrl: imgUrl,
-          checklist: l.checklistSnapshot.map((c) => ({
-            id: c.id,
-            label: c.label,
-            description: "",
-            appliesTo: ["front"] as ("front" | "back" | "any")[],
-            categories: "all" as const,
-            autoDetectable: "both" as const,
-            mandatory: true,
-            extractable: true,
-            status: c.status as "auto_pass" | "auto_fail" | "unchecked",
-            detectedValue:
-              m.ocrFields?.[
-                c.id === "health_warning"
-                  ? "healthWarning"
-                  : c.id === "name_address"
-                    ? "nameAddress"
-                    : c.id === "country_origin"
-                      ? "countryOfOrigin"
-                      : c.id === "sulfite_declaration"
-                        ? "sulfiteDeclaration"
-                        : c.id === "alcohol_content"
-                          ? "alcoholContent"
-                          : c.id === "net_contents"
-                            ? "netContents"
-                            : c.id === "brand_name"
-                              ? "brandName"
-                              : c.id === "class_type"
-                                ? "classType"
-                                : c.id
-              ],
-          })),
-        };
-      }),
+      status: o.status,
+      beverageCategory: product.category,
+      productName: product.productName,
+      labels: [frontLabel, backLabel],
       reviews: [],
-      serverValidation: m.ocrFields
-        ? {
-            completedAt: created,
-            findings: [],
-            ocrResults: m.ocrFields,
-          }
-        : undefined,
-      formFields: m.formFields,
+      serverValidation,
+      formFields: o.formFields,
     };
 
-    if (m.review) {
+    if (o.review) {
       sub.reviews.push({
         id: `REV-${idx}`,
         submissionId: sub.id,
-        reviewerId: m.review.reviewer,
+        reviewerId: o.review.reviewer,
         startedAt: created,
         completedAt: new Date(new Date(created).getTime() + 300_000).toISOString(),
         activeSeconds: 180 + Math.floor(Math.random() * 120),
-        decision: m.review.decision as ReviewRecord["decision"],
-        findings: m.review.findings,
-        notes: m.review.notes,
+        decision: o.review.decision as ReviewRecord["decision"],
+        findings: o.review.findings,
+        notes: o.review.notes,
         reviewType: "primary",
       });
     }
