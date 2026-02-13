@@ -211,12 +211,13 @@ function ChecklistRow({
         {item.extractable && (
           <div className="mt-1.5">
             {editing ? (
-              <form onSubmit={handleSaveEdit} className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+              <form onSubmit={handleSaveEdit} className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <input
                   type="text"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="flex-1 text-xs px-2 py-1 border border-blue-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                  size={Math.max(editValue.length + 2, 16)}
+                  className="text-xs font-mono px-2 py-0.5 border border-blue-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
                   placeholder={`Enter ${item.label.toLowerCase()}...`}
                   autoFocus
                   onKeyDown={(e) => {
@@ -225,27 +226,23 @@ function ChecklistRow({
                       setEditing(false);
                     }
                   }}
+                  onBlur={handleSaveEdit}
                 />
-                <button type="submit" className="p-1 rounded hover:bg-blue-100 text-blue-600" onClick={handleSaveEdit}>
-                  <Check size={14} />
+                <button type="submit" className="p-0.5 rounded hover:bg-blue-100 text-blue-600 shrink-0" onClick={handleSaveEdit}>
+                  <Check size={12} />
                 </button>
               </form>
             ) : displayValue ? (
-              <div className="flex items-center gap-1.5 group">
-                <span className="text-xs font-mono bg-gray-100 text-gray-800 px-2 py-0.5 rounded border border-gray-200 truncate">
-                  {displayValue}
-                </span>
-                {item.userValue && <span className="text-[10px] text-blue-500">edited</span>}
-                {!readOnly && onValueChange && (
-                  <button
-                    type="button"
-                    onClick={handleStartEdit}
-                    className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-opacity"
-                  >
-                    <Pencil size={11} />
-                  </button>
-                )}
-              </div>
+              <span
+                onClick={!readOnly && onValueChange ? handleStartEdit : undefined}
+                className={`inline-flex items-center gap-1.5 text-xs font-mono bg-gray-100 text-gray-800 px-2 py-0.5 rounded border border-gray-200 ${
+                  !readOnly && onValueChange ? "cursor-pointer hover:bg-blue-50 hover:border-blue-300" : ""
+                }`}
+                title={!readOnly && onValueChange ? "Click to edit" : undefined}
+              >
+                {displayValue}
+                {item.userValue && <span className="text-[10px] text-blue-500 font-sans">edited</span>}
+              </span>
             ) : (
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] text-gray-400 italic">Not detected</span>

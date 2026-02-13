@@ -44,6 +44,7 @@ import {
   FlaskConical,
   Zap,
   RotateCcw,
+  Info,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/TTBShell";
 import ImageInput from "@/components/ImageInput";
@@ -686,125 +687,137 @@ export default function EditorPage() {
                 ) : e.checklistTab === "compare" ? (
                   <FormComparison extractedFields={e.activeSlot.extractedFields} />
                 ) : (
+                  /* ── Data tab: always-visible form fields ── */
                   <div>
-                    {e.activeSlot.extractedFields ? (
-                      <>
-                        <p style={{ fontSize: 12, color: C.medGray, marginBottom: 12 }}>
-                          Extracted fields from OCR. Edit any value, then re-run validation with{" "}
-                          <strong>Quick Check</strong> or <strong>AI Extract</strong>.
-                        </p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {(Object.keys(e.activeSlot.extractedFields) as (keyof ExtractedFields)[])
-                            .filter((k) => k !== "rawText")
-                            .map((key) => (
-                              <div key={key}>
-                                <label style={{ fontSize: 11, fontWeight: 600, color: C.medGray, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                                  {key.replace(/([A-Z])/g, " $1").trim()}
-                                </label>
-                                <input
-                                  type="text"
-                                  value={e.activeSlot.extractedFields?.[key] ?? ""}
-                                  onChange={(ev) => {
-                                    const updated = { ...e.activeSlot.extractedFields!, [key]: ev.target.value || undefined };
-                                    e.updateSlot(e.activeSlotId, { extractedFields: updated });
-                                  }}
-                                  placeholder="Not detected"
-                                  style={{
-                                    width: "100%",
-                                    padding: "6px 10px",
-                                    fontSize: 12,
-                                    border: `1px solid ${C.border}`,
-                                    borderRadius: 6,
-                                    background: C.lightGray,
-                                    fontFamily: "inherit",
-                                    marginTop: 4,
-                                  }}
-                                />
-                              </div>
-                            ))}
-                        </div>
+                    <p style={{ fontSize: 12, color: C.medGray, marginBottom: 12 }}>
+                      Enter or edit label data. Use <strong>Quick Check</strong> or <strong>AI Extract</strong> to auto-fill.
+                    </p>
 
-                        <button
-                          onClick={() => {
-                            if (e.activeSlot.extractedFields) {
-                              e.applyOcrResults(e.activeSlot.extractedFields, "full");
-                            }
-                          }}
-                          style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 8,
-                            padding: "8px 0",
-                            marginTop: 12,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            borderRadius: 6,
-                            border: `1px solid ${C.navy}`,
-                            background: C.white,
-                            color: C.navy,
-                            cursor: "pointer",
-                          }}
-                        >
-                          <CheckCircle2 size={13} />
-                          Re-validate with edited data
-                        </button>
-
-                        {e.activeSlot.extractedFields.rawText && (
-                          <details style={{ marginTop: 8 }}>
-                            <summary style={{ fontSize: 11, fontWeight: 600, color: C.medGray, cursor: "pointer" }}>Raw OCR Text</summary>
-                            <pre style={{
-                              marginTop: 4,
-                              padding: 12,
-                              fontSize: 10,
-                              color: C.darkGray,
-                              background: C.lightGray,
+                    {/* Required fields */}
+                    <h4 style={{ fontSize: 11, fontWeight: 700, color: C.darkGray, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                      <AlertCircle size={12} style={{ color: "#e5a000" }} /> Required
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                      {([
+                        { key: "brandName", label: "Brand Name", placeholder: "e.g. Burnt Ridge Orchards" },
+                        { key: "classType", label: "Class / Type", placeholder: 'e.g. Red Wine, Blended Whiskey, Lager' },
+                        { key: "alcoholContent", label: "Alcohol Content", placeholder: 'e.g. Alcohol 11-14% by volume' },
+                        { key: "netContents", label: "Net Contents", placeholder: "e.g. 750 mL, 1 L, 12 FL OZ" },
+                        { key: "nameAddress", label: "Name & Address", placeholder: "Bottler/importer name, city, state" },
+                      ] as { key: keyof ExtractedFields; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
+                        <div key={key}>
+                          <label style={{ fontSize: 11, fontWeight: 600, color: C.medGray, display: "flex", alignItems: "center", gap: 4 }}>
+                            {label}
+                            <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#fef3cd", color: "#92400e", fontWeight: 600 }}>Required</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={e.activeSlot.extractedFields?.[key] ?? ""}
+                            onChange={(ev) => {
+                              const updated = { ...(e.activeSlot.extractedFields ?? {}), [key]: ev.target.value || undefined };
+                              e.updateSlot(e.activeSlotId, { extractedFields: updated });
+                            }}
+                            placeholder={placeholder}
+                            style={{
+                              width: "100%",
+                              padding: "7px 10px",
+                              fontSize: 13,
                               border: `1px solid ${C.border}`,
                               borderRadius: 6,
-                              overflow: "auto",
-                              maxHeight: 192,
-                              whiteSpace: "pre-wrap",
-                              fontFamily: "monospace",
-                            }}>
-                              {e.activeSlot.extractedFields.rawText}
-                            </pre>
-                          </details>
-                        )}
+                              background: C.white,
+                              fontFamily: "inherit",
+                              marginTop: 4,
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
 
-                        <details style={{ marginTop: 4 }}>
-                          <summary style={{ fontSize: 11, fontWeight: 600, color: C.medGray, cursor: "pointer" }}>View as JSON</summary>
-                          <pre style={{
-                            marginTop: 4,
-                            padding: 12,
-                            fontSize: 10,
-                            color: C.darkGray,
-                            background: C.lightGray,
-                            border: `1px solid ${C.border}`,
-                            borderRadius: 6,
-                            overflow: "auto",
-                            maxHeight: 192,
-                            whiteSpace: "pre-wrap",
-                            fontFamily: "monospace",
-                          }}>
-                            {JSON.stringify(
-                              Object.fromEntries(
-                                Object.entries(e.activeSlot.extractedFields).filter(([k]) => k !== "rawText"),
-                              ),
-                              null,
-                              2,
-                            )}
-                          </pre>
-                        </details>
-                      </>
-                    ) : (
-                      <div style={{ textAlign: "center", padding: "32px 0", color: C.medGray }}>
-                        <ScanSearch size={32} style={{ margin: "0 auto 8px", opacity: 0.5 }} />
-                        <p style={{ fontSize: 12 }}>No data extracted yet.</p>
-                        <p style={{ fontSize: 12, marginTop: 4 }}>
-                          Run <strong>Quick Check</strong> or <strong>AI Extract</strong> to populate fields.
-                        </p>
-                      </div>
+                    {/* Recommended fields */}
+                    <h4 style={{ fontSize: 11, fontWeight: 700, color: C.darkGray, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                      <Info size={12} style={{ color: C.lightBlue }} /> Recommended / Optional
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                      {([
+                        { key: "healthWarning", label: "Health Warning", placeholder: "Government warning statement" },
+                        { key: "appellation", label: "Appellation of Origin", placeholder: "e.g. Napa Valley, Washington State" },
+                        { key: "vintageDate", label: "Vintage Date", placeholder: "e.g. 2022" },
+                        { key: "varietal", label: "Varietal / Grape", placeholder: "e.g. Cabernet Sauvignon" },
+                        { key: "countryOfOrigin", label: "Country of Origin", placeholder: "e.g. Product of USA" },
+                        { key: "sulfiteDeclaration", label: "Sulfite Declaration", placeholder: 'e.g. Contains Sulfites' },
+                        { key: "ageStatement", label: "Age Statement", placeholder: "e.g. Aged 12 Years" },
+                      ] as { key: keyof ExtractedFields; label: string; placeholder: string }[]).map(({ key, label, placeholder }) => (
+                        <div key={key}>
+                          <label style={{ fontSize: 11, fontWeight: 600, color: C.medGray }}>
+                            {label}
+                          </label>
+                          <input
+                            type="text"
+                            value={e.activeSlot.extractedFields?.[key] ?? ""}
+                            onChange={(ev) => {
+                              const updated = { ...(e.activeSlot.extractedFields ?? {}), [key]: ev.target.value || undefined };
+                              e.updateSlot(e.activeSlotId, { extractedFields: updated });
+                            }}
+                            placeholder={placeholder}
+                            style={{
+                              width: "100%",
+                              padding: "7px 10px",
+                              fontSize: 13,
+                              border: `1px solid ${C.border}`,
+                              borderRadius: 6,
+                              background: C.white,
+                              fontFamily: "inherit",
+                              marginTop: 4,
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const fields = e.activeSlot.extractedFields ?? {};
+                        e.applyOcrResults(fields, "full");
+                      }}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        padding: "8px 0",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderRadius: 6,
+                        border: `1px solid ${C.navy}`,
+                        background: C.white,
+                        color: C.navy,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <CheckCircle2 size={13} />
+                      Re-validate with edited data
+                    </button>
+
+                    {e.activeSlot.extractedFields?.rawText && (
+                      <details style={{ marginTop: 8 }}>
+                        <summary style={{ fontSize: 11, fontWeight: 600, color: C.medGray, cursor: "pointer" }}>▸ View raw OCR text</summary>
+                        <pre style={{
+                          marginTop: 4,
+                          padding: 12,
+                          fontSize: 10,
+                          color: C.darkGray,
+                          background: C.lightGray,
+                          border: `1px solid ${C.border}`,
+                          borderRadius: 6,
+                          overflow: "auto",
+                          maxHeight: 192,
+                          whiteSpace: "pre-wrap",
+                          fontFamily: "monospace",
+                        }}>
+                          {e.activeSlot.extractedFields.rawText}
+                        </pre>
+                      </details>
                     )}
                   </div>
                 )}
