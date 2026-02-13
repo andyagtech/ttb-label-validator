@@ -313,8 +313,8 @@ export default function EditorControlPanel({
                     </div>
                     <p style={helpText}>
                       {activeSlot.warpMode === "simple"
-                        ? "4 corners + curvature sliders. Good for mild distortion."
-                        : "Multi-point edges with spline curves. Drag points along each edge."}
+                        ? "Select the 4 corners of a rectangular label. Good for flat labels."
+                        : "Multi-point edges with spline curves. Drag points along each edge. Best for curved bottles."}
                     </p>
                   </div>
 

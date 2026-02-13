@@ -25,7 +25,7 @@
  */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -78,6 +78,28 @@ export default function EditorPage() {
   const router = useRouter();
   const e = useEditorState();
   const [showFlattenPicker, setShowFlattenPicker] = useState(false);
+  const flattenPickerRef = useRef<HTMLDivElement>(null);
+  const flattenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-dismiss the AI Flatten picker after 4 seconds
+  useEffect(() => {
+    if (showFlattenPicker) {
+      flattenTimerRef.current = setTimeout(() => setShowFlattenPicker(false), 4000);
+    }
+    return () => { if (flattenTimerRef.current) clearTimeout(flattenTimerRef.current); };
+  }, [showFlattenPicker]);
+
+  // Dismiss on click outside
+  useEffect(() => {
+    if (!showFlattenPicker) return;
+    const handleClick = (ev: MouseEvent) => {
+      if (flattenPickerRef.current && !flattenPickerRef.current.contains(ev.target as Node)) {
+        setShowFlattenPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showFlattenPicker]);
 
   return (
     <>
@@ -336,40 +358,13 @@ export default function EditorPage() {
                     {e.isSharpening ? "..." : "Sharpen"}
                   </button>
 
-                  {/* AI Flatten: toggle to show Curved / Flat sub-buttons */}
-                  {showFlattenPicker ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginRight: 6 }}>
-                      <button
-                        onClick={() => { setShowFlattenPicker(false); e.handleAiFlatten("cylindrical"); }}
-                        disabled={e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas}
-                        style={{ ...actionBtn(C.red), opacity: e.isAiFlattening || e.aiFlattenCooldown > 0 ? 0.5 : 1 }}
-                        title="Unwrap a curved bottle label"
-                      >
-                        <Sparkles size={14} /> Curved Bottle
-                      </button>
-                      <button
-                        onClick={() => { setShowFlattenPicker(false); e.handleAiFlatten("perspective"); }}
-                        disabled={e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas}
-                        style={{ ...actionBtn(C.red), opacity: e.isAiFlattening || e.aiFlattenCooldown > 0 ? 0.5 : 1 }}
-                        title="Correct perspective on a flat label"
-                      >
-                        <Sparkles size={14} /> Flat Label
-                      </button>
-                      <button
-                        onClick={() => setShowFlattenPicker(false)}
-                        style={{ background: "none", border: "none", color: C.medGray, cursor: "pointer", padding: 4 }}
-                        title="Cancel"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ) : (
+                  {/* AI Flatten — button + floating picker */}
+                  <div ref={flattenPickerRef} style={{ position: "relative", marginRight: 6 }}>
                     <button
-                      onClick={() => setShowFlattenPicker(true)}
+                      onClick={() => setShowFlattenPicker((v) => !v)}
                       disabled={e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas}
                       style={{
                         ...actionBtn(C.red),
-                        marginRight: 6,
                         opacity: e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas ? 0.5 : 1,
                       }}
                       title={e.aiFlattenCooldown > 0 ? `Wait ${e.aiFlattenCooldown}s` : "AI Flatten — choose bottle shape"}
@@ -378,7 +373,38 @@ export default function EditorPage() {
                       {e.isAiFlattening ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                       {e.isAiFlattening ? "Flattening..." : e.aiFlattenCooldown > 0 ? `AI Flatten (${e.aiFlattenCooldown}s)` : "AI Flatten"}
                     </button>
-                  )}
+                    {showFlattenPicker && (
+                      <div style={{
+                        position: "absolute",
+                        top: "calc(100% + 6px)",
+                        right: 0,
+                        zIndex: 50,
+                        display: "flex",
+                        gap: 6,
+                        padding: 8,
+                        borderRadius: 8,
+                        background: C.white,
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+                        border: `1px solid ${C.border}`,
+                        whiteSpace: "nowrap",
+                      }}>
+                        <button
+                          onClick={() => { setShowFlattenPicker(false); e.handleAiFlatten("cylindrical"); }}
+                          style={actionBtn(C.red)}
+                          title="Unwrap a curved bottle label"
+                        >
+                          <Sparkles size={14} /> Curved Bottle
+                        </button>
+                        <button
+                          onClick={() => { setShowFlattenPicker(false); e.handleAiFlatten("perspective"); }}
+                          style={actionBtn(C.red)}
+                          title="Correct perspective on a flat label"
+                        >
+                          <Sparkles size={14} /> Flat Label
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                 </div>
 
@@ -419,16 +445,10 @@ export default function EditorPage() {
                     fontSize: 12,
                   }}>
                     <Wand2 size={14} style={{ color: C.lightBlue, flexShrink: 0 }} />
-                    <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: "4px 14px", color: C.darkGray }}>
-                      <span><strong>Curvature:</strong> {Math.round(e.autoFitResult.curvature * 100)}%
-                        {e.autoFitResult.crossCurvature > 0 && <> + {Math.round(e.autoFitResult.crossCurvature * 100)}% cross</>}
-                      </span>
-                      <span><strong>Axis:</strong> {e.autoFitResult.axis}</span>
-                      <span><strong>Mode:</strong> {e.autoFitResult.surfaceMode}</span>
-                      {e.autoFitResult.improvement > 0 && (
-                        <span style={{ color: C.green, fontWeight: 600 }}>+{e.autoFitResult.improvement}% improvement</span>
-                      )}
-                    </div>
+                    <span style={{ flex: 1, color: C.darkGray }}>
+                      <strong style={{ color: C.navy }}>Auto-Flatten attempted.</strong>{" "}
+                      For more adjustments, use the options on the right.
+                    </span>
                     <button onClick={() => e.setAutoFitResult(null)} style={{ background: "none", border: "none", color: C.medGray, cursor: "pointer" }}>
                       <X size={14} />
                     </button>

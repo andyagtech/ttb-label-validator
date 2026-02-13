@@ -457,6 +457,34 @@ export function useEditorState(): EditorStateReturn {
     });
   }, [activeSlot, activeSlotId, updateSlot]);
 
+  // Live preview: auto-regenerate corrected image when curvature settings change
+  useEffect(() => {
+    if (
+      activeSlot.viewMode !== "preview" ||
+      !activeSlot.sourceCanvas ||
+      !activeSlot.corners ||
+      activeSlot.warpMode === "mesh"
+    ) return;
+
+    const timer = setTimeout(() => {
+      const { width, height } = computeOutputDimensions(activeSlot.corners!);
+      const result = applyTransform(
+        activeSlot.sourceCanvas!,
+        activeSlot.corners!,
+        width,
+        height,
+        activeSlot.surfaceMode,
+        activeSlot.curvature,
+        activeSlot.cylinderAxis,
+        activeSlot.crossCurvature,
+      );
+      updateSlot(activeSlotId, { correctedImage: result.toDataURL("image/png") });
+    }, 120);
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSlot.curvature, activeSlot.crossCurvature, activeSlot.surfaceMode, activeSlot.cylinderAxis]);
+
   const handleAutoFlatten = useCallback(() => {
     if (!activeSlot.sourceCanvas || !activeSlot.corners) return;
     setIsAutoFitting(true);
