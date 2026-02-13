@@ -25,8 +25,6 @@ import {
   Upload,
   ClipboardCheck,
   ExternalLink,
-  Camera,
-  Pencil,
   X,
   Users,
   FlaskConical,
@@ -148,7 +146,11 @@ export default function TTBStylePrototype() {
           }}
         >
           The COLA process ensures all alcohol beverage labels comply with federal regulations before products enter the
-          market. Upload label images below for automated compliance checking.
+          market. You can upload your labels to our{" "}
+          <Link href="/editor" style={{ color: C.lightBlue, textDecoration: "underline", fontWeight: 600 }}>
+            Submission Tester
+          </Link>{" "}
+          to see how we validate them for compliance.
         </p>
 
         {/* Sample label image */}
@@ -549,23 +551,6 @@ export default function TTBStylePrototype() {
                 Validate Label
               </button>
 
-              {/* Link to full editor with camera/perspective tools */}
-              <div style={{ marginTop: 12, textAlign: "center" }}>
-                <Link
-                  href="/editor"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 12,
-                    color: C.lightBlue,
-                    textDecoration: "none",
-                  }}
-                >
-                  <Pencil size={12} />
-                  Open full editor with perspective correction tools
-                </Link>
-              </div>
             </div>
 
             {/* Quick links card */}
@@ -668,8 +653,8 @@ export default function TTBStylePrototype() {
                   <BookOpen size={16} />
                   Demo Overview
                 </Link>
-                <Link
-                  href="/"
+                <a
+                  href="#upload-title"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -686,7 +671,7 @@ export default function TTBStylePrototype() {
                 >
                   <ShieldCheck size={16} style={{ color: C.navy }} />
                   Label Validator
-                </Link>
+                </a>
                 <Link
                   href="/queue"
                   style={{
