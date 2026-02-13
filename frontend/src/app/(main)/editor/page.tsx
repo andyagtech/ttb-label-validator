@@ -28,6 +28,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { consumeTransferImages } from "@/lib/imageTransfer";
 import {
   Eye,
   Pencil,
@@ -84,22 +85,11 @@ export default function EditorPage() {
   const flattenPickerRef = useRef<HTMLDivElement>(null);
   const flattenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-load image(s) from landing page / generator (via sessionStorage)
+  // Auto-load image(s) from landing page / generator (via in-memory transfer)
   useEffect(() => {
-    try {
-      const landingImage = sessionStorage.getItem("ttb_landing_image");
-      if (landingImage) {
-        sessionStorage.removeItem("ttb_landing_image");
-        e.loadImageToSlot("front", landingImage);
-      }
-      const backImage = sessionStorage.getItem("ttb_landing_back_image");
-      if (backImage) {
-        sessionStorage.removeItem("ttb_landing_back_image");
-        e.loadImageToSlot("back", backImage);
-      }
-    } catch {
-      // sessionStorage not available
-    }
+    const { front, back } = consumeTransferImages();
+    if (front) e.loadImageToSlot("front", front);
+    if (back) e.loadImageToSlot("back", back);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-dismiss the AI Flatten picker after 4 seconds

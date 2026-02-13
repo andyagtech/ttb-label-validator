@@ -14,6 +14,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { setTransferImages } from "@/lib/imageTransfer";
 import {
   BarChart3,
   BookOpen,
@@ -516,11 +517,7 @@ export default function TTBStylePrototype() {
               <button
                 onClick={() => {
                   if (uploadedImage) {
-                    try {
-                      sessionStorage.setItem("ttb_landing_image", uploadedImage);
-                    } catch {
-                      // sessionStorage may fail if image is too large
-                    }
+                    setTransferImages(uploadedImage);
                     router.push("/editor");
                   }
                 }}

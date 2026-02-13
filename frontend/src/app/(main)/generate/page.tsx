@@ -15,6 +15,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { setTransferImages } from "@/lib/imageTransfer";
 import {
   Sparkles,
   Download,
@@ -274,18 +275,9 @@ export default function TTBGeneratePage() {
 
   const sendToEditor = useCallback(() => {
     if (!generatedImage) return;
-    try {
-      const frontUrl = `data:${generatedMime};base64,${generatedImage}`;
-      sessionStorage.setItem("ttb_landing_image", frontUrl);
-      if (generatedBackImage) {
-        const backUrl = `data:${generatedBackMime};base64,${generatedBackImage}`;
-        sessionStorage.setItem("ttb_landing_back_image", backUrl);
-      } else {
-        sessionStorage.removeItem("ttb_landing_back_image");
-      }
-    } catch {
-      // sessionStorage may fail if image is too large
-    }
+    const frontUrl = `data:${generatedMime};base64,${generatedImage}`;
+    const backUrl = generatedBackImage ? `data:${generatedBackMime};base64,${generatedBackImage}` : null;
+    setTransferImages(frontUrl, backUrl);
     router.push("/editor");
   }, [generatedImage, generatedMime, generatedBackImage, generatedBackMime, router]);
 
