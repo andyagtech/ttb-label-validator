@@ -13,6 +13,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles,
@@ -55,7 +56,7 @@ interface Preset {
 }
 
 type Category = "beer" | "wine" | "spirits";
-type LabelType = "front" | "back";
+type LabelType = "front" | "back" | "both";
 
 const CATEGORY_ICON: Record<Category, React.ReactNode> = {
   beer: <Beer size={16} className={CATEGORY_TEXT.beer} />,
@@ -73,7 +74,14 @@ const CATEGORY_BG: Record<Category, { bg: string; border: string; text: string }
 // Component
 // ---------------------------------------------------------------------------
 
+const DEFAULT_RENDER: Record<Category, "flat" | "bottle" | "can"> = {
+  beer: "can",
+  wine: "bottle",
+  spirits: "bottle",
+};
+
 export default function TTBGeneratePage() {
+  const router = useRouter();
   const [presets, setPresets] = useState<Preset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [presetFilter, setPresetFilter] = useState<Category | "all">("all");
@@ -93,8 +101,11 @@ export default function TTBGeneratePage() {
   const [renderStyle, setRenderStyle] = useState<"flat" | "bottle" | "can">("bottle");
 
   const [generating, setGenerating] = useState(false);
+  const [generatingStep, setGeneratingStep] = useState<"front" | "back" | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [generatedMime, setGeneratedMime] = useState<string>("image/png");
+  const [generatedBackImage, setGeneratedBackImage] = useState<string | null>(null);
+  const [generatedBackMime, setGeneratedBackMime] = useState<string>("image/png");
   const [usedPrompt, setUsedPrompt] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -102,6 +113,11 @@ export default function TTBGeneratePage() {
   const [history, setHistory] = useState<
     Array<{ imageBase64: string; mimeType: string; preset: string; timestamp: number }>
   >([]);
+
+  const handleCategoryChange = useCallback((c: Category) => {
+    setCategory(c);
+    setRenderStyle(DEFAULT_RENDER[c]);
+  }, []);
 
   useEffect(() => {
     fetch("/api/generate-label")
@@ -118,6 +134,7 @@ export default function TTBGeneratePage() {
       if (!p) return;
       setLabelType(p.labelType);
       setCategory(p.category);
+      setRenderStyle(DEFAULT_RENDER[p.category]);
       setBrandName(p.brandName);
       setClassType(p.classType);
       setAlcoholContent(p.alcoholContent || "");
@@ -130,17 +147,13 @@ export default function TTBGeneratePage() {
     [presets],
   );
 
-  const generate = useCallback(async () => {
-    setGenerating(true);
-    setError(null);
-    setGeneratedImage(null);
-
-    try {
+  const generateOne = useCallback(
+    async (side: "front" | "back"): Promise<{ success: boolean; imageBase64?: string; mimeType?: string; prompt?: string; error?: string }> => {
       const body: Record<string, string> = useCustomPrompt
         ? { customPrompt, renderStyle }
         : {
             preset: selectedPreset || "",
-            labelType,
+            labelType: side,
             category,
             brandName,
             classType,
@@ -161,46 +174,74 @@ export default function TTBGeneratePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      return res.json();
+    },
+    [useCustomPrompt, customPrompt, selectedPreset, category, brandName, classType, alcoholContent, netContents, appellation, vintage, nameAddress, countryOfOrigin, renderStyle],
+  );
 
-      const data = await res.json();
+  const generate = useCallback(async () => {
+    setGenerating(true);
+    setError(null);
+    setGeneratedImage(null);
+    setGeneratedBackImage(null);
+    setGeneratingStep(null);
 
-      if (data.success && data.imageBase64) {
-        setGeneratedImage(data.imageBase64);
-        setGeneratedMime(data.mimeType || "image/png");
-        setUsedPrompt(data.prompt || "");
-        setHistory((prev) => [
-          {
-            imageBase64: data.imageBase64,
-            mimeType: data.mimeType || "image/png",
-            preset: selectedPreset || "custom",
-            timestamp: Date.now(),
-          },
-          ...prev.slice(0, 19),
-        ]);
+    try {
+      if (labelType === "both") {
+        // Generate front
+        setGeneratingStep("front");
+        const frontData = await generateOne("front");
+        if (frontData.success && frontData.imageBase64) {
+          setGeneratedImage(frontData.imageBase64);
+          setGeneratedMime(frontData.mimeType || "image/png");
+          setUsedPrompt(frontData.prompt || "");
+          setHistory((prev) => [
+            { imageBase64: frontData.imageBase64!, mimeType: frontData.mimeType || "image/png", preset: (selectedPreset || "custom") + "-front", timestamp: Date.now() },
+            ...prev.slice(0, 19),
+          ]);
+        } else {
+          setError(frontData.error || "Front label generation failed");
+          if (frontData.prompt) setUsedPrompt(frontData.prompt);
+          setGenerating(false);
+          setGeneratingStep(null);
+          return;
+        }
+
+        // Generate back
+        setGeneratingStep("back");
+        const backData = await generateOne("back");
+        if (backData.success && backData.imageBase64) {
+          setGeneratedBackImage(backData.imageBase64);
+          setGeneratedBackMime(backData.mimeType || "image/png");
+          setHistory((prev) => [
+            { imageBase64: backData.imageBase64!, mimeType: backData.mimeType || "image/png", preset: (selectedPreset || "custom") + "-back", timestamp: Date.now() },
+            ...prev.slice(0, 19),
+          ]);
+        } else {
+          setError(backData.error || "Back label generation failed (front succeeded)");
+        }
       } else {
-        setError(data.error || "Generation failed");
-        if (data.prompt) setUsedPrompt(data.prompt);
+        const data = await generateOne(labelType);
+        if (data.success && data.imageBase64) {
+          setGeneratedImage(data.imageBase64);
+          setGeneratedMime(data.mimeType || "image/png");
+          setUsedPrompt(data.prompt || "");
+          setHistory((prev) => [
+            { imageBase64: data.imageBase64!, mimeType: data.mimeType || "image/png", preset: selectedPreset || "custom", timestamp: Date.now() },
+            ...prev.slice(0, 19),
+          ]);
+        } else {
+          setError(data.error || "Generation failed");
+          if (data.prompt) setUsedPrompt(data.prompt);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Network error");
     }
 
     setGenerating(false);
-  }, [
-    useCustomPrompt,
-    customPrompt,
-    selectedPreset,
-    labelType,
-    category,
-    brandName,
-    classType,
-    alcoholContent,
-    netContents,
-    appellation,
-    vintage,
-    nameAddress,
-    countryOfOrigin,
-  ]);
+    setGeneratingStep(null);
+  }, [labelType, generateOne, selectedPreset]);
 
   const downloadImage = useCallback(() => {
     if (!generatedImage) return;
@@ -217,11 +258,16 @@ export default function TTBGeneratePage() {
     setTimeout(() => setCopied(false), 2000);
   }, [usedPrompt]);
 
-  const sendToSimulator = useCallback(() => {
+  const sendToEditor = useCallback(() => {
     if (!generatedImage) return;
-    sessionStorage.setItem("generated-label", JSON.stringify({ imageBase64: generatedImage, mimeType: generatedMime }));
-    window.location.href = "/";
-  }, [generatedImage, generatedMime]);
+    try {
+      const dataUrl = `data:${generatedMime};base64,${generatedImage}`;
+      sessionStorage.setItem("ttb_landing_image", dataUrl);
+    } catch {
+      // sessionStorage may fail if image is too large
+    }
+    router.push("/editor");
+  }, [generatedImage, generatedMime, router]);
 
   return (
     <>
@@ -435,23 +481,27 @@ export default function TTBGeneratePage() {
                         Label Side
                       </label>
                       <div style={{ display: "flex", gap: 4 }}>
-                        {(["front", "back"] as LabelType[]).map((t) => (
+                        {([
+                          { key: "front" as LabelType, label: "Front" },
+                          { key: "back" as LabelType, label: "Back" },
+                          { key: "both" as LabelType, label: "Both" },
+                        ]).map((t) => (
                           <button
-                            key={t}
-                            onClick={() => setLabelType(t)}
+                            key={t.key}
+                            onClick={() => setLabelType(t.key)}
                             style={{
                               flex: 1,
                               padding: "6px 12px",
                               fontSize: 12,
                               fontWeight: 600,
                               borderRadius: 4,
-                              border: labelType === t ? `2px solid ${C.darkNavy}` : `1px solid ${C.border}`,
-                              background: labelType === t ? C.darkNavy : C.white,
-                              color: labelType === t ? C.white : C.darkGray,
+                              border: labelType === t.key ? `2px solid ${C.darkNavy}` : `1px solid ${C.border}`,
+                              background: labelType === t.key ? C.darkNavy : C.white,
+                              color: labelType === t.key ? C.white : C.darkGray,
                               cursor: "pointer",
                             }}
                           >
-                            {t.charAt(0).toUpperCase() + t.slice(1)}
+                            {t.label}
                           </button>
                         ))}
                       </div>
@@ -466,7 +516,7 @@ export default function TTBGeneratePage() {
                           return (
                             <button
                               key={c}
-                              onClick={() => setCategory(c)}
+                              onClick={() => handleCategoryChange(c)}
                               style={{
                                 flex: 1,
                                 padding: "6px 8px",
@@ -592,12 +642,12 @@ export default function TTBGeneratePage() {
               {generating ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Generating with Gemini...
+                  {labelType === "both" ? "Generating Front + Back..." : "Generating with Gemini..."}
                 </>
               ) : (
                 <>
                   <Wand2 size={16} />
-                  Generate Label Image
+                  {labelType === "both" ? "Generate Front + Back Labels" : "Generate Label Image"}
                 </>
               )}
             </button>
@@ -655,7 +705,7 @@ export default function TTBGeneratePage() {
                       <Download size={11} /> Save
                     </button>
                     <button
-                      onClick={sendToSimulator}
+                      onClick={sendToEditor}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -670,7 +720,7 @@ export default function TTBGeneratePage() {
                         cursor: "pointer",
                       }}
                     >
-                      <ArrowLeft size={11} /> Send to Simulator
+                      <ArrowLeft size={11} /> Send to Test Submission
                     </button>
                     <button
                       onClick={generate}
@@ -706,27 +756,63 @@ export default function TTBGeneratePage() {
                   background: C.lightGray,
                 }}
               >
-                {generating ? (
+                {generating && !generatedImage ? (
                   <div style={{ textAlign: "center" }}>
                     <Loader2
                       size={32}
                       className="animate-spin"
                       style={{ color: C.navy, margin: "0 auto 12px", display: "block" }}
                     />
-                    <p style={{ fontSize: 14, color: C.darkGray }}>Generating label with Gemini AI...</p>
-                    <p style={{ fontSize: 12, color: C.medGray, marginTop: 4 }}>This may take 10-30 seconds</p>
+                    <p style={{ fontSize: 14, color: C.darkGray }}>
+                      {generatingStep ? `Generating ${generatingStep} label with Gemini AI...` : "Generating label with Gemini AI..."}
+                    </p>
+                    <p style={{ fontSize: 12, color: C.medGray, marginTop: 4 }}>
+                      {labelType === "both" ? "Front + Back — this may take 30-60 seconds total" : "This may take 10-30 seconds"}
+                    </p>
                   </div>
                 ) : generatedImage ? (
-                  <img
-                    src={`data:${generatedMime};base64,${generatedImage}`}
-                    alt="Generated label"
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: 500,
-                      borderRadius: 8,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                    }}
-                  />
+                  <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center" }}>
+                    <div style={{ textAlign: "center" }}>
+                      {generatedBackImage && (
+                        <div style={{ fontSize: 11, fontWeight: 600, color: C.medGray, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Front Label</div>
+                      )}
+                      <img
+                        src={`data:${generatedMime};base64,${generatedImage}`}
+                        alt="Generated front label"
+                        style={{
+                          maxWidth: generatedBackImage ? "100%" : "100%",
+                          maxHeight: generatedBackImage ? 400 : 500,
+                          borderRadius: 8,
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                        }}
+                      />
+                    </div>
+                    {generatedBackImage && (
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: C.medGray, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Back Label</div>
+                        <img
+                          src={`data:${generatedBackMime};base64,${generatedBackImage}`}
+                          alt="Generated back label"
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: 400,
+                            borderRadius: 8,
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                          }}
+                        />
+                      </div>
+                    )}
+                    {generating && generatingStep === "back" && (
+                      <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 160, minHeight: 200 }}>
+                        <Loader2
+                          size={24}
+                          className="animate-spin"
+                          style={{ color: C.navy, marginBottom: 8 }}
+                        />
+                        <p style={{ fontSize: 12, color: C.medGray }}>Generating back label...</p>
+                      </div>
+                    )}
+                  </div>
                 ) : error ? (
                   <div style={{ textAlign: "center", maxWidth: 320 }}>
                     <div
