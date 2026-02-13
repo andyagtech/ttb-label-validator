@@ -245,12 +245,26 @@ export default function TTBGeneratePage() {
 
   const downloadImage = useCallback(() => {
     if (!generatedImage) return;
-    const ext = generatedMime.includes("png") ? "png" : "jpg";
-    const link = document.createElement("a");
-    link.href = `data:${generatedMime};base64,${generatedImage}`;
-    link.download = `test-label-${selectedPreset || "custom"}-${Date.now()}.${ext}`;
-    link.click();
-  }, [generatedImage, generatedMime, selectedPreset]);
+    const ts = Date.now();
+    const name = selectedPreset || "custom";
+    const extFront = generatedMime.includes("png") ? "png" : "jpg";
+    const linkFront = document.createElement("a");
+    linkFront.href = `data:${generatedMime};base64,${generatedImage}`;
+    linkFront.download = generatedBackImage
+      ? `test-label-${name}-front-${ts}.${extFront}`
+      : `test-label-${name}-${ts}.${extFront}`;
+    linkFront.click();
+
+    if (generatedBackImage) {
+      const extBack = generatedBackMime.includes("png") ? "png" : "jpg";
+      setTimeout(() => {
+        const linkBack = document.createElement("a");
+        linkBack.href = `data:${generatedBackMime};base64,${generatedBackImage}`;
+        linkBack.download = `test-label-${name}-back-${ts}.${extBack}`;
+        linkBack.click();
+      }, 300);
+    }
+  }, [generatedImage, generatedMime, generatedBackImage, generatedBackMime, selectedPreset]);
 
   const copyPrompt = useCallback(() => {
     navigator.clipboard.writeText(usedPrompt);
