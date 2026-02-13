@@ -52,6 +52,8 @@ The app uses **Next.js route groups** for a blue/green deployment pattern:
 | `generate/page.tsx` | `/generate` | AI test label generator — Gemini AI presets, custom prompts, history |
 | `api-test/page.tsx` | `/api-test` | Interactive API endpoint tester — grouped sidebar, path params, response viewer |
 | `agents/page.tsx` | `/agents` | Review agent profiles — performance stats, specialties, certifications, recent activity |
+| `editor/page.tsx` | `/editor` | Full Label Editor — COLA submission simulator with image upload, perspective correction, OCR, validation |
+| `overview/page.tsx` | `/overview` | Demo Overview — table of contents linking to every feature, page, and API endpoint |
 | `demo/page.tsx` | `/demo` | Component and feature showcase — pages, colors, typography, buttons, badges, cards |
 
 #### `legacy/` — Original Tailwind-Styled Pages (served at `/legacy`)
@@ -75,6 +77,7 @@ The app uses **Next.js route groups** for a blue/green deployment pattern:
 | `queue/route.ts` | `GET` + `POST /api/queue` | List submissions + create new submission |
 | `queue/[id]/route.ts` | `GET` + `PATCH` + `POST /api/queue/{id}` | Submission detail + status update + review decision |
 | `queue/seed/route.ts` | `POST /api/queue/seed` | Re-seed mock submission data |
+| `queue/populate/route.ts` | `GET` + `POST` + `DELETE /api/queue/populate` | Generate AI label images via Gemini, persist to Vercel Blob, maintain manifest |
 | `admin/agents/route.ts` | `GET` + `POST /api/admin/agents` | List all agents + create new agent |
 | `admin/stats/route.ts` | `GET /api/admin/stats` | Global review statistics |
 | `admin/stats/[agentId]/route.ts` | `GET /api/admin/stats/{agentId}` | Per-agent review statistics with recent activity |
@@ -107,8 +110,12 @@ The app uses **Next.js route groups** for a blue/green deployment pattern:
 | `fuzzyMatch.ts` | Levenshtein distance with Unicode normalization, case folding, punctuation stripping. Used by FormComparison for "STONE'S THROW" ↔ "Stone's Throw" matching |
 | `types.ts` | TypeScript types — `LabelSlot`, `ChecklistItem`, `BeverageCategory`, `Submission`, `ReviewRecord`, `ReviewFinding`, `ReviewDecision`, `ExtractedFields` |
 | `styles.ts` | Centralized design tokens, color maps (category, status, verdict), shared Tailwind class strings, utility formatters (`timeAgo`, `formatDate`, `formatSeconds`) |
-| `store.ts` | In-memory submission store — 8 realistic mock seed submissions, CRUD operations, review workflow state machine. Server-side singleton that resets on redeploy |
+| `store.ts` | In-memory submission store — 24 realistic mock seed submissions (14 from sampleData + 10 extras), CRUD operations, review workflow state machine. Loads persistent Blob image URLs from Vercel Blob on init. Server-side singleton that resets on redeploy |
 | `agentStore.ts` | In-memory agent store — 5 seed agents (Jenny Park, Dave Morrison, etc.), agent CRUD, global + per-agent statistics computed from submission reviews |
+| `blobStorage.ts` | Vercel Blob Storage utilities — upload label images, scan-based manifest reconstruction, list/delete helpers |
+| `generateLabel.ts` | Reusable server-side label generation via Gemini — `buildPrompt()`, `generateLabelImage()`, `generateBothLabels()` |
+| `imageTransfer.ts` | In-memory image transfer between pages (replaces sessionStorage for large images) |
+| `sampleData.ts` | 14 sample product definitions with COLA record fields, label generation params, expected OCR fields. `getSampleProducts()` groups front/back pairs |
 
 ### `frontend/src/lib/__tests__/` — Unit Tests (77 total)
 

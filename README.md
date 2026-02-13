@@ -2,7 +2,7 @@
 
 AI-powered alcohol label verification tool for TTB (Alcohol and Tobacco Tax and Trade Bureau) compliance. Upload label images, correct perspective distortion, and automatically extract and validate required label fields.
 
-**Live Demo:** [https://frontend-purlpal.vercel.app](https://frontend-purlpal.vercel.app)
+**Live Demo:** [https://ttb-demo-pipeline.vercel.app](https://ttb-demo-pipeline.vercel.app)
 
 ## Quick Start
 
@@ -164,7 +164,7 @@ flowchart TB
     end
 
     subgraph Prod["Production"]
-        VercelApp["Vercel\nfrontend-purlpal.vercel.app"]
+        VercelApp["Vercel\nttb-demo-pipeline.vercel.app"]
         LambdaOCR["AWS Lambda (Node.js)\nOpenRouter Proxy"]
         LambdaFlat["AWS Lambda (Python)\nOpenCV Flatten"]
         VercelApp -- "NEXT_PUBLIC_LAMBDA_URL" --> LambdaOCR
