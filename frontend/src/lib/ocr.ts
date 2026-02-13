@@ -186,8 +186,8 @@ export function parseOcrText(rawText: string): ExtractedFields {
   }
 
   // --- Brand name ---
-  // Heuristic: look for prominent text lines (all-caps, short, near the top)
-  // Also try common patterns like "BRAND NAME" or "XYZ BREWERY/WINERY/DISTILLERY"
+  // Heuristic: look for prominent text lines near the top of the label.
+  // Strategy: try specific patterns first, then fall back to prominent lines.
   const brandPatterns = [
     /(\w[\w\s&']+(?:brew(?:ery|ing)|winer(?:y|ies)|distiller(?:y|ies)|cellars?|vineyards?|estate))/i,
   ];
@@ -198,13 +198,28 @@ export function parseOcrText(rawText: string): ExtractedFields {
       break;
     }
   }
-  // Fallback: first prominent all-caps line that's 2+ words
+  // Fallback 1: first prominent all-caps line (1+ words, at least 3 chars)
   if (!fields.brandName) {
     for (const line of lines.slice(0, 8)) {
-      if (line.length >= 4 && line.length <= 60 && /^[A-Z][A-Z\s&']+$/.test(line) && line.split(/\s+/).length >= 2) {
+      if (line.length >= 3 && line.length <= 60 && /^[A-Z][A-Z\s&'.]+$/.test(line)) {
         fields.brandName = line;
         break;
       }
+    }
+  }
+  // Fallback 2: first short, prominent line (mixed case, single word OK)
+  // Handles cases like "Hennessy" or "Barefoot" appearing alone
+  if (!fields.brandName) {
+    for (const line of lines.slice(0, 5)) {
+      // Skip lines that are clearly not brand names
+      if (line.length < 3 || line.length > 40) continue;
+      if (/government\s+warning/i.test(line)) continue;
+      if (/contains?\s+sulfites?/i.test(line)) continue;
+      if (/^\d/.test(line)) continue; // starts with number
+      if (/alc|vol|proof|oz|ml|fl\b/i.test(line)) continue; // measurement-like
+      // Accept the first short prominent line as brand name
+      fields.brandName = line;
+      break;
     }
   }
 

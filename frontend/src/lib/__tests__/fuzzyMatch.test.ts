@@ -27,6 +27,12 @@ describe("normalize", () => {
   it("handles empty string", () => {
     expect(normalize("")).toBe("");
   });
+
+  it("strips diacritics/accents", () => {
+    expect(normalize("Moét")).toBe("moet");
+    expect(normalize("Côtes de Provence")).toBe("cotes de provence");
+    expect(normalize("Gewürztraminer")).toBe("gewurztraminer");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -49,7 +55,7 @@ describe("compareFields", () => {
   it("returns match when one contains the other", () => {
     const result = compareFields("750 mL", "750 mL (25.4 FL OZ)");
     expect(result.verdict).toBe("match");
-    expect(result.score).toBe(90);
+    expect(result.score).toBe(95);
   });
 
   it("returns mismatch for clearly different values", () => {
@@ -85,6 +91,55 @@ describe("compareFields", () => {
 
   it("scores close match for minor typos", () => {
     const result = compareFields("Old Tom Distilery", "Old Tom Distillery");
+    expect(result.verdict).toBe("match");
+    expect(result.score).toBeGreaterThanOrEqual(90);
+  });
+
+  // --- New: diacritic/accent matching ---
+  it("matches values with different accents (Moet vs Moét)", () => {
+    const result = compareFields("Moet Hennessy", "Moét Hennessy");
+    expect(result.verdict).toBe("exact");
+    expect(result.score).toBe(100);
+  });
+
+  // --- New: prefix-stripping containment ---
+  it("matches 'France' vs 'Product of France'", () => {
+    const result = compareFields("France", "Product of France");
+    expect(result.verdict).toBe("match");
+    expect(result.score).toBeGreaterThanOrEqual(90);
+  });
+
+  it("matches 'Mexico' vs 'Product of Mexico'", () => {
+    const result = compareFields("Mexico", "Product of Mexico");
+    expect(result.verdict).toBe("match");
+    expect(result.score).toBeGreaterThanOrEqual(90);
+  });
+
+  // --- New: token overlap matching for addresses ---
+  it("matches addresses with minor OCR word drops", () => {
+    // OCR dropped 'New' from 'New York'
+    const result = compareFields(
+      "Imported by Moet Hennessy USA, Inc., New York, NY 10153",
+      "Imported by Moét Hennessy USA, Inc, York, NY 10153",
+    );
+    expect(result.verdict).toBe("match");
+    expect(result.score).toBeGreaterThanOrEqual(80);
+  });
+
+  it("matches brand name case-insensitively (HENNESSY vs Hennessy)", () => {
+    const result = compareFields("HENNESSY", "Hennessy");
+    expect(result.verdict).toBe("exact");
+    expect(result.score).toBe(100);
+  });
+
+  it("matches 'Product of France' submitted vs 'France' detected", () => {
+    const result = compareFields("Product of France", "France");
+    expect(result.verdict).toBe("match");
+    expect(result.score).toBeGreaterThanOrEqual(90);
+  });
+
+  it("matches country with 'Imported from' prefix", () => {
+    const result = compareFields("France", "Imported from France");
     expect(result.verdict).toBe("match");
     expect(result.score).toBeGreaterThanOrEqual(90);
   });
