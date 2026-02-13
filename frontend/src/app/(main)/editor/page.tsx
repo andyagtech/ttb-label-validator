@@ -82,8 +82,8 @@ export default function EditorPage() {
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Full Label Editor" }]} />
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
-        {/* Page header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+        {/* Page header row: title + nav links */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
           <div>
             <h1
               style={{
@@ -102,53 +102,6 @@ export default function EditorPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Category selector */}
-            <div style={{ position: "relative" }}>
-              {!e.categoryConfirmed && !e.hasAnyImage && (
-                <div style={{
-                  position: "absolute",
-                  bottom: -32,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  whiteSpace: "nowrap",
-                  zIndex: 10,
-                }}>
-                  <div style={{
-                    background: "#e5a000",
-                    color: C.white,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "4px 12px",
-                    borderRadius: 12,
-                  }}>
-                    Start here — choose your beverage type
-                  </div>
-                </div>
-              )}
-              <div
-                data-walkthrough="category"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  borderRadius: 8,
-                  padding: 3,
-                  background: !e.categoryConfirmed && !e.hasAnyImage ? "#fef3cd" : C.lightGray,
-                  border: !e.categoryConfirmed && !e.hasAnyImage ? "2px solid #e5a000" : "none",
-                }}
-              >
-                {(["wine", "beer", "spirits"] as BeverageCategory[]).map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => e.handleCategoryChange(cat)}
-                    style={pillBtn(e.beverageCategory === cat)}
-                  >
-                    {cat === "wine" ? "Wine" : cat === "beer" ? "Beer" : "Spirits"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <button onClick={() => e.setShowBatchUpload(true)} style={linkBtn} title="Batch upload">
               <Plus size={13} /> Batch
             </button>
@@ -158,13 +111,46 @@ export default function EditorPage() {
             <Link href="/api-test" style={linkBtn}>
               <FlaskConical size={13} /> API
             </Link>
-            <span style={{ fontSize: 12, color: C.medGray }}>
-              {e.filledSlots}/{e.totalSlots} labels
-            </span>
           </div>
         </div>
 
-        {/* Slot tabs */}
+        {/* Step 1: Category selector — centered, visually prominent */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20, position: "relative" }}>
+          {!e.categoryConfirmed && !e.hasAnyImage && (
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#92400e",
+              marginBottom: 6,
+            }}>
+              Step 1 — Choose your beverage type
+            </div>
+          )}
+          <div
+            data-walkthrough="category"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: 8,
+              padding: 4,
+              background: !e.categoryConfirmed && !e.hasAnyImage ? "#fef3cd" : C.lightGray,
+              border: !e.categoryConfirmed && !e.hasAnyImage ? "2px solid #e5a000" : `1px solid ${C.border}`,
+            }}
+          >
+            {(["wine", "beer", "spirits"] as BeverageCategory[]).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => e.handleCategoryChange(cat)}
+                style={pillBtn(e.beverageCategory === cat)}
+              >
+                {cat === "wine" ? "Wine" : cat === "beer" ? "Beer" : "Spirits"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Slot tabs + label counter */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16, overflowX: "auto", paddingBottom: 4 }}>
           {e.slots.map((slot) => (
             <button
@@ -219,6 +205,10 @@ export default function EditorPage() {
           >
             <Plus size={14} /> Add Label
           </button>
+          <div style={{ flex: 1 }} />
+          <span style={{ fontSize: 12, color: C.medGray, whiteSpace: "nowrap", paddingRight: 4 }}>
+            {e.filledSlots}/{e.totalSlots} labels
+          </span>
         </div>
 
         {/* Main content */}
@@ -275,6 +265,28 @@ export default function EditorPage() {
                   </button>
                   <button onClick={e.applyCorrection} style={toolbarTab(e.activeSlot.viewMode === "preview")}>
                     <Eye size={16} /> Preview
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Replace this image? Your current edits and corrections will be lost.")) {
+                        e.handleClearSlot();
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: C.medGray,
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                    title="Remove this image and upload a new one"
+                  >
+                    <X size={14} /> Change Image
                   </button>
                   <div style={{ flex: 1 }} />
 
@@ -355,21 +367,6 @@ export default function EditorPage() {
                     </select>
                   </div>
 
-                  <button
-                    onClick={e.handleClearSlot}
-                    style={{
-                      marginRight: 12,
-                      padding: "6px 12px",
-                      fontSize: 12,
-                      borderRadius: 6,
-                      border: `1px solid ${C.border}`,
-                      background: C.white,
-                      color: C.medGray,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Change Image
-                  </button>
                 </div>
 
                 {/* Smart crop result banner */}
