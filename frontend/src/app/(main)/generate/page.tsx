@@ -87,7 +87,7 @@ export default function TTBGeneratePage() {
   const [selectedPreset, setSelectedPreset] = useState<string>("");
   const [presetFilter, setPresetFilter] = useState<Category | "all">("all");
 
-  const [labelType, setLabelType] = useState<LabelType>("front");
+  const [labelType, setLabelType] = useState<LabelType>("both");
   const [category, setCategory] = useState<Category>("spirits");
   const [brandName, setBrandName] = useState("JACK DANIEL'S");
   const [classType, setClassType] = useState("Tennessee Whiskey");
@@ -314,7 +314,7 @@ export default function TTBGeneratePage() {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Link
-              href="/"
+              href="/editor"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
