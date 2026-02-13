@@ -421,9 +421,45 @@ function generateMockSubmissions(): Submission[] {
         ],
       },
     },
+    // 14: Bell's Two Hearted Ale — submitted, no OCR
+    { status: "submitted", submitter: "Bell's Brewery, Inc.", daysAgo: 0, includeOcr: false },
+    // 15: Founders All Day IPA — submitted, no OCR
+    { status: "submitted", submitter: "Founders Brewing Co.", daysAgo: 0, includeOcr: false },
+    // 16: Yuengling Traditional Lager — submitted, no OCR
+    { status: "submitted", submitter: "D.G. Yuengling & Son, Inc.", daysAgo: 0, includeOcr: false },
+    // 17: New Belgium Fat Tire Amber Ale — submitted, no OCR
+    { status: "submitted", submitter: "New Belgium Brewing Company", daysAgo: 0, includeOcr: false },
+    // 18: Caymus Cabernet Sauvignon — submitted, no OCR
+    { status: "submitted", submitter: "Caymus Vineyards", daysAgo: 1, includeOcr: false },
+    // 19: Josh Cellars Chardonnay — submitted, no OCR
+    { status: "submitted", submitter: "Deutsch Family Wine & Spirits", daysAgo: 1, includeOcr: false },
+    // 20: Whispering Angel Rosé — needs_revision, with review
+    {
+      status: "needs_revision", submitter: "Sacha Lichine", daysAgo: 3, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Dave Morrison",
+        notes: "Vintage date not visible on front label. Resubmit with legible date.",
+        findings: [{ checklistItemId: "vintage_date", severity: "warning", message: "Vintage date is illegible or missing from front label." }],
+      },
+    },
+    // 21: Woodford Reserve Double Oaked — in_review, with OCR
+    { status: "in_review", submitter: "Brown-Forman Corporation", daysAgo: 2, includeOcr: true },
+    // 22: Casamigos Blanco Tequila — approved, with review
+    {
+      status: "approved", submitter: "Diageo North America", daysAgo: 8, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All fields compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 23: Grey Goose Vodka — submitted, no OCR
+    { status: "submitted", submitter: "Bacardi Limited", daysAgo: 1, includeOcr: false },
   ];
 
-  const subs = products.map((product, idx) => {
+  return products.map((product, idx) => {
     const o = overrides[idx] || { status: "submitted", submitter: "Unknown", daysAgo: 0, includeOcr: false };
     const created = daysAgo(o.daysAgo);
 
@@ -474,84 +510,4 @@ function generateMockSubmissions(): Submission[] {
 
     return sub;
   });
-
-  // -----------------------------------------------------------------------
-  // Additional submissions (beyond sampleData) for pagination testing
-  // -----------------------------------------------------------------------
-  const extras: Array<{
-    productName: string;
-    category: BeverageCategory;
-    status: SubmissionStatus;
-    submitter: string;
-    daysAgo: number;
-    formFields: Record<string, string>;
-    review?: { decision: string; reviewer: string; notes: string; findings: ReviewFinding[] };
-  }> = [
-    { productName: "Bell's Two Hearted Ale", category: "beer", status: "submitted", submitter: "Bell's Brewery, Inc.", daysAgo: 0,
-      formFields: { brandName: "BELL'S", classType: "India Pale Ale", alcoholContent: "7.0% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "Bell's Brewery, Inc., Comstock, MI 49053" } },
-    { productName: "Caymus Cabernet Sauvignon 2021", category: "wine", status: "submitted", submitter: "Caymus Vineyards", daysAgo: 1,
-      formFields: { brandName: "CAYMUS VINEYARDS", classType: "Cabernet Sauvignon", alcoholContent: "Alcohol 14.6% by Volume", netContents: "750 mL", appellation: "Napa Valley", vintageDate: "2021", varietal: "Cabernet Sauvignon", nameAddress: "Caymus Vineyards, Rutherford, CA 94573" } },
-    { productName: "Woodford Reserve Double Oaked", category: "spirits", status: "in_review", submitter: "Brown-Forman Corporation", daysAgo: 2,
-      formFields: { brandName: "WOODFORD RESERVE", classType: "Kentucky Straight Bourbon Whiskey", alcoholContent: "45.2% Alc./Vol. (90.4 Proof)", netContents: "750 mL", nameAddress: "Brown-Forman Corporation, Louisville, KY 40210" } },
-    { productName: "Founders All Day IPA", category: "beer", status: "submitted", submitter: "Founders Brewing Co.", daysAgo: 0,
-      formFields: { brandName: "FOUNDERS", classType: "India Pale Ale", alcoholContent: "4.7% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "Founders Brewing Co., Grand Rapids, MI 49503" } },
-    { productName: "Josh Cellars Chardonnay 2022", category: "wine", status: "submitted", submitter: "Deutsch Family Wine & Spirits", daysAgo: 1,
-      formFields: { brandName: "JOSH CELLARS", classType: "Chardonnay", alcoholContent: "Alcohol 13.5% by Volume", netContents: "750 mL", appellation: "California", vintageDate: "2022", varietal: "Chardonnay", nameAddress: "Deutsch Family Wine & Spirits, Stamford, CT 06901" } },
-    { productName: "Casamigos Blanco Tequila", category: "spirits", status: "approved", submitter: "Diageo North America", daysAgo: 8,
-      formFields: { brandName: "CASAMIGOS", classType: "Tequila Blanco", alcoholContent: "40% Alc./Vol. (80 Proof)", netContents: "750 mL", countryOfOrigin: "Product of Mexico", nameAddress: "Diageo North America, Norwalk, CT 06851" },
-      review: { decision: "approve", reviewer: "Jenny Park", notes: "All fields compliant. Approved.", findings: [] } },
-    { productName: "Yuengling Traditional Lager", category: "beer", status: "submitted", submitter: "D.G. Yuengling & Son, Inc.", daysAgo: 0,
-      formFields: { brandName: "YUENGLING", classType: "Lager", alcoholContent: "4.5% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "D.G. Yuengling & Son, Inc., Pottsville, PA 17901" } },
-    { productName: "Whispering Angel Rosé 2023", category: "wine", status: "needs_revision", submitter: "Sacha Lichine", daysAgo: 3,
-      formFields: { brandName: "WHISPERING ANGEL", classType: "Rosé", alcoholContent: "Alcohol 13.0% by Volume", netContents: "750 mL", appellation: "Côtes de Provence", vintageDate: "2023", countryOfOrigin: "Product of France", nameAddress: "Sacha Lichine, Château d'Esclans, France" },
-      review: { decision: "needs_revision", reviewer: "Dave Morrison", notes: "Vintage date not visible on front label. Resubmit with legible date.", findings: [{ checklistItemId: "vintage_date", severity: "warning", message: "Vintage date is illegible or missing from front label." }] } },
-    { productName: "Grey Goose Vodka", category: "spirits", status: "submitted", submitter: "Bacardi Limited", daysAgo: 1,
-      formFields: { brandName: "GREY GOOSE", classType: "Vodka", alcoholContent: "40% Alc./Vol. (80 Proof)", netContents: "750 mL", countryOfOrigin: "Product of France", nameAddress: "Bacardi Limited, Hamilton, Bermuda" } },
-    { productName: "New Belgium Fat Tire Amber Ale", category: "beer", status: "submitted", submitter: "New Belgium Brewing Company", daysAgo: 0,
-      formFields: { brandName: "NEW BELGIUM", classType: "Amber Ale", alcoholContent: "5.2% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "New Belgium Brewing Company, Fort Collins, CO 80524" } },
-  ];
-
-  extras.forEach((ex, i) => {
-    const idx = products.length + i;
-    const created = daysAgo(ex.daysAgo);
-    const [bgC, txtC] = COLOR_MAP[ex.category];
-
-    const frontImg = makeLabelSvg(bgC, txtC, ex.productName, "Front Label", ["Brand Name", "Class/Type", "Net Contents"]);
-    const backImg = makeLabelSvg(bgC, txtC, ex.productName, "Back Label", ["Government Warning", "Name & Address"]);
-
-    const sub: Submission = {
-      id: `SUB-${(1000 + idx).toString(36).toUpperCase()}`,
-      submitterId: ex.submitter,
-      createdAt: created,
-      updatedAt: created,
-      status: ex.status,
-      beverageCategory: ex.category,
-      productName: ex.productName,
-      labels: [
-        { slotId: `slot-${idx}-0`, slotName: "Front Label", originalImageUrl: frontImg, correctedImageUrl: frontImg, checklist: [] },
-        { slotId: `slot-${idx}-1`, slotName: "Back Label", originalImageUrl: backImg, correctedImageUrl: backImg, checklist: [] },
-      ],
-      reviews: [],
-      formFields: ex.formFields,
-    };
-
-    if (ex.review) {
-      sub.reviews.push({
-        id: `REV-${idx}`,
-        submissionId: sub.id,
-        reviewerId: ex.review.reviewer,
-        startedAt: created,
-        completedAt: new Date(new Date(created).getTime() + 300_000).toISOString(),
-        activeSeconds: 180 + Math.floor(Math.random() * 120),
-        decision: ex.review.decision as ReviewRecord["decision"],
-        findings: ex.review.findings,
-        notes: ex.review.notes,
-        reviewType: "primary",
-      });
-    }
-
-    subs.push(sub);
-  });
-
-  return subs;
 }

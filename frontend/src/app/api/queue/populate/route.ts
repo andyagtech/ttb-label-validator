@@ -115,7 +115,61 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Mode 3: List what needs images
+    // Mode 3: Batch — generate images for all products missing blob images
+    if (body.batch) {
+      const products = getSampleProducts();
+      const manifest = await loadManifest();
+      const stored = new Set(manifest?.labels.map((l) => l.productKey) || []);
+      const missing = products.filter((p) => !stored.has(p.productKey));
+
+      if (missing.length === 0) {
+        return NextResponse.json({
+          success: true,
+          message: "All products already have generated images.",
+          total: products.length,
+          generated: 0,
+        });
+      }
+
+      const results: Array<{ productKey: string; productName: string; success: boolean; error?: string }> = [];
+
+      for (const product of missing) {
+        try {
+          const { entry } = await generateAndUpload(product, body.renderStyle);
+          await upsertManifestEntry(entry);
+
+          // Also update in-memory store
+          const allSubs = getAllSubmissions();
+          const matchingSub = allSubs.find((s) => s.productName === product.productName);
+          if (matchingSub) {
+            updateSubmissionLabels(matchingSub.id, [
+              { slotName: "Front Label", imageUrl: entry.frontUrl },
+              { slotName: "Back Label", imageUrl: entry.backUrl },
+            ]);
+          }
+
+          results.push({ productKey: product.productKey, productName: product.productName, success: true });
+        } catch (err) {
+          results.push({
+            productKey: product.productKey,
+            productName: product.productName,
+            success: false,
+            error: err instanceof Error ? err.message : "Unknown error",
+          });
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        total: products.length,
+        alreadyStored: stored.size,
+        generated: results.filter((r) => r.success).length,
+        failed: results.filter((r) => !r.success).length,
+        results,
+      });
+    }
+
+    // Mode 4: List what needs images
     const allSubs = getAllSubmissions();
     const needsImages = allSubs.filter((s) =>
       s.labels.some((l) => isSvgPlaceholder(l.originalImageUrl)),
@@ -134,7 +188,7 @@ export async function POST(request: NextRequest) {
           category: s.beverageCategory,
         })),
       },
-      hint: 'POST { "submissionId": "SUB-RS" } or { "productKey": "sierra-nevada-pale-ale" }',
+      hint: 'POST { "batch": true } to generate all missing, or { "productKey": "..." } for one',
     });
   } catch (err) {
     return NextResponse.json(

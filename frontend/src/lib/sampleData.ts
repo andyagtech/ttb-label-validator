@@ -745,10 +745,357 @@ const SPIRITS_SAMPLES: SampleLabel[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Additional products — previously inline extras, now full catalog entries
+// ---------------------------------------------------------------------------
+
+const ADDITIONAL_BEER: SampleLabel[] = [
+  // 15. Bell's Two Hearted Ale
+  {
+    key: "bells-two-hearted-front",
+    displayName: "Bell's Two Hearted Ale (Front)",
+    colaSource: {
+      ttbId: "24018001000312",
+      brand: "BELL'S",
+      fancifulName: "TWO HEARTED ALE",
+      classCode: "902",
+      classType: "ALE",
+      originCode: "23",
+      origin: "MICHIGAN",
+      permit: "BR-MI-BEL-1",
+      approved: "01/18/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "BELL'S",
+      classType: "India Pale Ale",
+      alcoholContent: "7.0% Alc. By Vol.",
+      netContents: "12 FL OZ",
+    },
+    expectedFields: {
+      brand_name: "BELL'S",
+      class_type: "India Pale Ale",
+      alcohol_content: "7.0% Alc. By Vol.",
+      net_contents: "12 FL OZ",
+    },
+  },
+
+  // 16. Founders All Day IPA
+  {
+    key: "founders-all-day-ipa-front",
+    displayName: "Founders All Day IPA (Front)",
+    colaSource: {
+      ttbId: "24022001000189",
+      brand: "FOUNDERS",
+      fancifulName: "ALL DAY IPA",
+      classCode: "902",
+      classType: "ALE",
+      originCode: "23",
+      origin: "MICHIGAN",
+      permit: "BR-MI-FOU-1",
+      approved: "01/22/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "FOUNDERS",
+      classType: "India Pale Ale",
+      alcoholContent: "4.7% Alc. By Vol.",
+      netContents: "12 FL OZ",
+    },
+    expectedFields: {
+      brand_name: "FOUNDERS",
+      class_type: "India Pale Ale",
+      alcohol_content: "4.7% Alc. By Vol.",
+      net_contents: "12 FL OZ",
+    },
+  },
+
+  // 17. Yuengling Traditional Lager
+  {
+    key: "yuengling-lager-front",
+    displayName: "Yuengling Traditional Lager (Front)",
+    colaSource: {
+      ttbId: "24035001000401",
+      brand: "YUENGLING",
+      fancifulName: "TRADITIONAL LAGER",
+      classCode: "901",
+      classType: "LAGER",
+      originCode: "39",
+      origin: "PENNSYLVANIA",
+      permit: "BR-PA-YUE-1",
+      approved: "02/05/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "YUENGLING",
+      classType: "Lager",
+      alcoholContent: "4.5% Alc. By Vol.",
+      netContents: "12 FL OZ",
+    },
+    expectedFields: {
+      brand_name: "YUENGLING",
+      class_type: "Lager",
+      alcohol_content: "4.5% Alc. By Vol.",
+      net_contents: "12 FL OZ",
+    },
+  },
+
+  // 18. New Belgium Fat Tire Amber Ale
+  {
+    key: "new-belgium-fat-tire-front",
+    displayName: "New Belgium Fat Tire Amber Ale (Front)",
+    colaSource: {
+      ttbId: "24041001000223",
+      brand: "NEW BELGIUM",
+      fancifulName: "FAT TIRE",
+      classCode: "902",
+      classType: "ALE",
+      originCode: "06",
+      origin: "COLORADO",
+      permit: "BR-CO-NBR-1",
+      approved: "02/11/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "NEW BELGIUM",
+      classType: "Amber Ale",
+      alcoholContent: "5.2% Alc. By Vol.",
+      netContents: "12 FL OZ",
+    },
+    expectedFields: {
+      brand_name: "NEW BELGIUM",
+      class_type: "Amber Ale",
+      alcohol_content: "5.2% Alc. By Vol.",
+      net_contents: "12 FL OZ",
+    },
+  },
+];
+
+const ADDITIONAL_WINE: SampleLabel[] = [
+  // 19. Caymus Cabernet Sauvignon
+  {
+    key: "caymus-cabernet-front",
+    displayName: "Caymus Cabernet Sauvignon 2021 (Front)",
+    colaSource: {
+      ttbId: "24112001000178",
+      brand: "CAYMUS VINEYARDS",
+      fancifulName: "",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "01",
+      origin: "CALIFORNIA",
+      permit: "BW-CA-6012",
+      approved: "04/22/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "CAYMUS VINEYARDS",
+      classType: "Cabernet Sauvignon",
+      alcoholContent: "Alcohol 14.6% by Volume",
+      netContents: "750 mL",
+      appellation: "Napa Valley",
+      vintage: "2021",
+    },
+    expectedFields: {
+      brand_name: "CAYMUS VINEYARDS",
+      class_type: "Cabernet Sauvignon",
+      alcohol_content: "Alcohol 14.6% by Volume",
+      net_contents: "750 mL",
+      appellation: "Napa Valley",
+      vintage_date: "2021",
+      varietal: "Cabernet Sauvignon",
+    },
+  },
+
+  // 20. Josh Cellars Chardonnay
+  {
+    key: "josh-cellars-chardonnay-front",
+    displayName: "Josh Cellars Chardonnay 2022 (Front)",
+    colaSource: {
+      ttbId: "24128001000345",
+      brand: "JOSH CELLARS",
+      fancifulName: "",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "01",
+      origin: "CALIFORNIA",
+      permit: "BW-CA-7891",
+      approved: "05/08/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "JOSH CELLARS",
+      classType: "Chardonnay",
+      alcoholContent: "Alcohol 13.5% by Volume",
+      netContents: "750 mL",
+      appellation: "California",
+      vintage: "2022",
+    },
+    expectedFields: {
+      brand_name: "JOSH CELLARS",
+      class_type: "Chardonnay",
+      alcohol_content: "Alcohol 13.5% by Volume",
+      net_contents: "750 mL",
+      appellation: "California",
+      vintage_date: "2022",
+      varietal: "Chardonnay",
+    },
+  },
+
+  // 21. Whispering Angel Rosé
+  {
+    key: "whispering-angel-rose-front",
+    displayName: "Whispering Angel Rosé 2023 (Front)",
+    colaSource: {
+      ttbId: "24145001000267",
+      brand: "WHISPERING ANGEL",
+      fancifulName: "",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "FR",
+      origin: "FRANCE",
+      permit: "NY-I-4523",
+      approved: "05/25/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "WHISPERING ANGEL",
+      classType: "Rosé",
+      alcoholContent: "Alcohol 13.0% by Volume",
+      netContents: "750 mL",
+      appellation: "Côtes de Provence",
+      vintage: "2023",
+      countryOfOrigin: "France",
+    },
+    expectedFields: {
+      brand_name: "WHISPERING ANGEL",
+      class_type: "Rosé",
+      alcohol_content: "Alcohol 13.0% by Volume",
+      net_contents: "750 mL",
+      appellation: "Côtes de Provence",
+      vintage_date: "2023",
+      country_origin: "France",
+    },
+  },
+];
+
+const ADDITIONAL_SPIRITS: SampleLabel[] = [
+  // 22. Woodford Reserve Double Oaked
+  {
+    key: "woodford-reserve-front",
+    displayName: "Woodford Reserve Double Oaked (Front)",
+    colaSource: {
+      ttbId: "24078001000456",
+      brand: "WOODFORD RESERVE",
+      fancifulName: "DOUBLE OAKED",
+      classCode: "140",
+      classType: "WHISKY",
+      originCode: "18",
+      origin: "KENTUCKY",
+      permit: "DSP-KY-52",
+      approved: "03/18/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "WOODFORD RESERVE",
+      classType: "Kentucky Straight Bourbon Whiskey",
+      alcoholContent: "45.2% Alc./Vol. (90.4 Proof)",
+      netContents: "750 mL",
+    },
+    expectedFields: {
+      brand_name: "WOODFORD RESERVE",
+      class_type: "Kentucky Straight Bourbon Whiskey",
+      alcohol_content: "45.2% Alc./Vol. (90.4 Proof)",
+      net_contents: "750 mL",
+    },
+  },
+
+  // 23. Casamigos Blanco Tequila
+  {
+    key: "casamigos-blanco-front",
+    displayName: "Casamigos Blanco Tequila (Front)",
+    colaSource: {
+      ttbId: "24099001000312",
+      brand: "CASAMIGOS",
+      fancifulName: "BLANCO",
+      classCode: "160",
+      classType: "TEQUILA",
+      originCode: "MX",
+      origin: "MEXICO",
+      permit: "CT-I-892",
+      approved: "04/09/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "CASAMIGOS",
+      classType: "Tequila Blanco",
+      alcoholContent: "40% Alc./Vol. (80 Proof)",
+      netContents: "750 mL",
+      countryOfOrigin: "Mexico",
+    },
+    expectedFields: {
+      brand_name: "CASAMIGOS",
+      class_type: "Tequila Blanco",
+      alcohol_content: "40% Alc./Vol. (80 Proof)",
+      net_contents: "750 mL",
+      country_origin: "Mexico",
+    },
+  },
+
+  // 24. Grey Goose Vodka
+  {
+    key: "grey-goose-vodka-front",
+    displayName: "Grey Goose Vodka (Front)",
+    colaSource: {
+      ttbId: "24155001000189",
+      brand: "GREY GOOSE",
+      fancifulName: "",
+      classCode: "130",
+      classType: "VODKA",
+      originCode: "FR",
+      origin: "FRANCE",
+      permit: "BM-I-334",
+      approved: "06/07/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "GREY GOOSE",
+      classType: "Vodka",
+      alcoholContent: "40% Alc./Vol. (80 Proof)",
+      netContents: "750 mL",
+      countryOfOrigin: "France",
+    },
+    expectedFields: {
+      brand_name: "GREY GOOSE",
+      class_type: "Vodka",
+      alcohol_content: "40% Alc./Vol. (80 Proof)",
+      net_contents: "750 mL",
+      country_origin: "France",
+    },
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Combined exports
 // ---------------------------------------------------------------------------
 
-export const SAMPLE_LABELS: SampleLabel[] = [...BEER_SAMPLES, ...WINE_SAMPLES, ...SPIRITS_SAMPLES];
+export const SAMPLE_LABELS: SampleLabel[] = [
+  ...BEER_SAMPLES,
+  ...WINE_SAMPLES,
+  ...SPIRITS_SAMPLES,
+  ...ADDITIONAL_BEER,
+  ...ADDITIONAL_WINE,
+  ...ADDITIONAL_SPIRITS,
+];
 
 /** Lookup by key */
 export function getSampleLabel(key: string): SampleLabel | undefined {
@@ -784,6 +1131,16 @@ const DEFAULT_NAME_ADDRESS: Record<string, string> = {
   "OPUS ONE": "Opus One Winery, Oakville, CA 94562",
   "TITO'S HANDMADE VODKA": "Fifth Generation, Inc., Austin, TX 78702",
   "PATRON": "Patron Spirits International AG, Imported by The Patron Spirits Company, Coral Gables, FL 33134",
+  "BELL'S": "Bell's Brewery, Inc., Comstock, MI 49053",
+  "FOUNDERS": "Founders Brewing Co., Grand Rapids, MI 49503",
+  "YUENGLING": "D.G. Yuengling & Son, Inc., Pottsville, PA 17901",
+  "NEW BELGIUM": "New Belgium Brewing Company, Fort Collins, CO 80524",
+  "CAYMUS VINEYARDS": "Caymus Vineyards, Rutherford, CA 94573",
+  "JOSH CELLARS": "Deutsch Family Wine & Spirits, Stamford, CT 06901",
+  "WHISPERING ANGEL": "Sacha Lichine, Château d'Esclans, 83920 La Motte, France",
+  "WOODFORD RESERVE": "Brown-Forman Corporation, Louisville, KY 40210",
+  "CASAMIGOS": "Diageo North America, Norwalk, CT 06851",
+  "GREY GOOSE": "Bacardi Limited, Hamilton, Bermuda",
 };
 
 export interface SampleProduct {
