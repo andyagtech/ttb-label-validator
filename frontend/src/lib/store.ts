@@ -230,6 +230,29 @@ const COLOR_MAP: Record<BeverageCategory, [string, string]> = {
   wine: ["#3b0a1e", "#e8c4d0"],
 };
 
+/**
+ * Build formFields (COLA application form data) from a product's expected fields.
+ * Uses camelCase keys to match the Submission.formFields convention.
+ * This simulates what the submitter would have entered on TTB Form 5100.31.
+ */
+function buildFormFields(product: SampleProduct): Record<string, string> {
+  const ff: Record<string, string> = {};
+  const front = product.expectedFrontFields;
+  const back = product.expectedBackFields;
+  if (front.brand_name) ff.brandName = front.brand_name;
+  if (front.class_type) ff.classType = front.class_type;
+  if (front.alcohol_content) ff.alcoholContent = front.alcohol_content;
+  if (front.net_contents) ff.netContents = front.net_contents;
+  if (front.appellation) ff.appellation = front.appellation;
+  if (front.vintage_date) ff.vintageDate = front.vintage_date;
+  if (front.varietal) ff.varietal = front.varietal;
+  if (front.age_statement) ff.ageStatement = front.age_statement;
+  if (back.name_address) ff.nameAddress = back.name_address;
+  if (back.country_origin) ff.countryOfOrigin = back.country_origin;
+  if (back.health_warning) ff.healthWarning = "GOVERNMENT WARNING: (1) According to the Surgeon General...";
+  return ff;
+}
+
 /** Map checklist id to the expected-fields key */
 function fieldKey(id: string): string {
   const map: Record<string, string> = {
@@ -431,7 +454,7 @@ function generateMockSubmissions(): Submission[] {
       labels: [frontLabel, backLabel],
       reviews: [],
       serverValidation,
-      formFields: o.formFields,
+      formFields: o.formFields || buildFormFields(product),
     };
 
     if (o.review) {
@@ -461,20 +484,31 @@ function generateMockSubmissions(): Submission[] {
     status: SubmissionStatus;
     submitter: string;
     daysAgo: number;
+    formFields: Record<string, string>;
     review?: { decision: string; reviewer: string; notes: string; findings: ReviewFinding[] };
   }> = [
-    { productName: "Bell's Two Hearted Ale", category: "beer", status: "submitted", submitter: "Bell's Brewery, Inc.", daysAgo: 0 },
-    { productName: "Caymus Cabernet Sauvignon 2021", category: "wine", status: "submitted", submitter: "Caymus Vineyards", daysAgo: 1 },
-    { productName: "Woodford Reserve Double Oaked", category: "spirits", status: "in_review", submitter: "Brown-Forman Corporation", daysAgo: 2 },
-    { productName: "Founders All Day IPA", category: "beer", status: "submitted", submitter: "Founders Brewing Co.", daysAgo: 0 },
-    { productName: "Josh Cellars Chardonnay 2022", category: "wine", status: "submitted", submitter: "Deutsch Family Wine & Spirits", daysAgo: 1 },
+    { productName: "Bell's Two Hearted Ale", category: "beer", status: "submitted", submitter: "Bell's Brewery, Inc.", daysAgo: 0,
+      formFields: { brandName: "BELL'S", classType: "India Pale Ale", alcoholContent: "7.0% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "Bell's Brewery, Inc., Comstock, MI 49053" } },
+    { productName: "Caymus Cabernet Sauvignon 2021", category: "wine", status: "submitted", submitter: "Caymus Vineyards", daysAgo: 1,
+      formFields: { brandName: "CAYMUS VINEYARDS", classType: "Cabernet Sauvignon", alcoholContent: "Alcohol 14.6% by Volume", netContents: "750 mL", appellation: "Napa Valley", vintageDate: "2021", varietal: "Cabernet Sauvignon", nameAddress: "Caymus Vineyards, Rutherford, CA 94573" } },
+    { productName: "Woodford Reserve Double Oaked", category: "spirits", status: "in_review", submitter: "Brown-Forman Corporation", daysAgo: 2,
+      formFields: { brandName: "WOODFORD RESERVE", classType: "Kentucky Straight Bourbon Whiskey", alcoholContent: "45.2% Alc./Vol. (90.4 Proof)", netContents: "750 mL", nameAddress: "Brown-Forman Corporation, Louisville, KY 40210" } },
+    { productName: "Founders All Day IPA", category: "beer", status: "submitted", submitter: "Founders Brewing Co.", daysAgo: 0,
+      formFields: { brandName: "FOUNDERS", classType: "India Pale Ale", alcoholContent: "4.7% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "Founders Brewing Co., Grand Rapids, MI 49503" } },
+    { productName: "Josh Cellars Chardonnay 2022", category: "wine", status: "submitted", submitter: "Deutsch Family Wine & Spirits", daysAgo: 1,
+      formFields: { brandName: "JOSH CELLARS", classType: "Chardonnay", alcoholContent: "Alcohol 13.5% by Volume", netContents: "750 mL", appellation: "California", vintageDate: "2022", varietal: "Chardonnay", nameAddress: "Deutsch Family Wine & Spirits, Stamford, CT 06901" } },
     { productName: "Casamigos Blanco Tequila", category: "spirits", status: "approved", submitter: "Diageo North America", daysAgo: 8,
+      formFields: { brandName: "CASAMIGOS", classType: "Tequila Blanco", alcoholContent: "40% Alc./Vol. (80 Proof)", netContents: "750 mL", countryOfOrigin: "Product of Mexico", nameAddress: "Diageo North America, Norwalk, CT 06851" },
       review: { decision: "approve", reviewer: "Jenny Park", notes: "All fields compliant. Approved.", findings: [] } },
-    { productName: "Yuengling Traditional Lager", category: "beer", status: "submitted", submitter: "D.G. Yuengling & Son, Inc.", daysAgo: 0 },
+    { productName: "Yuengling Traditional Lager", category: "beer", status: "submitted", submitter: "D.G. Yuengling & Son, Inc.", daysAgo: 0,
+      formFields: { brandName: "YUENGLING", classType: "Lager", alcoholContent: "4.5% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "D.G. Yuengling & Son, Inc., Pottsville, PA 17901" } },
     { productName: "Whispering Angel Rosé 2023", category: "wine", status: "needs_revision", submitter: "Sacha Lichine", daysAgo: 3,
+      formFields: { brandName: "WHISPERING ANGEL", classType: "Rosé", alcoholContent: "Alcohol 13.0% by Volume", netContents: "750 mL", appellation: "Côtes de Provence", vintageDate: "2023", countryOfOrigin: "Product of France", nameAddress: "Sacha Lichine, Château d'Esclans, France" },
       review: { decision: "needs_revision", reviewer: "Dave Morrison", notes: "Vintage date not visible on front label. Resubmit with legible date.", findings: [{ checklistItemId: "vintage_date", severity: "warning", message: "Vintage date is illegible or missing from front label." }] } },
-    { productName: "Grey Goose Vodka", category: "spirits", status: "submitted", submitter: "Bacardi Limited", daysAgo: 1 },
-    { productName: "New Belgium Fat Tire Amber Ale", category: "beer", status: "submitted", submitter: "New Belgium Brewing Company", daysAgo: 0 },
+    { productName: "Grey Goose Vodka", category: "spirits", status: "submitted", submitter: "Bacardi Limited", daysAgo: 1,
+      formFields: { brandName: "GREY GOOSE", classType: "Vodka", alcoholContent: "40% Alc./Vol. (80 Proof)", netContents: "750 mL", countryOfOrigin: "Product of France", nameAddress: "Bacardi Limited, Hamilton, Bermuda" } },
+    { productName: "New Belgium Fat Tire Amber Ale", category: "beer", status: "submitted", submitter: "New Belgium Brewing Company", daysAgo: 0,
+      formFields: { brandName: "NEW BELGIUM", classType: "Amber Ale", alcoholContent: "5.2% Alc. By Vol.", netContents: "12 FL OZ", nameAddress: "New Belgium Brewing Company, Fort Collins, CO 80524" } },
   ];
 
   extras.forEach((ex, i) => {
@@ -498,6 +532,7 @@ function generateMockSubmissions(): Submission[] {
         { slotId: `slot-${idx}-1`, slotName: "Back Label", originalImageUrl: backImg, correctedImageUrl: backImg, checklist: [] },
       ],
       reviews: [],
+      formFields: ex.formFields,
     };
 
     if (ex.review) {

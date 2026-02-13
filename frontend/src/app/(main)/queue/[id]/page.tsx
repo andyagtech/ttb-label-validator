@@ -37,9 +37,14 @@ import {
   History,
   ClipboardCheck,
   SplitSquareHorizontal,
+  ScanSearch,
+  Square,
+  CheckSquare,
+  Loader2,
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
+import { parseOcrText, type ExtractedFields } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
 import {
   STATUS_STYLES,
@@ -50,6 +55,11 @@ import {
   formatDate,
   formatSeconds,
 } from "@/lib/styles";
+
+// ---------------------------------------------------------------------------
+// Required fields by law (mandatory on all labels)
+// ---------------------------------------------------------------------------
+const REQUIRED_FIELDS = new Set(["brandName", "classType", "netContents", "healthWarning", "nameAddress"]);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -131,6 +141,18 @@ export default function TTBReviewPage() {
   const [leftTab, setLeftTab] = useState<LeftTab>("side-by-side");
   const [selectedLabelIdx, setSelectedLabelIdx] = useState(0);
 
+  // Text Detect (Tesseract.js OCR)
+  const [detectedFields, setDetectedFields] = useState<ExtractedFields | null>(null);
+  const [detecting, setDetecting] = useState(false);
+  const [detectError, setDetectError] = useState<string | null>(null);
+
+  // Interactive checklist — agent checks off each field as verified
+  const [checkStates, setCheckStates] = useState<Record<string, boolean>>({});
+
+  const toggleCheck = useCallback((fieldKey: string) => {
+    setCheckStates((prev) => ({ ...prev, [fieldKey]: !prev[fieldKey] }));
+  }, []);
+
   // Timer tick
   useEffect(() => {
     const interval = setInterval(() => {
@@ -161,21 +183,84 @@ export default function TTBReviewPage() {
     fetchSubmission();
   }, [fetchSubmission]);
 
-  // Auto-run form comparison
+  // Run Text Detect (Tesseract.js) on label images
+  const runTextDetect = useCallback(async () => {
+    if (!submission) return;
+    setDetecting(true);
+    setDetectError(null);
+    try {
+      const Tesseract = await import("tesseract.js");
+      const allText: string[] = [];
+      for (const label of submission.labels) {
+        const imgUrl = label.correctedImageUrl || label.originalImageUrl;
+        if (!imgUrl) continue;
+        // Load image into an offscreen canvas
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error(`Failed to load ${label.slotName}`));
+          img.src = imgUrl;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL("image/png");
+        const result = await Tesseract.recognize(dataUrl, "eng");
+        allText.push(result.data.text);
+      }
+      const combined = allText.join("\n\n");
+      const parsed = parseOcrText(combined);
+      setDetectedFields(parsed);
+    } catch (err) {
+      console.error("[TextDetect] Error:", err);
+      setDetectError(err instanceof Error ? err.message : "OCR failed");
+    }
+    setDetecting(false);
+  }, [submission]);
+
+  // Merge all OCR sources: server OCR + detected fields
+  const mergedOcr = useMemo((): Record<string, string> => {
+    const merged: Record<string, string> = {};
+    // Server OCR results (snake_case keys → camelCase)
+    if (submission?.serverValidation?.ocrResults) {
+      const keyMap: Record<string, string> = {
+        brand_name: "brandName", class_type: "classType", alcohol_content: "alcoholContent",
+        net_contents: "netContents", health_warning: "healthWarning", name_address: "nameAddress",
+        country_origin: "countryOfOrigin", sulfite_declaration: "sulfiteDeclaration",
+        appellation: "appellation", vintage_date: "vintageDate", varietal: "varietal",
+        age_statement: "ageStatement",
+      };
+      for (const [k, v] of Object.entries(submission.serverValidation.ocrResults)) {
+        const camel = keyMap[k] || k;
+        if (v) merged[camel] = v;
+      }
+    }
+    // Client-side Tesseract results override/fill gaps
+    if (detectedFields) {
+      for (const [k, v] of Object.entries(detectedFields)) {
+        if (v && k !== "rawText" && !merged[k]) merged[k] = v;
+      }
+    }
+    return merged;
+  }, [submission, detectedFields]);
+
+  // Auto-run form comparison — works with merged OCR data
   const comparisonResults = useMemo(() => {
-    if (!submission?.formFields || !submission?.serverValidation?.ocrResults) return null;
+    if (!submission?.formFields) return null;
     const results: Record<string, MatchResult> = {};
     const formFields = submission.formFields;
-    const ocrResults = submission.serverValidation.ocrResults;
     for (const key of Object.keys(FIELD_LABELS)) {
       const formVal = formFields[key];
-      const labelVal = ocrResults[key];
+      const labelVal = mergedOcr[key];
       if (formVal || labelVal) {
         results[key] = compareFields(formVal, labelVal);
       }
     }
     return results;
-  }, [submission]);
+  }, [submission, mergedOcr]);
 
   const comparisonSummary = useMemo(() => {
     if (!comparisonResults) return null;
@@ -396,22 +481,41 @@ export default function TTBReviewPage() {
           {/* ---- SIDE-BY-SIDE TAB ---- */}
           {leftTab === "side-by-side" && (
             <div className="space-y-4">
-              {submission.labels.length > 1 && (
-                <div className="flex gap-2">
-                  {submission.labels.map((l, i) => (
-                    <button
-                      key={l.slotId}
-                      onClick={() => setSelectedLabelIdx(i)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
-                        selectedLabelIdx === i
-                          ? "bg-gray-800 text-white"
-                          : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <ImageIcon size={12} />
-                      {l.slotName}
-                    </button>
-                  ))}
+              {/* Label selector + Text Detect button */}
+              <div className="flex items-center gap-2">
+                {submission.labels.map((l, i) => (
+                  <button
+                    key={l.slotId}
+                    onClick={() => setSelectedLabelIdx(i)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                      selectedLabelIdx === i
+                        ? "bg-gray-800 text-white"
+                        : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <ImageIcon size={12} />
+                    {l.slotName}
+                  </button>
+                ))}
+
+                <button
+                  onClick={runTextDetect}
+                  disabled={detecting}
+                  className="ml-auto flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition shadow-sm text-white"
+                  style={{ background: detecting ? "#b45309" : "#ea580c" }}
+                >
+                  {detecting ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <ScanSearch size={15} />
+                  )}
+                  {detecting ? "Detecting..." : "Text Detect"}
+                </button>
+              </div>
+
+              {detectError && (
+                <div className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+                  Text Detect error: {detectError}
                 </div>
               )}
 
@@ -444,79 +548,137 @@ export default function TTBReviewPage() {
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Right: Extracted Data + Checklist */}
-                <div className="space-y-4">
-                  {ocrResults && (
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                      <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
-                        <FileText size={13} className="text-gray-400" />
-                        <span className="text-xs font-medium text-gray-700">Extracted Fields</span>
-                      </div>
-                      <div className="p-3 space-y-2">
-                        {Object.entries(ocrResults)
-                          .filter(([k]) => k !== "rawText")
-                          .map(([key, value]) => {
-                            const matchResult = comparisonResults?.[key];
-                            return (
-                              <div
-                                key={key}
-                                className={`rounded-lg px-3 py-2 border ${
-                                  matchResult ? verdictBg(matchResult.verdict) : "bg-gray-50 border-gray-100"
-                                }`}
-                              >
-                                <div className="flex items-center gap-1.5">
-                                  {matchResult && verdictIcon(matchResult.verdict)}
-                                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                                    {FIELD_LABELS[key as keyof typeof FIELD_LABELS] || key}
-                                  </p>
-                                </div>
-                                <p className="text-xs text-gray-700 mt-0.5 break-words">
-                                  {value || <span className="text-gray-400 italic">Not detected</span>}
-                                </p>
-                                {matchResult && submission.formFields?.[key] && (
-                                  <p className="text-[10px] text-gray-500 mt-0.5">
-                                    Form: &ldquo;{submission.formFields[key]}&rdquo;
-                                    {matchResult.verdict !== "exact" && matchResult.verdict !== "missing" && (
-                                      <span className="ml-1 text-gray-400">({matchResult.score}% match)</span>
-                                    )}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
-                      </div>
+                  {/* Raw text preview */}
+                  {detectedFields?.rawText && (
+                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+                      <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Raw OCR Text</p>
+                      <pre className="text-[11px] text-gray-600 max-h-[120px] overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
+                        {detectedFields.rawText}
+                      </pre>
                     </div>
                   )}
+                </div>
 
-                  {selectedLabel && (
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                      <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
-                        <ClipboardCheck size={13} className="text-gray-400" />
-                        <span className="text-xs font-medium text-gray-700">{selectedLabel.slotName} Checklist</span>
+                {/* Right: Submitted vs Detected comparison table */}
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ClipboardCheck size={13} className="text-gray-400" />
+                      <span className="text-xs font-medium text-gray-700">Form vs. Label Verification</span>
+                    </div>
+                    {comparisonSummary && (
+                      <div className="flex items-center gap-2 text-[10px]">
+                        <span className="text-emerald-600">{comparisonSummary.matches} match</span>
+                        {comparisonSummary.issues > 0 && (
+                          <span className="text-red-600">{comparisonSummary.issues} issue{comparisonSummary.issues > 1 ? "s" : ""}</span>
+                        )}
                       </div>
-                      <div className="p-3 space-y-1">
-                        {selectedLabel.checklist.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50"
-                          >
-                            {item.status === "auto_pass" ? (
-                              <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-                            ) : item.status === "auto_fail" ? (
-                              <XCircle size={14} className="text-red-500 shrink-0" />
+                    )}
+                  </div>
+
+                  <div className="divide-y divide-gray-100">
+                    {/* Header row */}
+                    <div className="grid grid-cols-[28px_1fr_1fr_1fr] gap-2 px-3 py-2 bg-gray-50 text-[9px] font-semibold text-gray-500 uppercase tracking-wider">
+                      <div></div>
+                      <div>Field</div>
+                      <div>Submitted (Form)</div>
+                      <div>Detected (Label)</div>
+                    </div>
+
+                    {/* Field rows */}
+                    {Object.keys(FIELD_LABELS).map((key) => {
+                      const formVal = submission.formFields?.[key];
+                      const detectedVal = mergedOcr[key];
+                      const matchResult = comparisonResults?.[key];
+                      const isRequired = REQUIRED_FIELDS.has(key);
+                      const isChecked = checkStates[key] || false;
+
+                      // Skip fields that have neither submitted nor detected values
+                      if (!formVal && !detectedVal && !isRequired) return null;
+
+                      // Determine row styling
+                      let rowBg = "bg-white";
+                      if (matchResult) {
+                        if (matchResult.verdict === "exact" || matchResult.verdict === "match") rowBg = "bg-emerald-50/50";
+                        else if (matchResult.verdict === "close") rowBg = "bg-amber-50/50";
+                        else if (matchResult.verdict === "mismatch") rowBg = "bg-red-50/50";
+                      }
+                      if (isRequired && !formVal && !detectedVal) rowBg = "bg-red-50/50";
+
+                      return (
+                        <div
+                          key={key}
+                          className={`grid grid-cols-[28px_1fr_1fr_1fr] gap-2 px-3 py-2.5 items-start ${rowBg} hover:bg-gray-50/80 transition cursor-pointer`}
+                          onClick={() => toggleCheck(key)}
+                        >
+                          {/* Checkbox */}
+                          <div className="flex items-center justify-center pt-0.5">
+                            {isChecked ? (
+                              <CheckSquare size={16} className="text-emerald-600" />
                             ) : (
-                              <div className="w-[14px] h-[14px] rounded-full border-2 border-gray-300 shrink-0" />
+                              <Square size={16} className="text-gray-300" />
                             )}
-                            <span className="text-xs text-gray-700">{item.label}</span>
-                            {item.detectedValue && (
-                              <span className="text-[10px] text-gray-400 ml-auto truncate max-w-[150px]">
-                                {item.detectedValue}
+                          </div>
+
+                          {/* Field name */}
+                          <div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[11px] font-medium text-gray-700">
+                                {FIELD_LABELS[key as keyof typeof FIELD_LABELS]}
+                              </span>
+                              {isRequired && (
+                                <span className="text-[8px] font-bold text-red-500 uppercase">REQ</span>
+                              )}
+                            </div>
+                            {matchResult && matchResult.verdict !== "exact" && matchResult.verdict !== "missing" && (
+                              <span className={`text-[9px] ${
+                                matchResult.verdict === "match" ? "text-emerald-600" :
+                                matchResult.verdict === "close" ? "text-amber-600" : "text-red-600"
+                              }`}>
+                                {matchResult.score}% match
                               </span>
                             )}
                           </div>
-                        ))}
+
+                          {/* Submitted (form) value */}
+                          <div>
+                            <p className="text-[11px] text-gray-700 break-words leading-tight">
+                              {formVal || <span className="text-gray-400 italic text-[10px]">{isRequired ? "⚠ Missing" : "—"}</span>}
+                            </p>
+                          </div>
+
+                          {/* Detected (label) value */}
+                          <div className="flex items-start gap-1">
+                            {matchResult && (
+                              <span className="shrink-0 mt-0.5">{verdictIcon(matchResult.verdict)}</span>
+                            )}
+                            <p className="text-[11px] text-gray-700 break-words leading-tight">
+                              {detectedVal || (
+                                <span className="text-gray-400 italic text-[10px]">
+                                  {(detectedFields || Object.keys(mergedOcr).length > 0) ? "Not found" : "Run Text Detect →"}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Government Warning special check */}
+                  {mergedOcr.healthWarning && (
+                    <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
+                          ? <CheckCircle2 size={12} className="text-emerald-500" />
+                          : <XCircle size={12} className="text-red-500" />
+                        }
+                        <span className="text-[10px] font-medium text-gray-600">
+                          {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
+                            ? '"GOVERNMENT WARNING:" is in ALL CAPS ✓'
+                            : '"GOVERNMENT WARNING:" is NOT in ALL CAPS — will be rejected'
+                          }
+                        </span>
                       </div>
                     </div>
                   )}
@@ -776,6 +938,59 @@ export default function TTBReviewPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Quick Reject — auto-populate findings from mismatches */}
+              {comparisonResults && isPending && (
+                <button
+                  onClick={() => {
+                    const autoFindings: ReviewFinding[] = [];
+                    // Check mismatches
+                    for (const [key, result] of Object.entries(comparisonResults)) {
+                      const fieldLabel = FIELD_LABELS[key as keyof typeof FIELD_LABELS] || key;
+                      if (result.verdict === "mismatch") {
+                        const formVal = submission.formFields?.[key] || "N/A";
+                        const ocrVal = mergedOcr[key] || "not detected";
+                        autoFindings.push({
+                          checklistItemId: key,
+                          severity: "error",
+                          message: `${fieldLabel} mismatch: form says "${formVal}" but label shows "${ocrVal}"`,
+                        });
+                      } else if (result.verdict === "close") {
+                        autoFindings.push({
+                          checklistItemId: key,
+                          severity: "warning",
+                          message: `${fieldLabel} is a close but imperfect match (${result.score}% similar). Verify manually.`,
+                        });
+                      }
+                    }
+                    // Check required fields that are missing from the label
+                    for (const reqKey of Array.from(REQUIRED_FIELDS)) {
+                      if (!mergedOcr[reqKey] && submission.formFields?.[reqKey]) {
+                        const fieldLabel = FIELD_LABELS[reqKey as keyof typeof FIELD_LABELS] || reqKey;
+                        if (!autoFindings.some((f) => f.checklistItemId === reqKey)) {
+                          autoFindings.push({
+                            checklistItemId: reqKey,
+                            severity: "error",
+                            message: `Required field "${fieldLabel}" was not detected on the label.`,
+                          });
+                        }
+                      }
+                    }
+                    if (autoFindings.length > 0) {
+                      setFindings(autoFindings);
+                      setDecision("reject");
+                      setNotes(`Rejected: ${autoFindings.length} issue(s) found during form-vs-label verification.`);
+                    }
+                  }}
+                  disabled={!Object.values(comparisonResults).some(
+                    (r) => r.verdict === "mismatch" || r.verdict === "close"
+                  ) && !Array.from(REQUIRED_FIELDS).some((k) => !mergedOcr[k] && submission.formFields?.[k])}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-xl border-2 border-red-200 text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                >
+                  <XCircle size={14} />
+                  Quick Reject — Auto-fill from Mismatches
+                </button>
+              )}
 
               {/* Findings */}
               <div className="bg-white rounded-xl border border-gray-200 p-4">
