@@ -13,6 +13,26 @@ AI-powered alcohol label verification tool for TTB (Alcohol and Tobacco Tax and 
 | Deployed Application URL | ✅ | **[https://ttb-demo-pipeline.vercel.app](https://ttb-demo-pipeline.vercel.app)** |
 | Working prototype | ✅ | Live at the URL above — 24 pre-loaded submissions ready to review |
 
+## Core Functionality: The Review Queue
+
+The core review functionality is in the **Review Queue**:
+
+- **Queue dashboard:** [ttb-demo-pipeline.vercel.app/queue](https://ttb-demo-pipeline.vercel.app/queue)
+- **Example submission:** [ttb-demo-pipeline.vercel.app/queue/SUB-S3](https://ttb-demo-pipeline.vercel.app/queue/SUB-S3) (Hennessy Cognac)
+
+**The flow:** An agent opens a submission and **Tesseract.js immediately starts running** as the page loads. Tesseract.js is an in-browser OCR tool — it does not make calls to an external AI provider, so it works behind firewalls with no API keys.
+
+Once OCR completes (~2-3 seconds), the **Form vs. Label Verification** table populates automatically, comparing what the applicant submitted on their COLA form against what was actually detected on the label images. Each field shows:
+
+- **Submitted value** (from the COLA form) vs. **Detected value** (from OCR)
+- **Label source badge** — which label (Front/Back) the detection came from
+- **Match score** — fuzzy matching with accent normalization and token overlap
+- **Checkbox** (right side) — agent confirms each field as verified
+- **🛑 Flag button** — one click adds a cited finding to the rejection
+- **Zoom** — full-screen lightbox for inspecting label artwork
+
+The idea is to make it efficient for the agent to match the text that was submitted against what's on the images. Instead of reading every field manually, the agent scans pre-checked results and handles edge cases.
+
 ## Quick Start
 
 ### Prerequisites
@@ -70,7 +90,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_...
 
 ```bash
 cd frontend
-npm test          # 77 tests across 3 suites
+npm test          # 115 tests across 6 suites
 ```
 
 ## Approach & Core Concept
@@ -92,7 +112,7 @@ This turns a 5–10 minute manual review into a quick scan of pre-populated resu
 
 ### Key Design Decisions
 
-- **Tesseract.js (browser-side OCR)** for the "Text Detect" button — runs entirely in-browser, no API key needed, ~2-3 seconds. Used by agents to extract text from label images on demand.
+- **Tesseract.js (browser-side OCR)** — runs entirely in-browser, no API key needed, ~2-3 seconds. Auto-runs when the agent opens a submission, so the comparison table populates without any clicks.
 - **Claude 3.5 Sonnet (server-side OCR)** for "AI Extract" — higher accuracy structured extraction when available, but requires an API key.
 - **Levenshtein fuzzy matching** for form-vs-label comparison — handles real-world differences like "STONE'S THROW" vs "Stone's Throw" (a real case from the senior agent's experience).
 - **Category-aware validation rules** — different checks for beer, wine, and spirits per TTB regulations (e.g., ABV is optional for malt beverages per 27 CFR 7.71).
@@ -116,24 +136,25 @@ Go to **[/queue](https://ttb-demo-pipeline.vercel.app/queue)** — you'll see 24
 
 ### 2. Pick a Submission
 
-Click any **"Submitted"** item (e.g., Sierra Nevada Pale Ale). This opens the agent review workspace.
+Click any **"Submitted"** item (e.g., [SUB-S3 Hennessy](https://ttb-demo-pipeline.vercel.app/queue/SUB-S3)). This opens the agent review workspace.
 
-### 3. Run Text Detect
+### 3. Watch Text Detect Auto-Run
 
-Click the orange **"Text Detect"** button. This runs Tesseract.js on both front and back label images, extracts text, and parses it into structured fields (brand name, ABV, net contents, government warning, etc.).
+Tesseract.js starts automatically ~500ms after the page loads. You'll see the orange button show "Detecting..." briefly, then the **Form vs. Label Verification** table fills in with results. No clicks needed — the agent can still re-run manually if desired.
 
 ### 4. Review Form vs. Label
 
-The right panel shows a side-by-side table:
-- **Submitted (Form)** — what the applicant claimed on their COLA application
-- **Detected (Label)** — what was actually found on the label image
-- **Checkboxes** — click each row to confirm you've verified it
-- **Color coding** — green = match, yellow = close, red = mismatch
+The right panel shows a side-by-side comparison for every field:
+- **Submitted (Form)** vs. **Detected (Label)** — with label source badges (e.g., "Back Label")
+- **Checkbox** (right side) — click to confirm you've verified the field
+- **🛑 Flag button** (right side) — click to add a cited finding for this discrepancy
+- **Color coding** — green = match, amber = close, red = mismatch
 - **REQ badge** — legally required fields (brand name, class/type, net contents, health warning, name & address)
+- **Zoom button** — opens a full-screen lightbox of the label artwork
 
 ### 5. Make a Decision
 
-Use the decision panel on the right: **Approve**, **Reject**, **Needs Revision**, or **Escalate**. The **Quick Reject** button auto-populates findings from all detected mismatches and missing required fields.
+Use the decision panel on the right: **Approve**, **Reject**, **Needs Revision**, or **Escalate**. The **Quick Reject** button auto-populates findings from all detected mismatches and missing required fields. The **Findings** section has a field typeahead — start typing "Health" and it auto-completes to "Health Warning" on Enter/Tab.
 
 ### Also Try
 
@@ -442,15 +463,16 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 
 ### Review Queue (Agent View)
 - **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed). **Typeahead search** filters instantly as you type across product name, submitter, category, and ID. Pagination for large queues.
-- **`/queue/[id]` review page** — full agent review workspace with 4-tab layout:
-  - **Label + Data** (side-by-side) — label artwork on the left; **Form vs. Label Verification** table on the right showing submitted form data vs. detected OCR data with interactive checkboxes, match/mismatch color coding, and **REQ** badges on legally required fields. Multi-label selector for front/back labels.
-  - **Checklist** — per-label compliance checklist with auto_pass/auto_fail/manual status
-  - **Form Comparison** — auto-computed fuzzy matching of COLA application form fields vs. label OCR, with field-by-field verdicts (exact/match/close/mismatch/missing), percentage scores, and summary bar
+- **`/queue/[id]` review page** — full agent review workspace with 2-tab layout:
+  - **Label + Data** (side-by-side) — label artwork on the left with **Front Label / Back Label / Zoom** buttons; **Form vs. Label Verification** table on the right showing submitted form data vs. detected OCR data with label source badges (Front/Back), interactive checkboxes on the right side, 🛑 flag buttons for cited rejections, match/mismatch color coding, and **REQ** badges on legally required fields.
   - **History** — full audit trail of previous reviews with findings
-- **Text Detect** — orange button runs **Tesseract.js** on front + back label images, parses raw OCR into structured fields (brand name, class/type, ABV, net contents, government warning, name & address, etc.), and populates the comparison table. No API key required.
+- **Auto Text Detect** — **Tesseract.js** runs automatically when the page loads (~2-3s), parsing each label separately to track which label (Front/Back) each field came from. Populates the comparison table with no manual clicks. Agent can re-run manually if needed. No API key required.
+- **Zoom lightbox** — full-screen dark overlay for inspecting label artwork at maximum size
 - **Government Warning check** — verifies "GOVERNMENT WARNING:" is in ALL CAPS (title case is rejected per TTB rules)
+- **🛑 Flag button** — per-field stop sign button adds a cited finding (e.g., `Name & Address: submitted "..." but label shows "..."`) and auto-sets decision to Reject
 - **Quick Reject** — one-click button that auto-populates findings from all detected mismatches and missing required fields, sets the decision to "Reject", and writes a summary note
-- **Decision panel** — sticky sidebar with reviewer name, decision buttons (Approve / Reject / Needs Revision / Escalate), findings editor, and notes
+- **Field typeahead** — Findings field selector with autocomplete from all FIELD_LABELS, completes on Enter/Tab
+- **Decision panel** — sticky sidebar with reviewer name, decision buttons (Approve / Reject / Needs Revision / Escalate), findings editor with field typeahead, and notes
 - **Live timer** — tracks active review time per session
 - **End-to-end flow** — "Submit to Agent Queue" button on the Submission Simulator sends processed images, checklists, and OCR-extracted fields to the agent review queue. Agent sees the actual corrected label artwork.
 - **Mock seed data** — 24 realistic submissions across beer/wine/spirits with various statuses, pre-populated COLA form fields, and label images
@@ -517,6 +539,9 @@ ttb_cola_project/
 │   │   │
 │   │   ├── components/
 │   │   │   ├── TTBShell.tsx     # TTB.gov visual shell (banner, header, nav, footer)
+│   │   │   ├── FormVsLabelTable.tsx  # Form vs. Label comparison table (checkboxes, flags, source badges)
+│   │   │   ├── DecisionPanel.tsx     # Review decision sidebar (findings with field typeahead)
+│   │   │   ├── QuickRejectButton.tsx # One-click auto-populate findings from mismatches
 │   │   │   ├── CornerEditor.tsx # 4-point corner editor with zoom/pan
 │   │   │   ├── MeshWarpEditor.tsx # Multi-point mesh warp editor
 │   │   │   ├── LabelChecklist.tsx # Checklist with validation results
@@ -538,10 +563,13 @@ ttb_cola_project/
 │   │   │   ├── store.ts         # In-memory submission store + 24 mock seed submissions
 │   │   │   ├── agentStore.ts    # In-memory agent store + 5 seed agents + stats helpers
 │   │   │   ├── styles.ts        # Shared design tokens, color maps, utility formatters
-│   │   │   └── __tests__/       # Unit tests (Vitest) — 77 tests
-│   │   │       ├── validation.test.ts  # 31 tests — rules engine
+│   │   │   └── __tests__/       # Unit tests (Vitest) — 115 tests
+│   │   │       ├── validation.test.ts  # 36 tests — rules engine
 │   │   │       ├── ocr.test.ts         # 32 tests — OCR parsing
-│   │   │       └── fuzzyMatch.test.ts  # 14 tests — fuzzy matching
+│   │   │       ├── fuzzyMatch.test.ts  # 22 tests — fuzzy matching + accent normalization
+│   │   │       ├── store.test.ts       # 13 tests — submission store CRUD
+│   │   │       ├── agentStore.test.ts  # 6 tests — agent store + stats
+│   │   │       └── explain.test.ts     # 6 tests — AI explanation
 │   │   └── types/
 │   │       └── tesseract.d.ts   # Tesseract.js type declarations
 │   ├── vitest.config.ts         # Test configuration
@@ -577,14 +605,17 @@ ttb_cola_project/
 
 ```bash
 cd frontend
-npm test        # Run all 77 tests once
+npm test        # Run all 115 tests once
 npm run test:watch  # Watch mode
 ```
 
-**77 unit tests** across 3 test suites:
-- **validation.test.ts** (31 tests) — government warning, ABV format, net contents, presence rules, class/type lookup, cross-field rules, sample label integration
+**115 unit tests** across 6 test suites:
+- **validation.test.ts** (36 tests) — government warning, ABV format, net contents, presence rules, class/type lookup, cross-field rules, sample label integration
 - **ocr.test.ts** (32 tests) — alcohol content parsing (7 ABV formats), net contents, government warning, sulfite, brand name, class/type, country of origin, vintage, name/address
-- **fuzzyMatch.test.ts** (14 tests) — normalization, Levenshtein scoring, Dave's "STONE'S THROW" case, smart quotes, edge cases
+- **fuzzyMatch.test.ts** (22 tests) — normalization, Levenshtein scoring, Dave's "STONE'S THROW" case, smart quotes, accent normalization, token overlap, containment with prefixes
+- **store.test.ts** (13 tests) — submission store CRUD, seeding, status updates, review submission
+- **agentStore.test.ts** (6 tests) — agent store operations, stats computation
+- **explain.test.ts** (6 tests) — AI explanation generation and fallback
 
 ## API Documentation
 

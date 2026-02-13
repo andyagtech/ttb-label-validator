@@ -49,7 +49,7 @@ The project brief describes a tool where agents compare label artwork against CO
 | Library/utility code (lib/) | ~6,900 lines across 14 modules |
 | Pages | 14 (including legacy) |
 | API routes | 11 |
-| Unit tests | 107 (6 test suites, all passing) |
+| Unit tests | 115 (6 test suites, all passing) |
 | Documentation files | 10 (including OpenAPI 3.1 spec) |
 
 ### Architecture
@@ -62,11 +62,10 @@ The project brief describes a tool where agents compare label artwork against CO
 
 ### What could be better
 
-- **Page components are large** — `/queue/[id]/page.tsx` is ~1,070 lines. This is the agent review workspace and contains a lot of UI logic (tabs, comparison table, decision panel). Breaking it into smaller sub-components would improve maintainability.
 - **In-memory store** — `store.ts` mixes data generation with CRUD operations. In production, the mock data generator would be separate from the database layer.
-- **No E2E tests** — unit tests cover the logic layer well (107 tests), but there are no Playwright/Cypress tests for the full UI flow. This is a trade-off given the prototype scope.
+- **No E2E tests** — unit tests cover the logic layer well (115 tests), but there are no Playwright/Cypress tests for the full UI flow. This is a trade-off given the prototype scope.
 
-**Assessment: Good.** Clean module boundaries, full TypeScript, 107 passing tests. The main weakness is large page components that could benefit from further decomposition.
+**Assessment: Good.** Clean module boundaries, full TypeScript, 115 passing tests. The review workspace has been decomposed into extracted components (FormVsLabelTable, DecisionPanel, QuickRejectButton) — the main page is ~670 lines with ~720 more across the extracted components.
 
 ---
 
@@ -176,12 +175,12 @@ The single most creative contribution is reframing the problem. The brief descri
 
 This shifts the agent's cognitive load from "read and verify" to "scan and confirm" — a fundamentally different (and faster) workflow.
 
-### Text Detect as an on-demand tool
+### Auto-run Text Detect (in-browser OCR)
 
-Rather than requiring OCR to run during submission (which adds latency and complexity), the "Text Detect" button lets the agent trigger Tesseract.js on demand. This means:
-- The submission pipeline stays fast (no OCR bottleneck)
-- The agent controls when OCR runs
-- It works entirely in the browser — no API key, no server cost
+Tesseract.js runs automatically when the agent opens a submission (~500ms after page load). Since it's entirely in-browser, there's no API cost and no firewall concerns. The Form vs. Label Verification table populates within ~2-3 seconds with no clicks needed. The agent can still re-run manually via the button if desired. This means:
+- The comparison table is ready by the time the agent finishes reading the header
+- No API key, no server cost, no firewall issues
+- Each label is parsed separately so we track which label (Front/Back) each field came from
 
 ### Quick Reject workflow
 
@@ -196,10 +195,9 @@ Instead of making agents manually type findings for each rejection, Quick Reject
 
 ### What I'd do with more time
 
-- **Confidence scoring** — weight the fuzzy match results by field importance (government warning mismatch is more serious than a brand name casing difference)
 - **Smart field suggestions** — when OCR can't find a field, suggest where to look on the label based on typical label layouts
 - **Agent analytics dashboard** — track review times, approval rates, and common rejection reasons across the team
-- **Side-by-side image zoom** — let agents zoom into specific regions of the label image while comparing against form data
+- **Confidence scoring** — weight the fuzzy match results by field importance (government warning mismatch is more serious than a brand name casing difference)
 
 **Assessment: Strong.** The pre-verification pipeline is a genuine insight into the problem, not just a feature. The project goes beyond "build an OCR tool" to "rethink the agent's workflow."
 
@@ -218,8 +216,7 @@ Instead of making agents manually type findings for each rejection, Quick Reject
 
 ### Honest weaknesses
 
-1. **Large page components** — the review workspace is a single ~1,070-line file
-2. **No E2E tests** — unit tests are solid but no browser automation tests
+1. **No E2E tests** — unit tests are solid (115) but no browser automation tests
 3. **In-memory persistence** — demo data resets on redeploy
 4. **SVG placeholder labels** — mock submissions use generated SVGs, not photorealistic images (though the tool handles real photos when uploaded)
 5. **No authentication** — appropriate for a prototype but would need Cognito/Azure AD in production

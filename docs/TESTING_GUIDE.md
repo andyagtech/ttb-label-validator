@@ -27,7 +27,7 @@ npm install
 
 ---
 
-## 2. Unit Tests (77 tests)
+## 2. Unit Tests (115 tests)
 
 ```bash
 # Run all tests once
@@ -38,13 +38,16 @@ npm test
 npm run test:watch
 ```
 
-**Expected output**: 77 tests passing across 3 suites.
+**Expected output**: 115 tests passing across 6 suites.
 
 | Suite | File | Tests | What it covers |
 |-------|------|-------|----------------|
-| Validation | `src/lib/__tests__/validation.test.ts` | 31 | Gov warning (caps, both statements), ABV format (7 formats), net contents, presence rules, class/type lookup, cross-field rules |
+| Validation | `src/lib/__tests__/validation.test.ts` | 36 | Gov warning (caps, both statements), ABV format (7 formats), net contents, presence rules, class/type lookup, cross-field rules |
 | OCR Parsing | `src/lib/__tests__/ocr.test.ts` | 32 | Alcohol content, net contents, gov warning, sulfite, brand name, class/type, country of origin, vintage, name/address extraction |
-| Fuzzy Match | `src/lib/__tests__/fuzzyMatch.test.ts` | 14 | Normalization, Levenshtein scoring, "STONE'S THROW" ↔ "Stone's Throw", smart quotes, edge cases |
+| Fuzzy Match | `src/lib/__tests__/fuzzyMatch.test.ts` | 22 | Normalization, Levenshtein scoring, "STONE'S THROW" ↔ "Stone's Throw", smart quotes, accent normalization, token overlap |
+| Store | `src/lib/__tests__/store.test.ts` | 13 | Submission store CRUD, seeding, status updates, review submission |
+| Agent Store | `src/lib/__tests__/agentStore.test.ts` | 6 | Agent store operations, stats computation |
+| Explain | `src/lib/__tests__/explain.test.ts` | 6 | AI explanation generation and fallback |
 
 **If a test fails**, check:
 - You're running from the `frontend/` directory
@@ -198,7 +201,7 @@ Opens at **http://localhost:3000** (or next available port if 3000 is in use).
 
 1. **Queue dashboard**
    - Open http://localhost:3000/queue
-   - Verify 8 mock submissions are listed
+   - Verify 24 mock submissions are listed
    - Check status badges (Pending, In Review, Approved, Rejected, etc.)
 
 2. **Filters**
@@ -222,9 +225,7 @@ Opens at **http://localhost:3000** (or next available port if 3000 is in use).
    - If multiple labels, click label selector tabs
 
 2. **Tabs**
-   - **Label + Data**: Side-by-side label image and OCR fields
-   - **Checklist**: Compliance checklist with auto/manual status
-   - **Form Comparison**: Fuzzy match of form fields vs. label OCR (similarity bars, verdicts)
+   - **Label + Data**: Side-by-side label image and Form vs. Label Verification table (auto-populated by Text Detect). Includes Front Label / Back Label / Zoom buttons, label source badges, checkboxes (right side), and 🛑 flag buttons.
    - **History**: Previous review records (if any)
 
 3. **Submit a review**
@@ -363,14 +364,14 @@ Key areas to spot-check:
 
 Run through this in under 5 minutes to verify a deployment:
 
-- [ ] `npm test` — 77 tests pass
+- [ ] `npm test` — 115 tests pass
 - [ ] `npm run build` — clean build, no errors
 - [ ] Open `/` — page loads, category dropdown works
 - [ ] Upload `public/samples/front-label-corrected.png` — image appears
 - [ ] Drag corners → Preview → corrected image renders
 - [ ] Click Quick Check → checklist updates
 - [ ] Open `/generate` — presets load, click one
-- [ ] Open `/queue` — 8 mock submissions visible
-- [ ] Click a submission → review page loads with tabs
+- [ ] Open `/queue` — 24 mock submissions visible
+- [ ] Click a submission → review page loads, Text Detect auto-runs, comparison table populates
 - [ ] Open `/api-test` — send a Queue List request → JSON response
 - [ ] Click `?` FAB on any page → walkthrough opens

@@ -126,7 +126,7 @@ This guide maps every requirement and stakeholder concern from the project descr
 - The **Compare tab** uses Levenshtein fuzzy matching with Unicode normalization and case folding
 - "STONE'S THROW" vs "Stone's Throw" → **98% match** (passes)
 - Smart quotes, accents, and case differences are all handled
-- **Unit tests:** `frontend/src/lib/__tests__/fuzzyMatch.test.ts` (14 tests) explicitly covers this case
+- **Unit tests:** `frontend/src/lib/__tests__/fuzzyMatch.test.ts` (22 tests) explicitly covers this case
 
 ---
 
@@ -194,10 +194,13 @@ Upload → Corner/Mesh Correction → Auto-Flatten → Sharpen → OCR
 
 ### Unit Tests
 
-Run `cd frontend && npx vitest` to see all 77 tests pass:
-- `validation.test.ts` — 31 tests
+Run `cd frontend && npx vitest` to see all 115 tests pass:
+- `validation.test.ts` — 36 tests
 - `ocr.test.ts` — 32 tests
-- `fuzzyMatch.test.ts` — 14 tests
+- `fuzzyMatch.test.ts` — 22 tests
+- `store.test.ts` — 13 tests
+- `agentStore.test.ts` — 6 tests
+- `explain.test.ts` — 6 tests
 
 ---
 
@@ -217,12 +220,13 @@ Run `cd frontend && npx vitest` to see all 77 tests pass:
    - **Pagination** — page 1 (20 items), page 2 (4 items)
    - Stats cards (Total, Pending, Approved, Rejected)
 
-2. **Click any submission** → full review workspace:
-   - **Label images** — front and back, AI-generated via Gemini
-   - **Checklist** — auto-detected validation results
-   - **Decision panel** — Approve / Reject / Needs Revision with notes
+2. **Click any submission** (try [SUB-S3 Hennessy](https://ttb-demo-pipeline.vercel.app/queue/SUB-S3)) → full review workspace:
+   - **Text Detect auto-runs** — Tesseract.js starts immediately, Form vs. Label Verification table populates in ~2-3s
+   - **Label images** — front and back with Zoom lightbox, label source badges (Front/Back)
+   - **Form vs. Label table** — submitted values vs. detected values, checkboxes (right side), 🛑 flag buttons
+   - **Decision panel** — Approve / Reject / Needs Revision / Escalate with field typeahead in Findings
    - **Review timer** — tracks active review time
-   - **Findings** — attach specific issues to checklist items
+   - **Quick Reject** — one-click auto-populate findings from all mismatches
 
 3. **Submit a decision** → status auto-transitions
 
@@ -292,7 +296,7 @@ Full API documentation: `docs/openapi.yaml` (OpenAPI 3.1)
 - **Label Generation:** Google Gemini AI
 - **Label Storage:** Vercel Blob Storage (persistent across deploys)
 - **Review Queue:** In-memory store with REST API (swappable to PostgreSQL)
-- **Unit Tests:** 77 tests via Vitest
+- **Unit Tests:** 115 tests via Vitest (6 suites)
 
 ---
 
@@ -360,7 +364,7 @@ Full API documentation: `docs/openapi.yaml` (OpenAPI 3.1)
 - `/api-test` → hit `POST /api/ocr` with a sample image, show JSON response
 
 ### Act 6: Technical Depth (1 min)
-- Show unit tests: `npx vitest` → 77 passing
+- Show unit tests: `npx vitest` → 115 passing
 - Show `docs/INFRASTRUCTURE_JUSTIFICATION.md` → production scaling plan
 - Show README architecture diagrams
 
