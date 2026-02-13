@@ -21,12 +21,15 @@ import {
   FileText,
   RefreshCw,
   ChevronRight,
+  ChevronLeft,
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
   Wine,
   Beer,
   GlassWater,
+  Search,
+  X,
 } from "lucide-react";
 import { C, Breadcrumbs } from "@/components/TTBShell";
 import { STATUS_STYLES, CATEGORY_TEXT, timeAgo } from "@/lib/styles";
@@ -75,6 +78,8 @@ type FilterStatus = "all" | "pending" | "reviewed";
 type SortKey = "productName" | "beverageCategory" | "status" | "submitterId" | "createdAt" | "lastReviewer";
 type SortDir = "asc" | "desc";
 
+const ITEMS_PER_PAGE = 20;
+
 export default function TTBQueuePage() {
   const router = useRouter();
   const [items, setItems] = useState<QueueItem[]>([]);
@@ -83,6 +88,16 @@ export default function TTBQueuePage() {
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  // Pagination & search
+  const [page, setPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+
+  // Stats (fetched separately so they reflect the full dataset)
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -95,34 +110,122 @@ export default function TTBQueuePage() {
     });
   }, []);
 
-  const fetchQueue = useCallback(async () => {
-    setLoading(true);
+  // Build API URL from current state
+  const buildUrl = useCallback(
+    (pg: number, q: string, statusFilter: FilterStatus) => {
+      const params = new URLSearchParams();
+      params.set("page", String(pg));
+      params.set("limit", String(ITEMS_PER_PAGE));
+      if (q) params.set("q", q);
+      if (statusFilter === "pending") params.set("status", "submitted,in_review");
+      else if (statusFilter === "reviewed") params.set("status", "approved,rejected,needs_revision");
+      return `/api/queue?${params.toString()}`;
+    },
+    [],
+  );
+
+  const fetchQueue = useCallback(
+    async (pg?: number, q?: string, f?: FilterStatus) => {
+      const usePage = pg ?? page;
+      const useQuery = q ?? searchQuery;
+      const useFilter = f ?? filter;
+      setLoading(true);
+      try {
+        const res = await fetch(buildUrl(usePage, useQuery, useFilter));
+        const data = await res.json();
+        setItems(data.submissions || []);
+        setTotalItems(data.total ?? 0);
+        setTotalPages(data.totalPages ?? 1);
+        setPage(data.page ?? 1);
+      } catch (err) {
+        console.error("[Queue] Failed to fetch queue", err);
+      }
+      setLoading(false);
+    },
+    [page, searchQuery, filter, buildUrl],
+  );
+
+  // Fetch stats (unfiltered totals for the stat cards)
+  const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch("/api/queue");
-      const data = await res.json();
-      setItems(data.submissions || []);
-    } catch (err) {
-      console.error("[Queue] Failed to fetch queue", err);
+      const [allRes, pendingRes, approvedRes, rejectedRes] = await Promise.all([
+        fetch("/api/queue?limit=1").then((r) => r.json()),
+        fetch("/api/queue?limit=1&status=submitted,in_review").then((r) => r.json()),
+        fetch("/api/queue?limit=1&status=approved").then((r) => r.json()),
+        fetch("/api/queue?limit=1&status=rejected").then((r) => r.json()),
+      ]);
+      setStats({
+        total: allRes.total ?? 0,
+        pending: pendingRes.total ?? 0,
+        approved: approvedRes.total ?? 0,
+        rejected: rejectedRes.total ?? 0,
+      });
+    } catch {
+      // Stats are non-critical
     }
-    setLoading(false);
   }, []);
 
   const seedQueue = useCallback(async () => {
     setSeeding(true);
     try {
       await fetch("/api/queue/seed", { method: "POST" });
-      await fetchQueue();
+      await fetchQueue(1, "", "all");
+      setSearchQuery("");
+      setSearchInput("");
+      setFilter("all");
+      await fetchStats();
     } catch (err) {
       console.error("[Queue] Failed to seed queue", err);
     }
     setSeeding(false);
-  }, [fetchQueue]);
+  }, [fetchQueue, fetchStats]);
 
+  // Initial load
   useEffect(() => {
-    fetchQueue();
-  }, [fetchQueue]);
+    fetchQueue(1, "", "all");
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Sort and filter
+  // Search submit handler
+  const handleSearch = useCallback(
+    (e?: React.FormEvent) => {
+      e?.preventDefault();
+      setSearchQuery(searchInput);
+      setPage(1);
+      fetchQueue(1, searchInput, filter);
+    },
+    [searchInput, filter, fetchQueue],
+  );
+
+  const clearSearch = useCallback(() => {
+    setSearchInput("");
+    setSearchQuery("");
+    setPage(1);
+    fetchQueue(1, "", filter);
+  }, [filter, fetchQueue]);
+
+  // Filter change handler
+  const handleFilterChange = useCallback(
+    (f: FilterStatus) => {
+      setFilter(f);
+      setPage(1);
+      fetchQueue(1, searchQuery, f);
+    },
+    [searchQuery, fetchQueue],
+  );
+
+  // Page change handler
+  const goToPage = useCallback(
+    (pg: number) => {
+      const clamped = Math.max(1, Math.min(pg, totalPages));
+      setPage(clamped);
+      fetchQueue(clamped, searchQuery, filter);
+    },
+    [totalPages, searchQuery, filter, fetchQueue],
+  );
+
+  // Client-side sort of the current page
   const sorted = useMemo(() => {
     const arr = [...items];
     if (sortKey) {
@@ -156,17 +259,6 @@ export default function TTBQueuePage() {
     return arr;
   }, [items, sortKey, sortDir]);
 
-  const filtered =
-    filter === "all"
-      ? sorted
-      : filter === "pending"
-        ? sorted.filter((i) => i.status === "submitted" || i.status === "in_review")
-        : sorted.filter((i) => i.status === "approved" || i.status === "rejected" || i.status === "needs_revision");
-
-  const pendingCount = items.filter((i) => i.status === "submitted" || i.status === "in_review").length;
-  const approvedCount = items.filter((i) => i.status === "approved").length;
-  const rejectedCount = items.filter((i) => i.status === "rejected").length;
-
   return (
     <>
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Review Queue" }]} />
@@ -190,7 +282,7 @@ export default function TTBQueuePage() {
               Review Queue
             </h1>
             <p style={{ fontSize: 14, color: C.medGray, marginTop: 4 }}>
-              {items.length} total submissions · {pendingCount} pending review
+              {stats.total} total submissions · {stats.pending} pending review
             </p>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -214,7 +306,7 @@ export default function TTBQueuePage() {
               Submission Simulator →
             </Link>
             <button
-              onClick={fetchQueue}
+              onClick={() => { fetchQueue(); fetchStats(); }}
               aria-label="Refresh queue"
               style={{
                 display: "inline-flex",
@@ -244,10 +336,10 @@ export default function TTBQueuePage() {
           style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}
         >
           {[
-            { n: items.length, label: "Total", color: C.darkNavy, border: C.border },
-            { n: pendingCount, label: "Pending Review", color: "#e5a000", border: "#f5d78e" },
-            { n: approvedCount, label: "Approved", color: C.green, border: "#b7e4c7" },
-            { n: rejectedCount, label: "Rejected", color: C.red, border: "#f5c6cb" },
+            { n: stats.total, label: "Total", color: C.darkNavy, border: C.border },
+            { n: stats.pending, label: "Pending Review", color: "#e5a000", border: "#f5d78e" },
+            { n: stats.approved, label: "Approved", color: C.green, border: "#b7e4c7" },
+            { n: stats.rejected, label: "Rejected", color: C.red, border: "#f5c6cb" },
           ].map((s) => (
             <div
               key={s.label}
@@ -264,8 +356,83 @@ export default function TTBQueuePage() {
           ))}
         </div>
 
+        {/* Search bar */}
+        <form
+          onSubmit={handleSearch}
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ position: "relative", flex: 1 }}>
+            <Search
+              size={15}
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: C.medGray,
+                pointerEvents: "none",
+              }}
+            />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by product name, submitter, category, or ID..."
+              style={{
+                width: "100%",
+                padding: "8px 36px 8px 36px",
+                fontSize: 14,
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                outline: "none",
+                background: C.white,
+                color: C.darkNavy,
+              }}
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 2,
+                  display: "flex",
+                  color: C.medGray,
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <button
+            type="submit"
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              borderRadius: 6,
+              border: `1px solid ${C.navy}`,
+              background: C.navy,
+              color: C.white,
+              cursor: "pointer",
+            }}
+          >
+            Search
+          </button>
+        </form>
+
         {/* Filter tabs */}
-        <div id="queue-filters" style={{ display: "flex", gap: 4, marginBottom: 16 }} data-walkthrough="queue-filters">
+        <div id="queue-filters" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16 }} data-walkthrough="queue-filters">
           {(
             [
               ["all", "All"],
@@ -275,7 +442,7 @@ export default function TTBQueuePage() {
           ).map(([key, label]) => (
             <button
               key={key}
-              onClick={() => setFilter(key)}
+              onClick={() => handleFilterChange(key)}
               style={{
                 padding: "6px 14px",
                 fontSize: 13,
@@ -291,6 +458,16 @@ export default function TTBQueuePage() {
               {label}
             </button>
           ))}
+          {searchQuery && (
+            <span style={{ fontSize: 12, color: C.medGray, marginLeft: 8 }}>
+              Showing {totalItems} result{totalItems !== 1 ? "s" : ""} for &ldquo;{searchQuery}&rdquo;
+            </span>
+          )}
+          <span style={{ flex: 1 }} />
+          <span style={{ fontSize: 12, color: C.medGray }}>
+            {totalItems} item{totalItems !== 1 ? "s" : ""}
+            {totalPages > 1 && ` · Page ${page} of ${totalPages}`}
+          </span>
         </div>
 
         {/* Table */}
@@ -389,14 +566,14 @@ export default function TTBQueuePage() {
                     </button>
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : sorted.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: "48px 16px", textAlign: "center", fontSize: 14, color: C.medGray }}>
-                    No submissions match this filter.
+                    {searchQuery ? `No submissions match "${searchQuery}".` : "No submissions match this filter."}
                   </td>
                 </tr>
               ) : (
-                filtered.map((item, i) => {
+                sorted.map((item: QueueItem, i: number) => {
                   const sc = STATUS_STYLES[item.status] || STATUS_STYLES.draft;
                   const statusIcon = STATUS_ICONS[item.status] || STATUS_ICONS.draft;
                   return (
@@ -461,6 +638,92 @@ export default function TTBQueuePage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 4,
+              marginTop: 20,
+            }}
+          >
+            <button
+              onClick={() => goToPage(page - 1)}
+              disabled={page <= 1}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "6px 12px",
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 4,
+                border: `1px solid ${C.border}`,
+                background: C.white,
+                color: page <= 1 ? C.lightGrayText : C.darkGray,
+                cursor: page <= 1 ? "not-allowed" : "pointer",
+              }}
+            >
+              <ChevronLeft size={14} />
+              Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, idx) =>
+                p === "..." ? (
+                  <span key={`ellipsis-${idx}`} style={{ padding: "6px 4px", fontSize: 13, color: C.medGray }}>
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => goToPage(p as number)}
+                    style={{
+                      padding: "6px 12px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      borderRadius: 4,
+                      border: page === p ? `1px solid ${C.navy}` : `1px solid ${C.border}`,
+                      background: page === p ? C.navy : C.white,
+                      color: page === p ? C.white : C.darkGray,
+                      cursor: "pointer",
+                      minWidth: 36,
+                    }}
+                  >
+                    {p}
+                  </button>
+                ),
+              )}
+            <button
+              onClick={() => goToPage(page + 1)}
+              disabled={page >= totalPages}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "6px 12px",
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 4,
+                border: `1px solid ${C.border}`,
+                background: C.white,
+                color: page >= totalPages ? C.lightGrayText : C.darkGray,
+                cursor: page >= totalPages ? "not-allowed" : "pointer",
+              }}
+            >
+              Next
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

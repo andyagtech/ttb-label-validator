@@ -9,21 +9,50 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllSubmissions, createSubmission, ensureManifestApplied } from "@/lib/store";
 import { log } from "@/lib/logger";
 
-/** GET /api/queue — list all submissions, optionally filtered by comma-separated statuses. */
+/**
+ * GET /api/queue — list submissions with optional filtering, search, and pagination.
+ *
+ * Query params:
+ *   status  — comma-separated statuses to include (e.g. "submitted,in_review")
+ *   q       — search string matched against productName, submitterId, beverageCategory, and id
+ *   page    — 1-indexed page number (default: 1)
+ *   limit   — items per page (default: 20, max: 100)
+ */
 export async function GET(request: NextRequest) {
   await ensureManifestApplied();
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
+  const query = searchParams.get("q")?.trim().toLowerCase() || "";
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
 
   let subs = getAllSubmissions();
 
+  // Status filter
   if (status) {
     const statuses = status.split(",");
     subs = subs.filter((s) => statuses.includes(s.status));
   }
 
+  // Search filter
+  if (query) {
+    subs = subs.filter((s) =>
+      s.productName.toLowerCase().includes(query) ||
+      s.submitterId.toLowerCase().includes(query) ||
+      s.beverageCategory.toLowerCase().includes(query) ||
+      s.id.toLowerCase().includes(query) ||
+      s.status.toLowerCase().includes(query),
+    );
+  }
+
+  const total = subs.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const safePage = Math.min(page, totalPages);
+  const offset = (safePage - 1) * limit;
+  const paged = subs.slice(offset, offset + limit);
+
   // Project to a lightweight summary shape for the list view (omits full labels/reviews)
-  const items = subs.map((s) => ({
+  const items = paged.map((s) => ({
     id: s.id,
     productName: s.productName,
     beverageCategory: s.beverageCategory,
@@ -37,7 +66,7 @@ export async function GET(request: NextRequest) {
     lastDecision: s.reviews.length > 0 ? s.reviews[s.reviews.length - 1].decision : null,
   }));
 
-  return NextResponse.json({ submissions: items, total: items.length });
+  return NextResponse.json({ submissions: items, total, page: safePage, limit, totalPages });
 }
 
 /** POST /api/queue — create a new submission. Requires beverageCategory and productName. */
