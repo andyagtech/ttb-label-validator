@@ -116,8 +116,8 @@ export interface EditorStateReturn {
   setSmartCropDone: (v: boolean) => void;
 
   // ── AI Flatten (server-side Lambda) ─────────────────────────────────
-  /** Send image to the AI flatten endpoint. */
-  handleAiFlatten: () => Promise<void>;
+  /** Send image to the AI flatten endpoint with an explicit mode. */
+  handleAiFlatten: (mode: "cylindrical" | "perspective") => Promise<void>;
   /** Whether AI flatten is currently in progress. */
   isAiFlattening: boolean;
   /** Result of the last AI flatten operation. */
@@ -522,8 +522,9 @@ export function useEditorState(): EditorStateReturn {
     }, 50);
   }, [activeSlot, activeSlotId, updateSlot]);
 
-  const handleAiFlatten = useCallback(async () => {
+  const handleAiFlatten = useCallback(async (mode: "cylindrical" | "perspective") => {
     if (!activeSlot.sourceCanvas || isAiFlattening || aiFlattenCooldown > 0) return;
+    setFlattenMode(mode);
     setIsAiFlattening(true);
     setAiFlattenResult(null);
 
@@ -534,7 +535,7 @@ export function useEditorState(): EditorStateReturn {
       const res = await fetch("/api/flatten", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64, mode: flattenMode, mimeType: "image/png" }),
+        body: JSON.stringify({ imageBase64, mode, mimeType: "image/png" }),
       });
 
       const data = await res.json();
@@ -560,19 +561,19 @@ export function useEditorState(): EditorStateReturn {
         };
         img.src = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
       } else {
-        setAiFlattenResult({ mode: flattenMode, details: { error: data.error || "Unknown error" } });
+        setAiFlattenResult({ mode, details: { error: data.error || "Unknown error" } });
         setIsAiFlattening(false);
         setAiFlattenCooldown(5);
       }
     } catch (err) {
       setAiFlattenResult({
-        mode: flattenMode,
+        mode,
         details: { error: err instanceof Error ? err.message : "Network error" },
       });
       setIsAiFlattening(false);
       setAiFlattenCooldown(5);
     }
-  }, [activeSlot, activeSlotId, flattenMode, isAiFlattening, aiFlattenCooldown, updateSlot]);
+  }, [activeSlot, activeSlotId, isAiFlattening, aiFlattenCooldown, updateSlot]);
 
   // ── Export ────────────────────────────────────────────────────────
 

@@ -23,8 +23,8 @@ import type { ExtractedFields } from "@/lib/ocr";
 // Enum-style union types
 // ---------------------------------------------------------------------------
 
-/** Whether the canvas shows the draggable-corner editor or the corrected preview. */
-export type ViewMode = "edit" | "preview";
+/** Whether the canvas shows the draggable-corner editor, corrected preview, or original source. */
+export type ViewMode = "edit" | "preview" | "original";
 
 /** Which warp algorithm to use: 4-corner perspective or multi-point mesh. */
 export type WarpMode = "simple" | "mesh";

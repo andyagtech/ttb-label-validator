@@ -319,7 +319,7 @@ export default function Home() {
                   </button>
                   <div className="mr-2 flex items-center gap-0.5">
                     <button
-                      onClick={handleAiFlatten}
+                      onClick={() => handleAiFlatten(flattenMode)}
                       disabled={isAiFlattening || aiFlattenCooldown > 0 || !activeSlot.sourceCanvas}
                       className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-l-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
                       title={aiFlattenCooldown > 0 ? `Wait ${aiFlattenCooldown}s` : `AI Flatten (${flattenMode})`}
@@ -334,7 +334,7 @@ export default function Home() {
                     </button>
                     <select
                       value={flattenMode}
-                      onChange={(e) => setFlattenMode(e.target.value as "cylindrical" | "perspective")}
+                      onChange={(ev) => setFlattenMode(ev.target.value as "cylindrical" | "perspective")}
                       className="px-1.5 py-2 text-[10px] font-medium rounded-r-lg bg-rose-600 text-white border-l border-rose-400 cursor-pointer hover:bg-rose-700 transition"
                       title="Flatten mode"
                     >

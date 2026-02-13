@@ -25,7 +25,7 @@
  */
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -43,6 +43,7 @@ import {
   ClipboardCheck,
   FlaskConical,
   Zap,
+  RotateCcw,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/TTBShell";
 import ImageInput from "@/components/ImageInput";
@@ -76,6 +77,7 @@ import EditorControlPanel from "./_components/EditorControlPanel";
 export default function EditorPage() {
   const router = useRouter();
   const e = useEditorState();
+  const [showFlattenPicker, setShowFlattenPicker] = useState(false);
 
   return (
     <>
@@ -260,11 +262,14 @@ export default function EditorPage() {
               <div style={cardClipped}>
                 {/* Toolbar */}
                 <div style={{ display: "flex", alignItems: "center", borderBottom: `1px solid ${C.border}` }}>
-                  <button onClick={() => e.updateSlot(e.activeSlotId, { viewMode: "edit" })} style={toolbarTab(e.activeSlot.viewMode === "edit")}>
+                  <button onClick={() => { e.updateSlot(e.activeSlotId, { viewMode: "edit" }); setShowFlattenPicker(false); }} style={toolbarTab(e.activeSlot.viewMode === "edit")}>
                     <Pencil size={16} /> Edit
                   </button>
-                  <button onClick={e.applyCorrection} style={toolbarTab(e.activeSlot.viewMode === "preview")}>
+                  <button onClick={() => { e.applyCorrection(); setShowFlattenPicker(false); }} style={toolbarTab(e.activeSlot.viewMode === "preview")}>
                     <Eye size={16} /> Preview
+                  </button>
+                  <button onClick={() => { e.updateSlot(e.activeSlotId, { viewMode: "original" }); setShowFlattenPicker(false); }} style={toolbarTab(e.activeSlot.viewMode === "original")}>
+                    <RotateCcw size={16} /> Original
                   </button>
                   <button
                     onClick={() => {
@@ -331,41 +336,49 @@ export default function EditorPage() {
                     {e.isSharpening ? "..." : "Sharpen"}
                   </button>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 0, marginRight: 6 }}>
+                  {/* AI Flatten: toggle to show Curved / Flat sub-buttons */}
+                  {showFlattenPicker ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginRight: 6 }}>
+                      <button
+                        onClick={() => { setShowFlattenPicker(false); e.handleAiFlatten("cylindrical"); }}
+                        disabled={e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas}
+                        style={{ ...actionBtn(C.red), opacity: e.isAiFlattening || e.aiFlattenCooldown > 0 ? 0.5 : 1 }}
+                        title="Unwrap a curved bottle label"
+                      >
+                        <Sparkles size={14} /> Curved Bottle
+                      </button>
+                      <button
+                        onClick={() => { setShowFlattenPicker(false); e.handleAiFlatten("perspective"); }}
+                        disabled={e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas}
+                        style={{ ...actionBtn(C.red), opacity: e.isAiFlattening || e.aiFlattenCooldown > 0 ? 0.5 : 1 }}
+                        title="Correct perspective on a flat label"
+                      >
+                        <Sparkles size={14} /> Flat Label
+                      </button>
+                      <button
+                        onClick={() => setShowFlattenPicker(false)}
+                        style={{ background: "none", border: "none", color: C.medGray, cursor: "pointer", padding: 4 }}
+                        title="Cancel"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
                     <button
-                      onClick={e.handleAiFlatten}
+                      onClick={() => setShowFlattenPicker(true)}
                       disabled={e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas}
                       style={{
                         ...actionBtn(C.red),
-                        borderRadius: "6px 0 0 6px",
+                        marginRight: 6,
                         opacity: e.isAiFlattening || e.aiFlattenCooldown > 0 || !e.activeSlot.sourceCanvas ? 0.5 : 1,
                       }}
-                      title={e.aiFlattenCooldown > 0 ? `Wait ${e.aiFlattenCooldown}s` : `AI Flatten (${e.flattenMode})`}
+                      title={e.aiFlattenCooldown > 0 ? `Wait ${e.aiFlattenCooldown}s` : "AI Flatten — choose bottle shape"}
                       data-walkthrough="ai-flatten"
                     >
                       {e.isAiFlattening ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                      {e.isAiFlattening ? "..." : e.aiFlattenCooldown > 0 ? `${e.aiFlattenCooldown}s` : "AI Flatten"}
+                      {e.isAiFlattening ? "Flattening..." : e.aiFlattenCooldown > 0 ? `AI Flatten (${e.aiFlattenCooldown}s)` : "AI Flatten"}
                     </button>
-                    <select
-                      value={e.flattenMode}
-                      onChange={(ev) => e.setFlattenMode(ev.target.value as "cylindrical" | "perspective")}
-                      style={{
-                        padding: "7px 6px",
-                        fontSize: 10,
-                        fontWeight: 600,
-                        borderRadius: "0 6px 6px 0",
-                        background: "#b91c1c",
-                        color: C.white,
-                        border: "none",
-                        borderLeft: "1px solid #fca5a5",
-                        cursor: "pointer",
-                      }}
-                      title="Flatten mode"
-                    >
-                      <option value="cylindrical">Bottle</option>
-                      <option value="perspective">Flat</option>
-                    </select>
-                  </div>
+                  )}
 
                 </div>
 
@@ -488,6 +501,12 @@ export default function EditorPage() {
                     <img
                       src={e.activeSlot.correctedImage}
                       alt={`Corrected ${e.activeSlot.name}`}
+                      style={{ maxWidth: "100%", maxHeight: 560, borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}
+                    />
+                  ) : e.activeSlot.viewMode === "original" && e.activeSlot.imageSrc ? (
+                    <img
+                      src={e.activeSlot.imageSrc}
+                      alt={`Original ${e.activeSlot.name}`}
                       style={{ maxWidth: "100%", maxHeight: 560, borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}
                     />
                   ) : (
