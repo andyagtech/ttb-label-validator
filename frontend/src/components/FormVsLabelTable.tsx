@@ -1,13 +1,15 @@
 /**
- * Form vs. Label Verification Table — side-by-side comparison of submitted
- * COLA form data against OCR-detected label data.
+ * Form vs. Label Verification Table — the primary review tool for agents.
  *
- * Features:
- *   - Interactive checkboxes for agent verification
- *   - Match/mismatch color coding per row
- *   - REQ badges on legally required fields
- *   - Government Warning ALL CAPS check
- *   - Summary counts (matches, issues)
+ * Compares submitted COLA form data against OCR-detected label text.
+ * Designed for ergonomic, at-a-glance verification:
+ *
+ *   - Each field shows form value, detected value, and match explanation
+ *   - Proximate matches show WHY they matched (containment, token overlap, etc.)
+ *     so the agent can verify visually rather than re-checking
+ *   - Color coding: green = agrees, amber = review needed, red = mismatch
+ *   - Interactive checkboxes for agent sign-off per field
+ *   - OCR confidence banner reminds agents that parsing is approximate
  */
 
 import React from "react";
@@ -19,6 +21,8 @@ import {
   Square,
   CheckSquare,
   Minus,
+  Info,
+  ScanSearch,
 } from "lucide-react";
 import { MatchResult } from "@/lib/fuzzyMatch";
 import { FIELD_LABELS } from "@/lib/styles";
@@ -26,17 +30,42 @@ import type { ExtractedFields } from "@/lib/ocr";
 
 const REQUIRED_FIELDS = new Set(["brandName", "classType", "netContents", "healthWarning", "nameAddress"]);
 
-function verdictIcon(verdict: MatchResult["verdict"]) {
+function verdictIcon(verdict: MatchResult["verdict"], size = 14) {
+  switch (verdict) {
+    case "exact":
+      return <CheckCircle2 size={size} className="text-emerald-500 shrink-0" />;
+    case "match":
+      return <CheckCircle2 size={size} className="text-emerald-500 shrink-0" />;
+    case "close":
+      return <AlertTriangle size={size} className="text-amber-500 shrink-0" />;
+    case "mismatch":
+      return <XCircle size={size} className="text-red-500 shrink-0" />;
+    case "missing":
+      return <Minus size={size} className="text-gray-400 shrink-0" />;
+  }
+}
+
+function verdictLabel(verdict: MatchResult["verdict"]): string {
+  switch (verdict) {
+    case "exact": return "Exact";
+    case "match": return "Match";
+    case "close": return "Review";
+    case "mismatch": return "Mismatch";
+    case "missing": return "Missing";
+  }
+}
+
+function scoreBadgeColor(verdict: MatchResult["verdict"]): string {
   switch (verdict) {
     case "exact":
     case "match":
-      return <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />;
+      return "bg-emerald-100 text-emerald-700 border-emerald-200";
     case "close":
-      return <AlertTriangle size={13} className="text-amber-500 shrink-0" />;
+      return "bg-amber-100 text-amber-700 border-amber-200";
     case "mismatch":
-      return <XCircle size={13} className="text-red-500 shrink-0" />;
+      return "bg-red-100 text-red-700 border-red-200";
     case "missing":
-      return <Minus size={13} className="text-gray-400 shrink-0" />;
+      return "bg-gray-100 text-gray-500 border-gray-200";
   }
 }
 
@@ -59,33 +88,57 @@ export default function FormVsLabelTable({
   checkStates,
   onToggleCheck,
 }: FormVsLabelTableProps) {
+  const hasOcr = detectedFields || Object.keys(mergedOcr).length > 0;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Header */}
       <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ClipboardCheck size={13} className="text-gray-400" />
-          <span className="text-xs font-medium text-gray-700">Form vs. Label Verification</span>
+          <ClipboardCheck size={14} className="text-[#1a4480]" />
+          <span className="text-xs font-semibold text-gray-800">Form vs. Label Verification</span>
         </div>
         {comparisonSummary && (
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="text-emerald-600">{comparisonSummary.matches} match</span>
+          <div className="flex items-center gap-3 text-[11px] font-medium">
+            <span className="flex items-center gap-1 text-emerald-600">
+              <CheckCircle2 size={11} /> {comparisonSummary.matches}
+            </span>
             {comparisonSummary.issues > 0 && (
-              <span className="text-red-600">{comparisonSummary.issues} issue{comparisonSummary.issues > 1 ? "s" : ""}</span>
+              <span className="flex items-center gap-1 text-amber-600">
+                <AlertTriangle size={11} /> {comparisonSummary.issues}
+              </span>
+            )}
+            {comparisonSummary.missing > 0 && (
+              <span className="flex items-center gap-1 text-gray-400">
+                <Minus size={11} /> {comparisonSummary.missing}
+              </span>
             )}
           </div>
         )}
       </div>
 
-      <div className="divide-y divide-gray-100">
-        {/* Header row */}
-        <div className="grid grid-cols-[28px_1fr_1fr_1fr] gap-2 px-3 py-2 bg-gray-50 text-[9px] font-semibold text-gray-500 uppercase tracking-wider">
-          <div></div>
-          <div>Field</div>
-          <div>Submitted (Form)</div>
-          <div>Detected (Label)</div>
+      {/* OCR confidence banner — shown once OCR has been run */}
+      {hasOcr && (
+        <div className="px-4 py-2 bg-blue-50/70 border-b border-blue-100 flex items-start gap-2">
+          <Info size={13} className="text-blue-400 mt-0.5 shrink-0" />
+          <p className="text-[10px] text-blue-600 leading-relaxed">
+            <span className="font-semibold">OCR is approximate.</span>{" "}
+            In-browser text detection may have minor errors. Green rows agree — verify amber/red rows against the label image.
+          </p>
         </div>
+      )}
 
-        {/* Field rows */}
+      {/* No OCR yet — prompt */}
+      {!hasOcr && (
+        <div className="px-4 py-6 text-center border-b border-gray-100 bg-gray-50/50">
+          <ScanSearch size={24} className="text-gray-300 mx-auto mb-2" />
+          <p className="text-xs text-gray-500 font-medium">Click <span className="text-orange-600 font-semibold">Text Detect</span> to extract text from label images</p>
+          <p className="text-[10px] text-gray-400 mt-1">OCR results will appear here for comparison against submitted form data</p>
+        </div>
+      )}
+
+      {/* Field rows */}
+      <div className="divide-y divide-gray-100">
         {Object.keys(FIELD_LABELS).map((key) => {
           const formVal = formFields?.[key];
           const detectedVal = mergedOcr[key];
@@ -96,69 +149,88 @@ export default function FormVsLabelTable({
           // Skip fields that have neither submitted nor detected values
           if (!formVal && !detectedVal && !isRequired) return null;
 
-          // Determine row styling
-          let rowBg = "bg-white";
+          // Row border color
+          let borderColor = "border-l-transparent";
           if (matchResult) {
-            if (matchResult.verdict === "exact" || matchResult.verdict === "match") rowBg = "bg-emerald-50/50";
-            else if (matchResult.verdict === "close") rowBg = "bg-amber-50/50";
-            else if (matchResult.verdict === "mismatch") rowBg = "bg-red-50/50";
+            if (matchResult.verdict === "exact" || matchResult.verdict === "match") borderColor = "border-l-emerald-400";
+            else if (matchResult.verdict === "close") borderColor = "border-l-amber-400";
+            else if (matchResult.verdict === "mismatch") borderColor = "border-l-red-400";
           }
-          if (isRequired && !formVal && !detectedVal) rowBg = "bg-red-50/50";
+          if (isRequired && !formVal && !detectedVal) borderColor = "border-l-red-400";
+
+          // Row background
+          let rowBg = "";
+          if (isChecked) rowBg = "bg-emerald-50/30";
 
           return (
             <div
               key={key}
-              className={`grid grid-cols-[28px_1fr_1fr_1fr] gap-2 px-3 py-2.5 items-start ${rowBg} hover:bg-gray-50/80 transition cursor-pointer`}
+              className={`border-l-[3px] ${borderColor} ${rowBg} hover:bg-gray-50/60 transition cursor-pointer`}
               onClick={() => onToggleCheck(key)}
             >
-              {/* Checkbox */}
-              <div className="flex items-center justify-center pt-0.5">
-                {isChecked ? (
-                  <CheckSquare size={16} className="text-emerald-600" />
-                ) : (
-                  <Square size={16} className="text-gray-300" />
-                )}
-              </div>
-
-              {/* Field name */}
-              <div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[11px] font-medium text-gray-700">
-                    {FIELD_LABELS[key as keyof typeof FIELD_LABELS]}
-                  </span>
-                  {isRequired && (
-                    <span className="text-[8px] font-bold text-red-500 uppercase">REQ</span>
+              {/* Main row: checkbox + field name + badge + values */}
+              <div className="flex items-start gap-2 px-3 py-2.5">
+                {/* Checkbox */}
+                <div className="flex items-center justify-center pt-0.5 shrink-0">
+                  {isChecked ? (
+                    <CheckSquare size={16} className="text-emerald-600" />
+                  ) : (
+                    <Square size={16} className="text-gray-300" />
                   )}
                 </div>
-                {matchResult && matchResult.verdict !== "exact" && matchResult.verdict !== "missing" && (
-                  <span className={`text-[9px] ${
-                    matchResult.verdict === "match" ? "text-emerald-600" :
-                    matchResult.verdict === "close" ? "text-amber-600" : "text-red-600"
-                  }`}>
-                    {matchResult.score}% match
-                  </span>
-                )}
-              </div>
 
-              {/* Submitted (form) value */}
-              <div>
-                <p className="text-[11px] text-gray-700 break-words leading-tight">
-                  {formVal || <span className="text-gray-400 italic text-[10px]">{isRequired ? "⚠ Missing" : "—"}</span>}
-                </p>
-              </div>
-
-              {/* Detected (label) value */}
-              <div className="flex items-start gap-1">
-                {matchResult && (
-                  <span className="shrink-0 mt-0.5">{verdictIcon(matchResult.verdict)}</span>
-                )}
-                <p className="text-[11px] text-gray-700 break-words leading-tight">
-                  {detectedVal || (
-                    <span className="text-gray-400 italic text-[10px]">
-                      {(detectedFields || Object.keys(mergedOcr).length > 0) ? "Not found" : "Run Text Detect →"}
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Field name row with badge */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[11px] font-semibold text-gray-800">
+                      {FIELD_LABELS[key as keyof typeof FIELD_LABELS]}
                     </span>
+                    {isRequired && (
+                      <span className="text-[8px] font-bold text-red-500 bg-red-50 px-1 py-0.5 rounded uppercase">REQ</span>
+                    )}
+                    {matchResult && matchResult.verdict !== "missing" && (
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${scoreBadgeColor(matchResult.verdict)} flex items-center gap-1 ml-auto`}>
+                        {verdictIcon(matchResult.verdict, 10)}
+                        {matchResult.verdict === "exact" ? "100%" : `${matchResult.score}%`}
+                        <span className="font-medium">{verdictLabel(matchResult.verdict)}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Two-column values: Submitted vs Detected */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Submitted</p>
+                      <p className="text-[11px] text-gray-700 break-words leading-snug">
+                        {formVal || <span className="text-gray-400 italic text-[10px]">{isRequired ? "⚠ Missing" : "—"}</span>}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Detected</p>
+                      <p className="text-[11px] text-gray-700 break-words leading-snug">
+                        {detectedVal || (
+                          <span className="text-gray-400 italic text-[10px]">
+                            {hasOcr ? "Not found on label" : "—"}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Match explanation — the key UX improvement for proximate matches */}
+                  {matchResult && matchResult.verdict !== "exact" && matchResult.verdict !== "missing" && (
+                    <div className={`mt-1.5 text-[10px] leading-snug px-2 py-1 rounded ${
+                      matchResult.verdict === "match"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : matchResult.verdict === "close"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-red-50 text-red-700"
+                    }`}>
+                      {matchResult.message}
+                    </div>
                   )}
-                </p>
+                </div>
               </div>
             </div>
           );
@@ -167,16 +239,16 @@ export default function FormVsLabelTable({
 
       {/* Government Warning special check */}
       {mergedOcr.healthWarning && (
-        <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
-          <div className="flex items-center gap-1.5 mb-1">
+        <div className="px-4 py-2.5 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
             {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
-              ? <CheckCircle2 size={12} className="text-emerald-500" />
-              : <XCircle size={12} className="text-red-500" />
+              ? <CheckCircle2 size={13} className="text-emerald-500" />
+              : <XCircle size={13} className="text-red-500" />
             }
-            <span className="text-[10px] font-medium text-gray-600">
+            <span className="text-[11px] font-medium text-gray-700">
               {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
-                ? '"GOVERNMENT WARNING:" is in ALL CAPS ✓'
-                : '"GOVERNMENT WARNING:" is NOT in ALL CAPS — will be rejected'
+                ? '"GOVERNMENT WARNING:" found in ALL CAPS ✓'
+                : '"GOVERNMENT WARNING:" is NOT in ALL CAPS — required by 27 CFR'
               }
             </span>
           </div>
