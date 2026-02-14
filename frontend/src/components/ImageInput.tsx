@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import { Upload, Camera, X, SwitchCamera } from "lucide-react";
+import { Upload, Camera, X, SwitchCamera, Info } from "lucide-react";
 
 interface ImageInputProps {
   onImageLoaded: (imageDataUrl: string) => void;
@@ -173,10 +173,21 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
         </div>
 
         {/* Status text */}
-        <div className="absolute top-4 left-0 right-0 text-center">
+        <div className="absolute top-4 left-0 right-0 text-center space-y-2">
           <span className="bg-black/60 text-white text-sm px-3 py-1.5 rounded-full">
             Position the label in the frame
           </span>
+          <div>
+            <a
+              href="/picture_guide.png"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-blue-300 hover:text-white transition bg-black/40 px-2 py-1 rounded-full"
+            >
+              <Info size={11} />
+              Picture-taking guidelines
+            </a>
+          </div>
         </div>
 
         {/* Controls */}
@@ -252,6 +263,19 @@ export default function ImageInput({ onImageLoaded }: ImageInputProps) {
         <Camera size={24} />
         <span className="font-medium">Use Camera</span>
       </button>
+
+      {/* Picture-taking guidelines */}
+      <div className="text-center">
+        <a
+          href="/picture_guide.png"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline transition"
+        >
+          <Info size={14} />
+          Please follow our picture-taking guidelines for the best result
+        </a>
+      </div>
 
       {/* Camera error message */}
       {cameraError && (
