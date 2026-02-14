@@ -314,17 +314,17 @@ function buildLabel(
 }
 
 /**
- * Generate 14 realistic mock submissions from the sampleData product catalog.
+ * Generate 42 realistic mock submissions from the sampleData product catalog.
  *
  * Every submission has BOTH front and back labels. Most have no OCR
  * extracted fields yet — suitable for testing Tesseract.js field extraction.
  *
- * Status distribution:
- *   - 8 submitted (no OCR — Tesseract testing targets)
- *   - 2 in_review (with OCR)
- *   - 2 approved (with review)
- *   - 1 rejected (with review)
- *   - 1 needs_revision (with review)
+ * Status distribution (42 total):
+ *   - 18 submitted (no OCR — Tesseract testing targets)
+ *   - 5  in_review (with OCR)
+ *   - 7  approved  (with review)
+ *   - 5  rejected  (with review + specific CFR findings)
+ *   - 7  needs_revision (with review + specific findings)
  */
 function generateMockSubmissions(): Submission[] {
   const products = getSampleProducts();
@@ -457,6 +457,222 @@ function generateMockSubmissions(): Submission[] {
     },
     // 23: Grey Goose Vodka — submitted, no OCR
     { status: "submitted", submitter: "Bacardi Limited", daysAgo: 1, includeOcr: false },
+
+    // ---- Expanded catalog (products 24–41) ----
+
+    // 24: Samuel Adams Boston Lager — approved, clean domestic lager
+    {
+      status: "approved", submitter: "The Boston Beer Company", daysAgo: 10, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All mandatory fields present and compliant. ABV, net contents, and health warning verified.",
+        findings: [],
+      },
+    },
+    // 25: Guinness Draught Stout — rejected, missing importer statement
+    {
+      status: "rejected", submitter: "Diageo North America, Inc.", daysAgo: 5, includeOcr: true,
+      formFields: {
+        brandName: "Guinness",
+        classType: "Stout",
+        alcoholContent: "4.2% Alc. By Vol.",
+        netContents: "14.9 FL OZ (440 mL)",
+      },
+      review: {
+        decision: "reject",
+        reviewer: "Dave Morrison",
+        notes: "Back label is missing the mandatory 'Imported by' statement with US importer name and address. Required for all imported malt beverages under 27 CFR 7.63(b).",
+        findings: [
+          {
+            checklistItemId: "name_address",
+            severity: "error",
+            message: "Imported product must show US importer name and address on the brand or back label (27 CFR 7.63(b)).",
+          },
+        ],
+      },
+    },
+    // 26: Modelo Especial — needs_revision, net contents format issue
+    {
+      status: "needs_revision", submitter: "Crown Imports LLC", daysAgo: 3, includeOcr: true,
+      formFields: {
+        brandName: "Modelo",
+        classType: "Pilsner-Style Lager",
+        alcoholContent: "4.4% Alc. By Vol.",
+        netContents: "355 mL",
+      },
+      review: {
+        decision: "needs_revision",
+        reviewer: "Jenny Park",
+        notes: "Net contents shown in metric only (355 mL). Malt beverages sold in the US must show net contents in US customary measure, e.g., '12 FL OZ (355 mL)'. Resubmit with corrected label.",
+        findings: [
+          {
+            checklistItemId: "net_contents",
+            severity: "error",
+            message: "Net contents must include US customary measure for malt beverages (27 CFR 7.70). '355 mL' alone is insufficient — must read '12 FL OZ (355 mL)'.",
+          },
+        ],
+      },
+    },
+    // 27: Deschutes Fresh Squeezed IPA — submitted, no OCR
+    { status: "submitted", submitter: "Deschutes Brewery", daysAgo: 0, includeOcr: false },
+    // 28: Athletic Brewing Run Wild — in_review, non-alcoholic labeling under scrutiny
+    { status: "in_review", submitter: "Athletic Brewing Company", daysAgo: 2, includeOcr: true },
+    // 29: Kendall-Jackson Chardonnay — submitted, no OCR
+    { status: "submitted", submitter: "Jackson Family Wines", daysAgo: 1, includeOcr: false },
+    // 30: Silver Oak Cabernet — approved, clean premium domestic wine
+    {
+      status: "approved", submitter: "Silver Oak Cellars", daysAgo: 12, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "Appellation, varietal, vintage, and all mandatory fields verified. Sulfite declaration present. Approved.",
+        findings: [],
+      },
+    },
+    // 31: Santa Margherita Pinot Grigio — rejected, country of origin in Italian not English
+    {
+      status: "rejected", submitter: "Santa Margherita USA", daysAgo: 6, includeOcr: true,
+      formFields: {
+        brandName: "Santa Margherita",
+        classType: "Pinot Grigio",
+        alcoholContent: "Alcohol 12.5% by Volume",
+        netContents: "750 mL",
+      },
+      review: {
+        decision: "reject",
+        reviewer: "Jenny Park",
+        notes: "Country of origin reads 'Italia' instead of 'Italy'. TTB requires country of origin in English on US market labels (27 CFR 4.39(a)).",
+        findings: [
+          {
+            checklistItemId: "country_origin",
+            severity: "error",
+            message: "Country of origin must be stated in English. Label shows 'Italia' — must read 'Italy' or 'Product of Italy' (27 CFR 4.39(a)).",
+          },
+        ],
+      },
+    },
+    // 32: Cloudy Bay Sauvignon Blanc — needs_revision, sulfite declaration missing
+    {
+      status: "needs_revision", submitter: "Moet Hennessy USA, Inc.", daysAgo: 4, includeOcr: true,
+      formFields: {
+        brandName: "Cloudy Bay",
+        classType: "Sauvignon Blanc",
+        alcoholContent: "Alcohol 13.5% by Volume",
+        netContents: "750 mL",
+      },
+      review: {
+        decision: "needs_revision",
+        reviewer: "Dave Morrison",
+        notes: "Sulfite declaration ('Contains Sulfites') not found on either label. Required for all wines containing ≥10 ppm sulfites (27 CFR 4.32(e)). Resubmit with sulfite statement.",
+        findings: [
+          {
+            checklistItemId: "sulfite_declaration",
+            severity: "error",
+            message: "Sulfite declaration required on wine labels containing ≥10 ppm SO₂ (27 CFR 4.32(e)). Statement not detected.",
+          },
+        ],
+      },
+    },
+    // 33: Antinori Tignanello — in_review, imported Italian Super Tuscan
+    { status: "in_review", submitter: "Ste. Michelle Wine Estates", daysAgo: 2, includeOcr: true },
+    // 34: Buffalo Trace Bourbon — submitted, no OCR
+    { status: "submitted", submitter: "Sazerac Company", daysAgo: 0, includeOcr: false },
+    // 35: Wild Turkey 101 — rejected, proof statement format non-compliant
+    {
+      status: "rejected", submitter: "Campari Group", daysAgo: 7, includeOcr: true,
+      formFields: {
+        brandName: "Wild Turkey",
+        classType: "Kentucky Straight Bourbon Whiskey",
+        alcoholContent: "101 Proof",
+        netContents: "750 mL",
+      },
+      review: {
+        decision: "reject",
+        reviewer: "Jenny Park",
+        notes: "Alcohol content stated as '101 Proof' only. Spirits labels must show percentage alcohol by volume, e.g., '50.5% Alc./Vol. (101 Proof)'. Proof alone is not sufficient under 27 CFR 5.63(a).",
+        findings: [
+          {
+            checklistItemId: "alcohol_content",
+            severity: "error",
+            message: "Alcohol content must be stated as percentage by volume. '101 Proof' alone does not satisfy 27 CFR 5.63(a). Must read '50.5% Alc./Vol. (101 Proof)'.",
+          },
+        ],
+      },
+    },
+    // 36: Hendrick's Gin — approved, imported gin compliant
+    {
+      status: "approved", submitter: "William Grant & Sons, Inc.", daysAgo: 9, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "Country of origin, importer statement, ABV, and all mandatory fields verified. Label is compliant.",
+        findings: [],
+      },
+    },
+    // 37: Bacardi Superior White Rum — submitted, no OCR
+    { status: "submitted", submitter: "Bacardi Corporation", daysAgo: 0, includeOcr: false },
+    // 38: Don Julio Blanco — needs_revision, class designation incomplete
+    {
+      status: "needs_revision", submitter: "Diageo North America", daysAgo: 5, includeOcr: true,
+      formFields: {
+        brandName: "Don Julio",
+        classType: "Tequila",
+        alcoholContent: "40% Alc./Vol. (80 Proof)",
+        netContents: "750 mL",
+      },
+      review: {
+        decision: "needs_revision",
+        reviewer: "Jenny Park",
+        notes: "Class/type designation reads 'Tequila' but TTB Form 5100.31 application specifies 'Tequila Blanco'. Label must match the approved class/type on the COLA application (27 CFR 5.55).",
+        findings: [
+          {
+            checklistItemId: "class_type",
+            severity: "warning",
+            message: "Class/type on label ('Tequila') does not match COLA application ('Tequila Blanco'). Must be consistent per 27 CFR 5.55.",
+          },
+        ],
+      },
+    },
+    // 39: Johnnie Walker Black Label — submitted, no OCR
+    { status: "submitted", submitter: "Diageo North America", daysAgo: 1, includeOcr: false },
+    // 40: The Macallan 12 Year — rejected, age statement discrepancy
+    {
+      status: "rejected", submitter: "The Edrington Group USA", daysAgo: 8, includeOcr: true,
+      formFields: {
+        brandName: "The Macallan",
+        classType: "Single Malt Scotch Whisky",
+        alcoholContent: "43% Alc./Vol. (86 Proof)",
+        netContents: "750 mL",
+      },
+      review: {
+        decision: "reject",
+        reviewer: "Dave Morrison",
+        notes: "Age statement reads '12 Years' but batch analysis indicates components younger than 12 years. Age statement must reflect the youngest whisky in the blend (27 CFR 5.74). Rejected pending reformulation or label correction.",
+        findings: [
+          {
+            checklistItemId: "age_statement",
+            severity: "error",
+            message: "Age statement '12 Years' may be misleading if youngest component is under 12 years. Must reflect youngest whisky in bottle (27 CFR 5.74).",
+          },
+          {
+            checklistItemId: "country_origin",
+            severity: "warning",
+            message: "Country of origin shown as 'Scotland' — TTB prefers full country name 'United Kingdom' or 'Product of Scotland, United Kingdom'.",
+          },
+        ],
+      },
+    },
+    // 41: Jameson Irish Whiskey — approved, compliant import
+    {
+      status: "approved", submitter: "Pernod Ricard USA", daysAgo: 11, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All fields compliant. Country of origin, importer statement, health warning, and class/type verified. Approved.",
+        findings: [],
+      },
+    },
   ];
 
   return products.map((product, idx) => {

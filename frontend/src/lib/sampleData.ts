@@ -1085,6 +1085,620 @@ const ADDITIONAL_SPIRITS: SampleLabel[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Expanded catalog — additional products from ttb_cola_records.json
+// ---------------------------------------------------------------------------
+
+const EXPANDED_BEER: SampleLabel[] = [
+  // 25. Samuel Adams Boston Lager — classic American craft lager
+  {
+    key: "samuel-adams-boston-lager-front",
+    displayName: "Samuel Adams Boston Lager (Front)",
+    colaSource: {
+      ttbId: "24051001000312",
+      brand: "SAMUEL ADAMS",
+      fancifulName: "BOSTON LAGER",
+      classCode: "901",
+      classType: "LAGER",
+      originCode: "06",
+      origin: "MASSACHUSETTS",
+      permit: "BR-MA-SA-1",
+      approved: "02/20/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "SAMUEL ADAMS",
+      classType: "Vienna Lager",
+      alcoholContent: "5.0% Alc. By Vol.",
+      netContents: "12 FL OZ (355 mL)",
+    },
+    expectedFields: {
+      brand_name: "SAMUEL ADAMS",
+      class_type: "Vienna Lager",
+      alcohol_content: "5.0% Alc. By Vol.",
+      net_contents: "12 FL OZ (355 mL)",
+    },
+  },
+
+  // 26. Guinness Draught Stout — imported Irish stout
+  {
+    key: "guinness-draught-front",
+    displayName: "Guinness Draught Stout (Front)",
+    colaSource: {
+      ttbId: "24078001000234",
+      brand: "GUINNESS",
+      fancifulName: "DRAUGHT STOUT",
+      classCode: "903",
+      classType: "STOUT",
+      originCode: "00",
+      origin: "IRELAND",
+      permit: "IM-IR-GUI-1",
+      approved: "03/19/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "GUINNESS",
+      classType: "Stout",
+      alcoholContent: "4.2% Alc. By Vol.",
+      netContents: "14.9 FL OZ (440 mL)",
+      countryOfOrigin: "Ireland",
+    },
+    expectedFields: {
+      brand_name: "GUINNESS",
+      class_type: "Stout",
+      alcohol_content: "4.2% Alc. By Vol.",
+      net_contents: "14.9 FL OZ (440 mL)",
+      country_origin: "Ireland",
+    },
+  },
+
+  // 27. Modelo Especial — imported Mexican lager
+  {
+    key: "modelo-especial-front",
+    displayName: "Modelo Especial (Front)",
+    colaSource: {
+      ttbId: "24056001000891",
+      brand: "MODELO",
+      fancifulName: "ESPECIAL",
+      classCode: "901",
+      classType: "LAGER",
+      originCode: "00",
+      origin: "MEXICO",
+      permit: "IM-MX-MOD-1",
+      approved: "02/25/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "MODELO",
+      classType: "Pilsner-Style Lager",
+      alcoholContent: "4.4% Alc. By Vol.",
+      netContents: "12 FL OZ (355 mL)",
+      countryOfOrigin: "Mexico",
+    },
+    expectedFields: {
+      brand_name: "MODELO",
+      class_type: "Pilsner-Style Lager",
+      alcohol_content: "4.4% Alc. By Vol.",
+      net_contents: "12 FL OZ (355 mL)",
+      country_origin: "Mexico",
+    },
+  },
+
+  // 28. Deschutes Fresh Squeezed IPA — Pacific Northwest craft
+  {
+    key: "deschutes-fresh-squeezed-front",
+    displayName: "Deschutes Fresh Squeezed IPA (Front)",
+    colaSource: {
+      ttbId: "24067001000523",
+      brand: "DESCHUTES",
+      fancifulName: "FRESH SQUEEZED IPA",
+      classCode: "902",
+      classType: "ALE",
+      originCode: "38",
+      origin: "OREGON",
+      permit: "BR-OR-DES-1",
+      approved: "03/08/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "DESCHUTES",
+      classType: "India Pale Ale",
+      alcoholContent: "6.4% Alc. By Vol.",
+      netContents: "12 FL OZ (355 mL)",
+    },
+    expectedFields: {
+      brand_name: "DESCHUTES",
+      class_type: "India Pale Ale",
+      alcohol_content: "6.4% Alc. By Vol.",
+      net_contents: "12 FL OZ (355 mL)",
+    },
+  },
+
+  // 29. Athletic Brewing Run Wild — non-alcoholic craft IPA
+  {
+    key: "athletic-run-wild-front",
+    displayName: "Athletic Brewing Run Wild IPA (Front)",
+    colaSource: {
+      ttbId: "23345001000623",
+      brand: "ATHLETIC BREWING",
+      fancifulName: "RUN WILD IPA",
+      classCode: "902",
+      classType: "ALE",
+      originCode: "14",
+      origin: "CONNECTICUT",
+      permit: "BR-CT-ATH-1",
+      approved: "12/11/2023",
+    },
+    generation: {
+      labelType: "front",
+      category: "beer",
+      brandName: "ATHLETIC BREWING",
+      classType: "Non-Alcoholic IPA",
+      alcoholContent: "Less than 0.5% Alc. By Vol.",
+      netContents: "12 FL OZ (355 mL)",
+    },
+    expectedFields: {
+      brand_name: "ATHLETIC BREWING",
+      class_type: "Non-Alcoholic IPA",
+      alcohol_content: "Less than 0.5% Alc. By Vol.",
+      net_contents: "12 FL OZ (355 mL)",
+    },
+  },
+];
+
+const EXPANDED_WINE: SampleLabel[] = [
+  // 30. Kendall-Jackson Vintner's Reserve Chardonnay
+  {
+    key: "kendall-jackson-chardonnay-front",
+    displayName: "Kendall-Jackson Chardonnay 2022 (Front)",
+    colaSource: {
+      ttbId: "24023001000456",
+      brand: "KENDALL-JACKSON",
+      fancifulName: "VINTNER'S RESERVE CHARDONNAY",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "01",
+      origin: "CALIFORNIA",
+      permit: "BW-CA-KJ-1",
+      approved: "01/23/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "KENDALL-JACKSON",
+      classType: "Chardonnay",
+      alcoholContent: "Alcohol 13.5% by Volume",
+      netContents: "750 mL",
+      appellation: "California",
+      vintage: "2022",
+    },
+    expectedFields: {
+      brand_name: "KENDALL-JACKSON",
+      class_type: "Chardonnay",
+      alcohol_content: "Alcohol 13.5% by Volume",
+      net_contents: "750 mL",
+      appellation: "California",
+      vintage_date: "2022",
+      varietal: "Chardonnay",
+    },
+  },
+
+  // 31. Silver Oak Cabernet Sauvignon — Alexander Valley
+  {
+    key: "silver-oak-cabernet-front",
+    displayName: "Silver Oak Cabernet Sauvignon 2019 (Front)",
+    colaSource: {
+      ttbId: "24056001000234",
+      brand: "SILVER OAK",
+      fancifulName: "CABERNET SAUVIGNON",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "01",
+      origin: "CALIFORNIA",
+      permit: "BW-CA-SO-1",
+      approved: "02/25/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "SILVER OAK",
+      classType: "Cabernet Sauvignon",
+      alcoholContent: "Alcohol 14.2% by Volume",
+      netContents: "750 mL",
+      appellation: "Alexander Valley",
+      vintage: "2019",
+    },
+    expectedFields: {
+      brand_name: "SILVER OAK",
+      class_type: "Cabernet Sauvignon",
+      alcohol_content: "Alcohol 14.2% by Volume",
+      net_contents: "750 mL",
+      appellation: "Alexander Valley",
+      vintage_date: "2019",
+      varietal: "Cabernet Sauvignon",
+    },
+  },
+
+  // 32. Santa Margherita Pinot Grigio — imported Italy
+  {
+    key: "santa-margherita-pinot-grigio-front",
+    displayName: "Santa Margherita Pinot Grigio 2022 (Front)",
+    colaSource: {
+      ttbId: "24078001000678",
+      brand: "SANTA MARGHERITA",
+      fancifulName: "PINOT GRIGIO",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "00",
+      origin: "ITALY",
+      permit: "IM-IT-SM-1",
+      approved: "03/19/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "SANTA MARGHERITA",
+      classType: "Pinot Grigio",
+      alcoholContent: "Alcohol 12.5% by Volume",
+      netContents: "750 mL",
+      appellation: "Alto Adige",
+      vintage: "2022",
+      countryOfOrigin: "Italy",
+    },
+    expectedFields: {
+      brand_name: "SANTA MARGHERITA",
+      class_type: "Pinot Grigio",
+      alcohol_content: "Alcohol 12.5% by Volume",
+      net_contents: "750 mL",
+      appellation: "Alto Adige",
+      vintage_date: "2022",
+      varietal: "Pinot Grigio",
+      country_origin: "Italy",
+    },
+  },
+
+  // 33. Cloudy Bay Sauvignon Blanc — imported New Zealand
+  {
+    key: "cloudy-bay-sauv-blanc-front",
+    displayName: "Cloudy Bay Sauvignon Blanc 2023 (Front)",
+    colaSource: {
+      ttbId: "24067001000567",
+      brand: "CLOUDY BAY",
+      fancifulName: "SAUVIGNON BLANC",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "00",
+      origin: "NEW ZEALAND",
+      permit: "IM-NZ-CB-1",
+      approved: "03/08/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "CLOUDY BAY",
+      classType: "Sauvignon Blanc",
+      alcoholContent: "Alcohol 13.5% by Volume",
+      netContents: "750 mL",
+      appellation: "Marlborough",
+      vintage: "2023",
+      countryOfOrigin: "New Zealand",
+    },
+    expectedFields: {
+      brand_name: "CLOUDY BAY",
+      class_type: "Sauvignon Blanc",
+      alcohol_content: "Alcohol 13.5% by Volume",
+      net_contents: "750 mL",
+      appellation: "Marlborough",
+      vintage_date: "2023",
+      varietal: "Sauvignon Blanc",
+      country_origin: "New Zealand",
+    },
+  },
+
+  // 34. Antinori Tignanello — imported Italian Super Tuscan
+  {
+    key: "antinori-tignanello-front",
+    displayName: "Antinori Tignanello 2020 (Front)",
+    colaSource: {
+      ttbId: "24089001000789",
+      brand: "ANTINORI",
+      fancifulName: "TIGNANELLO",
+      classCode: "82",
+      classType: "TABLE WINE",
+      originCode: "00",
+      origin: "ITALY",
+      permit: "IM-IT-ANT-1",
+      approved: "03/30/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "wine",
+      brandName: "ANTINORI",
+      classType: "Red Wine",
+      alcoholContent: "Alcohol 14.0% by Volume",
+      netContents: "750 mL",
+      appellation: "Toscana IGT",
+      vintage: "2020",
+      countryOfOrigin: "Italy",
+    },
+    expectedFields: {
+      brand_name: "ANTINORI",
+      class_type: "Red Wine",
+      alcohol_content: "Alcohol 14.0% by Volume",
+      net_contents: "750 mL",
+      appellation: "Toscana IGT",
+      vintage_date: "2020",
+      country_origin: "Italy",
+    },
+  },
+];
+
+const EXPANDED_SPIRITS: SampleLabel[] = [
+  // 35. Buffalo Trace Bourbon
+  {
+    key: "buffalo-trace-front",
+    displayName: "Buffalo Trace Bourbon (Front)",
+    colaSource: {
+      ttbId: "24078001000345",
+      brand: "BUFFALO TRACE",
+      fancifulName: "",
+      classCode: "140",
+      classType: "WHISKY",
+      originCode: "18",
+      origin: "KENTUCKY",
+      permit: "DSP-KY-BT-1",
+      approved: "03/19/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "BUFFALO TRACE",
+      classType: "Kentucky Straight Bourbon Whiskey",
+      alcoholContent: "45% Alc./Vol. (90 Proof)",
+      netContents: "750 mL",
+    },
+    expectedFields: {
+      brand_name: "BUFFALO TRACE",
+      class_type: "Kentucky Straight Bourbon Whiskey",
+      alcohol_content: "45% Alc./Vol. (90 Proof)",
+      net_contents: "750 mL",
+    },
+  },
+
+  // 36. Wild Turkey 101
+  {
+    key: "wild-turkey-101-front",
+    displayName: "Wild Turkey 101 Bourbon (Front)",
+    colaSource: {
+      ttbId: "24089001000456",
+      brand: "WILD TURKEY",
+      fancifulName: "101",
+      classCode: "140",
+      classType: "WHISKY",
+      originCode: "18",
+      origin: "KENTUCKY",
+      permit: "DSP-KY-WT-1",
+      approved: "03/30/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "WILD TURKEY",
+      classType: "Kentucky Straight Bourbon Whiskey",
+      alcoholContent: "50.5% Alc./Vol. (101 Proof)",
+      netContents: "750 mL",
+    },
+    expectedFields: {
+      brand_name: "WILD TURKEY",
+      class_type: "Kentucky Straight Bourbon Whiskey",
+      alcohol_content: "50.5% Alc./Vol. (101 Proof)",
+      net_contents: "750 mL",
+    },
+  },
+
+  // 37. Hendrick's Gin — imported Scotland
+  {
+    key: "hendricks-gin-front",
+    displayName: "Hendrick's Gin (Front)",
+    colaSource: {
+      ttbId: "24067001000789",
+      brand: "HENDRICK'S",
+      fancifulName: "GIN",
+      classCode: "321",
+      classType: "GIN",
+      originCode: "00",
+      origin: "SCOTLAND",
+      permit: "IM-UK-HEN-1",
+      approved: "03/08/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "HENDRICK'S",
+      classType: "Gin",
+      alcoholContent: "44% Alc./Vol. (88 Proof)",
+      netContents: "750 mL",
+      countryOfOrigin: "United Kingdom",
+    },
+    expectedFields: {
+      brand_name: "HENDRICK'S",
+      class_type: "Gin",
+      alcohol_content: "44% Alc./Vol. (88 Proof)",
+      net_contents: "750 mL",
+      country_origin: "United Kingdom",
+    },
+  },
+
+  // 38. Bacardi Superior White Rum
+  {
+    key: "bacardi-superior-front",
+    displayName: "Bacardi Superior White Rum (Front)",
+    colaSource: {
+      ttbId: "24091001000234",
+      brand: "BACARDI",
+      fancifulName: "SUPERIOR WHITE RUM",
+      classCode: "331",
+      classType: "RUM",
+      originCode: "00",
+      origin: "PUERTO RICO",
+      permit: "DSP-PR-BAC-1",
+      approved: "04/01/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "BACARDI",
+      classType: "Rum",
+      alcoholContent: "40% Alc./Vol. (80 Proof)",
+      netContents: "750 mL",
+    },
+    expectedFields: {
+      brand_name: "BACARDI",
+      class_type: "Rum",
+      alcohol_content: "40% Alc./Vol. (80 Proof)",
+      net_contents: "750 mL",
+    },
+  },
+
+  // 39. Don Julio Blanco Tequila — imported Mexico
+  {
+    key: "don-julio-blanco-front",
+    displayName: "Don Julio Blanco Tequila (Front)",
+    colaSource: {
+      ttbId: "24023001000891",
+      brand: "DON JULIO",
+      fancifulName: "BLANCO TEQUILA",
+      classCode: "160",
+      classType: "TEQUILA",
+      originCode: "00",
+      origin: "MEXICO",
+      permit: "IM-MX-DJ-1",
+      approved: "01/23/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "DON JULIO",
+      classType: "Tequila Blanco",
+      alcoholContent: "40% Alc./Vol. (80 Proof)",
+      netContents: "750 mL",
+      countryOfOrigin: "Mexico",
+    },
+    expectedFields: {
+      brand_name: "DON JULIO",
+      class_type: "Tequila Blanco",
+      alcohol_content: "40% Alc./Vol. (80 Proof)",
+      net_contents: "750 mL",
+      country_origin: "Mexico",
+    },
+  },
+
+  // 40. Johnnie Walker Black Label — imported Scotland
+  {
+    key: "johnnie-walker-black-front",
+    displayName: "Johnnie Walker Black Label (Front)",
+    colaSource: {
+      ttbId: "24056001000345",
+      brand: "JOHNNIE WALKER",
+      fancifulName: "BLACK LABEL",
+      classCode: "381",
+      classType: "SCOTCH WHISKY — BLENDED",
+      originCode: "00",
+      origin: "SCOTLAND",
+      permit: "IM-UK-JW-1",
+      approved: "02/25/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "JOHNNIE WALKER",
+      classType: "Blended Scotch Whisky",
+      alcoholContent: "40% Alc./Vol. (80 Proof)",
+      netContents: "750 mL",
+      countryOfOrigin: "United Kingdom",
+    },
+    expectedFields: {
+      brand_name: "JOHNNIE WALKER",
+      class_type: "Blended Scotch Whisky",
+      alcohol_content: "40% Alc./Vol. (80 Proof)",
+      net_contents: "750 mL",
+      country_origin: "United Kingdom",
+      age_statement: "12 Years Old",
+    },
+  },
+
+  // 41. The Macallan 12 Year Sherry Oak — imported Scotland
+  {
+    key: "macallan-12-sherry-front",
+    displayName: "The Macallan 12 Year Sherry Oak (Front)",
+    colaSource: {
+      ttbId: "24067001000456",
+      brand: "THE MACALLAN",
+      fancifulName: "12 YEAR SHERRY OAK",
+      classCode: "382",
+      classType: "SCOTCH WHISKY — SINGLE MALT",
+      originCode: "00",
+      origin: "SCOTLAND",
+      permit: "IM-UK-MAC-1",
+      approved: "03/08/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "THE MACALLAN",
+      classType: "Single Malt Scotch Whisky",
+      alcoholContent: "43% Alc./Vol. (86 Proof)",
+      netContents: "750 mL",
+      countryOfOrigin: "United Kingdom",
+    },
+    expectedFields: {
+      brand_name: "THE MACALLAN",
+      class_type: "Single Malt Scotch Whisky",
+      alcohol_content: "43% Alc./Vol. (86 Proof)",
+      net_contents: "750 mL",
+      country_origin: "United Kingdom",
+      age_statement: "12 Years Old",
+    },
+  },
+
+  // 42. Jameson Irish Whiskey — imported Ireland
+  {
+    key: "jameson-irish-whiskey-front",
+    displayName: "Jameson Irish Whiskey (Front)",
+    colaSource: {
+      ttbId: "24089001000678",
+      brand: "JAMESON",
+      fancifulName: "IRISH WHISKEY",
+      classCode: "391",
+      classType: "IRISH WHISKEY",
+      originCode: "00",
+      origin: "IRELAND",
+      permit: "IM-IR-JAM-1",
+      approved: "03/30/2024",
+    },
+    generation: {
+      labelType: "front",
+      category: "spirits",
+      brandName: "JAMESON",
+      classType: "Irish Whiskey",
+      alcoholContent: "40% Alc./Vol. (80 Proof)",
+      netContents: "750 mL",
+      countryOfOrigin: "Ireland",
+    },
+    expectedFields: {
+      brand_name: "JAMESON",
+      class_type: "Irish Whiskey",
+      alcohol_content: "40% Alc./Vol. (80 Proof)",
+      net_contents: "750 mL",
+      country_origin: "Ireland",
+    },
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Combined exports
 // ---------------------------------------------------------------------------
 
@@ -1095,6 +1709,9 @@ export const SAMPLE_LABELS: SampleLabel[] = [
   ...ADDITIONAL_BEER,
   ...ADDITIONAL_WINE,
   ...ADDITIONAL_SPIRITS,
+  ...EXPANDED_BEER,
+  ...EXPANDED_WINE,
+  ...EXPANDED_SPIRITS,
 ];
 
 /** Lookup by key */
@@ -1141,6 +1758,24 @@ const DEFAULT_NAME_ADDRESS: Record<string, string> = {
   "WOODFORD RESERVE": "Brown-Forman Corporation, Louisville, KY 40210",
   "CASAMIGOS": "Diageo North America, Norwalk, CT 06851",
   "GREY GOOSE": "Bacardi Limited, Hamilton, Bermuda",
+  "SAMUEL ADAMS": "The Boston Beer Company, Boston, MA 02129",
+  "GUINNESS": "Imported by Diageo North America, Norwalk, CT 06851",
+  "MODELO": "Imported by Crown Imports LLC, Chicago, IL 60661",
+  "DESCHUTES": "Deschutes Brewery, Bend, OR 97701",
+  "ATHLETIC BREWING": "Athletic Brewing Company, Stratford, CT 06615",
+  "KENDALL-JACKSON": "Kendall-Jackson Wine Estates, Sonoma County, CA 95448",
+  "SILVER OAK": "Silver Oak Cellars, Oakville, CA 94562",
+  "SANTA MARGHERITA": "Imported by Santa Margherita USA, Miami, FL 33131",
+  "CLOUDY BAY": "Imported by Moet Hennessy USA, Inc., New York, NY 10153",
+  "ANTINORI": "Imported by Ste. Michelle Wine Estates, Woodinville, WA 98072",
+  "BUFFALO TRACE": "Buffalo Trace Distillery, Frankfort, KY 40601",
+  "WILD TURKEY": "Austin Nichols Distilling Co., Lawrenceburg, KY 40342",
+  "HENDRICK'S": "Imported by William Grant & Sons, Inc., New York, NY 10019",
+  "BACARDI": "Bacardi Corporation, Cataño, Puerto Rico 00962",
+  "DON JULIO": "Imported by Diageo North America, Norwalk, CT 06851",
+  "JOHNNIE WALKER": "Imported by Diageo North America, Norwalk, CT 06851",
+  "THE MACALLAN": "Imported by The Edrington Group USA, New York, NY 10022",
+  "JAMESON": "Imported by Pernod Ricard USA, New York, NY 10153",
 };
 
 export interface SampleProduct {
