@@ -80,56 +80,67 @@ export async function saveManifest(manifest: LabelManifest): Promise<string> {
 }
 
 /**
- * Load the manifest by scanning actual blobs in storage.
+ * Load the label manifest — tries live Blob storage first, then falls back
+ * to the static manifest bundled in the repo.
  *
- * Instead of reading a manifest.json file (which suffers from
- * read-modify-write race conditions across serverless instances),
- * we scan the blob listing and reconstruct the manifest from the
- * actual image files present.
+ * The static manifest contains public Vercel Blob URLs for all 24 products,
+ * so images work even without BLOB_READ_WRITE_TOKEN (e.g., local dev).
  */
 export async function loadManifest(): Promise<LabelManifest | null> {
+  // 1. Try live Blob storage (requires BLOB_READ_WRITE_TOKEN)
   try {
     const { blobs } = await list({ prefix: "sample-labels/" });
     const imageBlobs = blobs.filter((b) => !b.pathname.endsWith("manifest.json"));
-    if (imageBlobs.length === 0) return null;
+    if (imageBlobs.length > 0) {
+      // Lazy-import to avoid circular dependency at module load time
+      const { getSampleProducts } = await import("./sampleData");
+      const products = getSampleProducts();
+      const productMap = new Map(products.map((p) => [p.productKey, p]));
 
-    // Lazy-import to avoid circular dependency at module load time
-    const { getSampleProducts } = await import("./sampleData");
-    const products = getSampleProducts();
-    const productMap = new Map(products.map((p) => [p.productKey, p]));
+      const grouped = new Map<string, { frontUrl?: string; backUrl?: string; uploadedAt?: string }>();
+      for (const blob of imageBlobs) {
+        const match = blob.pathname.match(/sample-labels\/(.+)-(front|back)\./);
+        if (!match) continue;
+        const [, productKey, side] = match;
+        if (!grouped.has(productKey)) grouped.set(productKey, {});
+        const entry = grouped.get(productKey)!;
+        if (side === "front") entry.frontUrl = blob.url;
+        else entry.backUrl = blob.url;
+        entry.uploadedAt = typeof blob.uploadedAt === "string" ? blob.uploadedAt : blob.uploadedAt?.toISOString?.() || "";
+      }
 
-    // Group blobs by product key
-    const grouped = new Map<string, { frontUrl?: string; backUrl?: string; uploadedAt?: string }>();
-    for (const blob of imageBlobs) {
-      const match = blob.pathname.match(/sample-labels\/(.+)-(front|back)\./);
-      if (!match) continue;
-      const [, productKey, side] = match;
-      if (!grouped.has(productKey)) grouped.set(productKey, {});
-      const entry = grouped.get(productKey)!;
-      if (side === "front") entry.frontUrl = blob.url;
-      else entry.backUrl = blob.url;
-      entry.uploadedAt = typeof blob.uploadedAt === "string" ? blob.uploadedAt : blob.uploadedAt?.toISOString?.() || "";
+      const labels: LabelBlobEntry[] = [];
+      for (const [productKey, urls] of Array.from(grouped)) {
+        if (!urls.frontUrl || !urls.backUrl) continue;
+        const product = productMap.get(productKey);
+        labels.push({
+          productKey,
+          productName: product?.productName || productKey,
+          category: product?.category || "spirits",
+          frontUrl: urls.frontUrl,
+          backUrl: urls.backUrl,
+          generatedAt: urls.uploadedAt || "",
+        });
+      }
+
+      return { updatedAt: new Date().toISOString(), labels };
     }
-
-    // Build manifest entries (only include products with both front+back)
-    const labels: LabelBlobEntry[] = [];
-    for (const [productKey, urls] of Array.from(grouped)) {
-      if (!urls.frontUrl || !urls.backUrl) continue;
-      const product = productMap.get(productKey);
-      labels.push({
-        productKey,
-        productName: product?.productName || productKey,
-        category: product?.category || "spirits",
-        frontUrl: urls.frontUrl,
-        backUrl: urls.backUrl,
-        generatedAt: urls.uploadedAt || "",
-      });
-    }
-
-    return { updatedAt: new Date().toISOString(), labels };
   } catch {
-    return null;
+    // Blob API not available — fall through to static manifest
   }
+
+  // 2. Fall back to bundled static manifest (public URLs, no token needed)
+  try {
+    const staticManifest = await import("./staticManifest.json");
+    const data = staticManifest.default || staticManifest;
+    if (data?.labels?.length > 0) {
+      return data as LabelManifest;
+    }
+  } catch {
+    // Static manifest not found or malformed
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
