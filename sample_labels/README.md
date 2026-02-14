@@ -6,7 +6,8 @@ This directory contains sample label images and reference data from the TTB (Alc
 
 | File | Description |
 |------|-------------|
-| `ttb_cola_records.csv` | 40+ real COLA records across beer, wine, and spirits — sourced from the [TTB Public COLA Registry](https://www.ttbonline.gov/colasonline/publicSearchColasBasic.do) |
+| `ttb_cola_records.json` | **42 COLA records** in human-readable JSON, grouped by category with full metadata, class code reference, and direct COLA detail URLs |
+| `ttb_cola_records.csv` | Same records in CSV format for spreadsheet/import use |
 | `*.png`, `*.jpg`, `*.webp` | Sample label images used during development and testing |
 | `project_description_original.docx` | Original project brief (Word format) |
 | `malt-beverage-example-labels.pdf` | TTB reference showing compliant malt beverage labels |
@@ -97,4 +98,23 @@ The CSV includes **40+ records** across all three categories:
 3. Click **Search** to view matching COLA records
 4. Click any result's TTB ID to see full details including the approved label images
 
-> **Note:** The TTB Public COLA Registry is a free, public database. No registration required.
+## Viewing a Specific COLA by TTB ID
+
+You can view any COLA record directly using this URL pattern (from [data.gov catalog](https://catalog.data.gov/dataset/ttb-public-cola-registry-view-the-details-of-a-specific-certificate-of-label-approval-cola-35e4b)):
+
+```
+https://www.ttbonline.gov/colasonline/viewColaDetails.do?action=publicDisplaySearchBasic&ttbid=XXXXXXXXXXXXXX
+```
+
+Replace `XXXXXXXXXXXXXX` with the 14-character TTB ID. Each record in the JSON file includes a pre-built `colaDetailUrl` for convenience.
+
+## TTB Data on data.gov
+
+- **Dataset ID:** `015-TTB-55`
+- **License:** [Creative Commons CC Zero](https://creativecommons.org/publicdomain/zero/1.0/) (Public Domain)
+- **Contact:** `ttbfoia@ttb.gov` (Quinton Mason)
+- **Search & Download guide:** [save-search-results-in-public-cola-registry.pdf](https://www.ttb.gov/images/pdfs/labeling_colas-docs/save-search-results-in-public-cola-registry.pdf)
+- **View COLA detail guide:** [display-cola-detail-through-public-cola-registry.pdf](https://www.ttb.gov/images/pdfs/labeling_colas-docs/display-cola-detail-through-public-cola-registry.pdf)
+- **Harvest metadata:** [data.gov harvest object](https://catalog.data.gov/harvest/object/f13790e8-7667-4ff7-9bd5-9192eeabe28b)
+
+> **Note:** The TTB Public COLA Registry is a free, public database. No registration required. Data is licensed CC Zero (public domain).
