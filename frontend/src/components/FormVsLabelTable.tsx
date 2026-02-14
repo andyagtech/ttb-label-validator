@@ -25,9 +25,11 @@ import {
   Info,
   ScanSearch,
   OctagonX,
+  BookOpen,
 } from "lucide-react";
 import { MatchResult } from "@/lib/fuzzyMatch";
 import { FIELD_LABELS } from "@/lib/styles";
+import { FIELD_CITATIONS } from "@/lib/validation";
 import type { ExtractedFields } from "@/lib/ocr";
 
 const REQUIRED_FIELDS = new Set(["brandName", "classType", "netContents", "healthWarning", "nameAddress"]);
@@ -233,6 +235,27 @@ export default function FormVsLabelTable({
                           : "bg-red-50 text-red-700"
                     }`}>
                       {matchResult.message}
+                    </div>
+                  )}
+
+                  {/* CFR Citation — regulatory authority for this field */}
+                  {FIELD_CITATIONS[key] && (
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <BookOpen size={10} className="text-gray-400 shrink-0" />
+                      <span className="text-[9px] text-gray-500">
+                        {FIELD_CITATIONS[key].section} — {FIELD_CITATIONS[key].summary}
+                      </span>
+                      {FIELD_CITATIONS[key].referenceUrl && (
+                        <a
+                          href={FIELD_CITATIONS[key].referenceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[9px] text-blue-500 hover:text-blue-700 underline shrink-0"
+                        >
+                          eCFR ↗
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>

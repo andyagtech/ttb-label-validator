@@ -227,6 +227,86 @@ export function citationFor(ruleId: string): Citation | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// Field key → primary CFR citation — used by FormVsLabelTable on the review page
+// Maps the camelCase field keys from FIELD_LABELS to the most relevant regulation.
+// ---------------------------------------------------------------------------
+
+export const FIELD_CITATIONS: Record<string, Citation> = {
+  brandName: {
+    chapter: "1",
+    section: "27 CFR §7.54",
+    summary: "Brand name must appear on the brand label (front) per 27 CFR Part 7.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7/subpart-D/section-7.54",
+  },
+  classType: {
+    chapter: "1",
+    section: "27 CFR §7.55",
+    summary: "Class/type designation required on the brand label per 27 CFR Part 7.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7/subpart-D/section-7.55",
+  },
+  alcoholContent: {
+    chapter: "1",
+    section: "27 CFR §7.71",
+    summary: "Alcohol content statement required for wine & spirits; optional for malt beverages. Must use approved format (not \"ABV\").",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7/subpart-E/section-7.71",
+  },
+  netContents: {
+    chapter: "1",
+    section: "27 CFR §7.28",
+    summary: "Net contents statement mandatory. Malt beverages require American measure (FL OZ).",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  healthWarning: {
+    chapter: "1",
+    section: "27 CFR Part 16",
+    summary: "\"GOVERNMENT WARNING:\" in ALL CAPS followed by both prescribed statements. Required on all beverages ≥ 0.5% ABV.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-16",
+  },
+  nameAddress: {
+    chapter: "1",
+    section: "27 CFR §7.59",
+    summary: "Name and address of bottler, producer, or importer required per 27 CFR Part 7.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7/subpart-D/section-7.59",
+  },
+  countryOfOrigin: {
+    chapter: "1",
+    section: "27 CFR §7.63",
+    summary: "Country of origin required on imported products per 27 CFR Part 7 and 19 USC §1304.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7/subpart-D/section-7.63",
+  },
+  appellation: {
+    chapter: "1",
+    section: "27 CFR §4.25",
+    summary: "Appellation of origin for wine — required when varietal or vintage is stated.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.25",
+  },
+  varietal: {
+    chapter: "1",
+    section: "27 CFR §4.23",
+    summary: "Varietal (grape) designation rules for wine. Requires appellation of origin when stated.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.23",
+  },
+  vintageDate: {
+    chapter: "1",
+    section: "27 CFR §4.27",
+    summary: "Vintage date rules for wine. Requires appellation of origin when stated.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.27",
+  },
+  sulfiteDeclaration: {
+    chapter: "1",
+    section: "27 CFR §4.32(e)",
+    summary: "\"Contains Sulfites\" declaration required if product contains ≥ 10 ppm sulfur dioxide.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4",
+  },
+  ageStatement: {
+    chapter: "1",
+    section: "27 CFR §5.74",
+    summary: "Age statement required for certain spirits types (e.g., straight bourbon < 4 years).",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.74",
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Government Warning — exact prescribed text per 27 CFR Part 16
 // ---------------------------------------------------------------------------
 
