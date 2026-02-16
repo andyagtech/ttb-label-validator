@@ -15,6 +15,7 @@
  *   --all       Download images for ALL records in ttb_cola_records.json
  *   --headless  Run headless (no browser window)
  *   --force     Re-download even if files already exist
+ *   --limit N   Stop after successfully downloading N new records
  */
 
 import { chromium } from 'playwright';
@@ -49,6 +50,7 @@ let headless = false;
 let force = false;
 let downloadBroken = false;
 let downloadAll = false;
+let downloadLimit = Infinity;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--ttbid' && args[i + 1]) singleTtbId = args[i + 1];
@@ -56,6 +58,7 @@ for (let i = 0; i < args.length; i++) {
   if (args[i] === '--force') force = true;
   if (args[i] === '--broken') downloadBroken = true;
   if (args[i] === '--all') downloadAll = true;
+  if (args[i] === '--limit' && args[i + 1]) downloadLimit = parseInt(args[i + 1]);
 }
 
 // ── Load records ────────────────────────────────────────────────────────────
@@ -272,6 +275,24 @@ async function main() {
     process.exit(1);
   }
 
+  // When using --limit, shuffle to get a diverse category mix
+  if (downloadLimit < Infinity) {
+    // Interleave categories: pick from beer, wine, spirits round-robin
+    const byCategory = { beer: [], wine: [], spirits: [] };
+    for (const r of records) byCategory[r.category]?.push(r) || (byCategory.spirits.push(r));
+    const interleaved = [];
+    const cats = ['beer', 'wine', 'spirits'];
+    let idx = 0;
+    while (interleaved.length < records.length) {
+      const cat = cats[idx % 3];
+      if (byCategory[cat].length > 0) interleaved.push(byCategory[cat].shift());
+      idx++;
+      if (cats.every(c => byCategory[c].length === 0)) break;
+    }
+    records = interleaved;
+    console.log(`🔀 Shuffled for category diversity (limit: ${downloadLimit})`);
+  }
+
   console.log(`🎯 Will download images for ${records.length} COLA records`);
   console.log('═'.repeat(60));
 
@@ -298,17 +319,35 @@ async function main() {
 
   let totalImages = 0;
   let successForms = 0;
+  let newDownloads = 0;
+  let skippedForms = 0;
 
   for (let i = 0; i < records.length; i++) {
     const rec = records[i];
     const label = `${rec.brandName}${rec.fancifulName ? ' ' + rec.fancifulName : ''}`;
     console.log(`\n[${i + 1}/${records.length}] ${'─'.repeat(40)}`);
-    
+
+    // Check if already downloaded (before calling downloadLabelImages)
+    const existingBefore = readdirSync(OUTPUT_DIR).filter(f => f.startsWith(rec.ttbId) && f.endsWith('.png')).length;
+
     const count = await downloadLabelImages(page, rec.ttbId, label);
     totalImages += count;
     if (count > 0) successForms++;
 
-    if (i < records.length - 1) {
+    // Only count as "new" if we didn't have images before
+    if (existingBefore === 0 && count > 0) {
+      newDownloads++;
+    } else if (existingBefore > 0) {
+      skippedForms++;
+    }
+
+    if (newDownloads >= downloadLimit) {
+      console.log(`\n  🎯 Reached limit of ${downloadLimit} NEW downloads`);
+      break;
+    }
+
+    // Only delay between actual network requests (not skips)
+    if (existingBefore === 0 && i < records.length - 1) {
       await page.waitForTimeout(DELAY_BETWEEN_REQUESTS_MS);
     }
   }
@@ -317,7 +356,9 @@ async function main() {
 
   console.log('\n' + '═'.repeat(60));
   console.log(`📊 SUMMARY:`);
-  console.log(`   Forms: ${successForms}/${records.length} successful`);
+  console.log(`   New downloads: ${newDownloads}`);
+  console.log(`   Skipped (already had): ${skippedForms}`);
+  console.log(`   Total forms with images: ${successForms}`);
   console.log(`   Images downloaded: ${totalImages}`);
   console.log(`📁 Output: ${OUTPUT_DIR}`);
 }

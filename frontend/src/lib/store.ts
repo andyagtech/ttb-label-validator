@@ -89,15 +89,26 @@ const TTB_LABEL_IMAGES: Record<string, number[]> = {
   "24089001000156": [2],  // DOMAINE CHANTEPIERRE
   "24089001000456": [2, 3],  // DOMAINE DES FLORETS
   "24089001000678": [2],  // LOST CAUSE MEADERY
+  "25335001000029": [1, 2],  // VOLADA
+  "25335001000078": [1],  // 450 NORTH BREWING CO.
+  "25335001000085": [1],  // AMERICAN SOLERA
   "25335001000169": [2],  // FREE WILL BREWING
+  "25335001000197": [1],  // CZECH 10°
+  "25335001000267": [1],  // LAMPLIGHTER BREWING CO.
   "25335001000295": [2, 3],  // POINT
   "25335001000316": [2],  // RAPID LIBERTIES HAZY DIPA
+  "25335001000325": [1],  // BOREAL DAWN BLACK IPA
+  "25335001000386": [1],  // FOCAL POINT
   "25335001000393": [1, 2],  // CUPCAKE
   "25335001000421": [1],  // NICE SIZED MOUNTAINS
   "25335001000428": [1],  // OUT OF ORDER: HERE GOES NOTHING
+  "25335001000463": [1, 2],  // MONSIER GENUINE BLACK
+  "25335001000484": [1, 2],  // HERITAGE
   "25335001000491": [3, 2],  // LAVANTI (3=front artwork, 2=info/back)
   "25335001000533": [1, 2, 3],  // CAIAROSSA
+  "25335001000547": [1],  // MOTH:
   "25335001000561": [3, 2],  // SENORIO DE ODON (3=front artwork, 2=info/back)
+  "25335001000603": [1],  // EMCEE
   "25335001000624": [2, 3],  // LA SOUFFRANDIERE
   "25335001000650": [2, 3],  // AMATECO
   "25335001000652": [2, 3],  // CASCADIA MANOR
@@ -106,9 +117,18 @@ const TTB_LABEL_IMAGES: Record<string, number[]> = {
   "25335001000708": [2],  // SAN FELICE
   "25335001000736": [1, 2],  // L'OUVERTURE
   "25335001000820": [2],  // MAC & JACKS BREWING CO.
+  "25335001000850": [1, 2],  // TUPPS SPIRITS
+  "25335001000875": [1],  // FOUR HOUNDS DISTILLING
   "25335001000932": [1, 2],  // L'ECU
+  "25335001000946": [1],  // MADWOMAN
   "25335001000960": [3, 2],  // DAISY CREEK (3=front artwork, 2=info/back)
+  "25335001000981": [1, 2],  // NEW BELGIUM
   "25335001000995": [1, 2, 3],  // THE REVERIES
+  "25336001000162": [1],  // TENNESSEE SHINE CO
+  "25336001000302": [1, 2, 3],  // MAHOGANY FOX
+  "25336001000456": [1, 2],  // ELEVACION
+  "25338001000250": [1, 2],  // PADDY
+  "25338001000428": [1, 2, 3],  // CASA LAS JARAS
 };
 
 /**
@@ -513,6 +533,22 @@ const SUBMISSIONS: SubmissionDef[] = [
     review: { decision: "approve", reviewer: "Jenny Park",
       notes: "All mandatory fields compliant. Health warning, ABV, net contents verified.", findings: [] } },
   { ttbId: "24003001000701", status: "submitted", submitter: "Hop Butcher Brewing Co.", daysAgo: 1 },
+  // New beer (batch 2)
+  { ttbId: "25335001000078", status: "submitted", submitter: "450 North Brewing Co.", daysAgo: 0 },
+  { ttbId: "25335001000085", status: "in_review", submitter: "American Solera Brewing", daysAgo: 2 },
+  { ttbId: "25335001000197", status: "approved", submitter: "Czech Import Group LLC", daysAgo: 9,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All mandatory fields present. ABV, net contents, health warning verified. Approved.", findings: [] } },
+  { ttbId: "25335001000267", status: "submitted", submitter: "Lamplighter Brewing Co.", daysAgo: 1 },
+  { ttbId: "25335001000325", status: "needs_revision", submitter: "Boreal Dawn Brewing LLC", daysAgo: 4,
+    review: { decision: "needs_revision", reviewer: "Dave Morrison",
+      notes: "Health warning text uses title case. Must be 'GOVERNMENT WARNING:' in ALL CAPS per TTB regulations.",
+      findings: [{ checklistItemId: "health_warning", severity: "error", message: "\"Government Warning:\" must be in ALL CAPS per TTB regulations." }] } },
+  { ttbId: "25335001000386", status: "in_review", submitter: "Focal Point Brewing Co.", daysAgo: 3 },
+  { ttbId: "25335001000603", status: "submitted", submitter: "Emcee Brewing LLC", daysAgo: 0 },
+  { ttbId: "25335001000981", status: "approved", submitter: "New Belgium Brewing Co.", daysAgo: 11,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "Clean label, all fields verified. Approved.", findings: [] } },
 
   // ── Wine ────────────────────────────────────────────────────────────────
   { ttbId: "24012001000123", status: "approved", submitter: "Las Perdices Winery", daysAgo: 12,
@@ -597,6 +633,32 @@ const SUBMISSIONS: SubmissionDef[] = [
     review: { decision: "reject", reviewer: "Dave Morrison",
       notes: "Importer name and address missing. Required for all imported spirits (27 CFR 5.63(b)).",
       findings: [{ checklistItemId: "name_address", severity: "error", message: "Importer name and address required on imported spirits labels (27 CFR 5.63(b)). Not found on label." }] } },
+  // New spirits (batch 2)
+  { ttbId: "25335001000029", status: "submitted", submitter: "Volada Spirits LLC", daysAgo: 0 },
+  { ttbId: "25335001000463", status: "in_review", submitter: "Monsier Genuine Black Distillery", daysAgo: 2 },
+  { ttbId: "25335001000484", status: "approved", submitter: "Heritage Distilling Co.", daysAgo: 8,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "ABV, health warning, class/type, and name/address all compliant. Approved.", findings: [] } },
+  { ttbId: "25335001000547", status: "submitted", submitter: "Moth Cocktails Inc.", daysAgo: 1 },
+  { ttbId: "25335001000850", status: "needs_revision", submitter: "Tupps Spirits LLC", daysAgo: 5,
+    review: { decision: "needs_revision", reviewer: "Dave Morrison",
+      notes: "Alcohol content must be stated as percentage by volume. Current format non-compliant.",
+      findings: [{ checklistItemId: "alcohol_content", severity: "error", message: "Alcohol content must be stated as percentage by volume (27 CFR 5.63(a))." }] } },
+  { ttbId: "25335001000875", status: "submitted", submitter: "Four Hounds Distilling LLC", daysAgo: 0 },
+  { ttbId: "25335001000946", status: "rejected", submitter: "Madwoman Spirits Co.", daysAgo: 6,
+    review: { decision: "reject", reviewer: "Jenny Park",
+      notes: "Net contents not stated in US customary measure. Required per 27 CFR 5.67.",
+      findings: [{ checklistItemId: "net_contents", severity: "error", message: "Net contents must include US customary measure (27 CFR 5.67)." }] } },
+  { ttbId: "25336001000162", status: "submitted", submitter: "Tennessee Shine Co.", daysAgo: 0 },
+  { ttbId: "25336001000302", status: "approved", submitter: "Mahogany Fox Spirits", daysAgo: 10,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "All mandatory fields present and compliant. Approved.", findings: [] } },
+  { ttbId: "25336001000456", status: "needs_revision", submitter: "Elevacion Tequila LLC", daysAgo: 3,
+    review: { decision: "needs_revision", reviewer: "Jenny Park",
+      notes: "Country of origin statement missing. Required for imported tequila (27 CFR 5.63(b)).",
+      findings: [{ checklistItemId: "country_origin", severity: "error", message: "Country of origin must appear on imported spirits labels (27 CFR 5.63(b))." }] } },
+  { ttbId: "25338001000250", status: "submitted", submitter: "Irish Distillers International", daysAgo: 1 },
+  { ttbId: "25338001000428", status: "in_review", submitter: "Casa Las Jaras Tequila S.A.", daysAgo: 2 },
 ];
 
 function generateMockSubmissions(): Submission[] {
