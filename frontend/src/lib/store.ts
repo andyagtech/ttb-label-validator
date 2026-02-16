@@ -25,33 +25,164 @@ function ensureSeeded() {
 }
 
 /**
+ * Vercel Blob CDN base URL for TTB label images.
+ * Images are stored as ttb-labels/{ttbId}-{N}.png in the Blob store.
+ */
+const BLOB_BASE = "https://rcptligvu3vbkguv.public.blob.vercel-storage.com/ttb-labels";
+
+/**
+ * Real TTB COLA label images scraped from ttbonline.gov and cropped to
+ * individual labels. The numbers are label indices from the COLA form page.
+ *
+ * Array order determines assignment:
+ *   - First element  → Front Label
+ *   - Second element → Back Label
+ *   - Third+ elements → Other Label N
+ */
+const TTB_LABEL_IMAGES: Record<string, number[]> = {
+  "23312001000445": [1, 2],  // CRAFTED CASK
+  "23356001000155": [2],  // DOGFISH HEAD
+  "24003001000001": [2, 3],  // 813
+  "24003001000078": [2],  // KÜNSTLER BREWING
+  "24003001000085": [2],  // PHANTASM
+  "24003001000113": [2],  // BURIAL BEER CO.
+  "24003001000169": [2, 3, 4],  // BARLEY & BOAR
+  "24003001000190": [1, 2],  // CHANDLER PLAZA
+  "24003001000200": [1, 2],  // CIMINO
+  "24003001000225": [2, 3],  // THE EDGE
+  "24003001000281": [2],  // ONDA
+  "24003001000325": [3, 2],  // CRAIG AND CARLA HAWKINS (3=front artwork, 2=info/back)
+  "24003001000330": [2, 3],  // RUTHERFORD HILL
+  "24003001000350": [2],  // CAMP FUEL
+  "24003001000393": [1, 2],  // TENUTA MARA
+  "24003001000414": [1],  // LOGYARD BREWING
+  "24003001000421": [2, 3],  // LONGHORN CELLARS
+  "24003001000477": [1],  // TRISKELION
+  "24003001000484": [1],  // CERVEZA COMPLICE
+  "24003001000525": [1],  // SAVE ME #1
+  "24003001000561": [2],  // ECLIPSE
+  "24003001000582": [1],  // HOPFLY BREWING COMPANY
+  "24003001000600": [1, 2],  // ARTHUR'S GRAND RESERVE
+  "24003001000638": [2],  // HOPS N DROPS
+  "24003001000645": [1],  // SIERRA NEVADA
+  "24003001000666": [3, 2],  // LASORDA FAMILY WINES (3=front artwork, 2=info/back)
+  "24003001000700": [2, 3],  // FILO DE TRINCHERA MEZCAL ARTESANAL
+  "24003001000701": [1],  // HOP BUTCHER FOR THE WORLD
+  "24003001000715": [2, 3],  // GRAPE BEGINNINGS WINERY
+  "24003001000736": [2, 3],  // CAT WHISKERS
+  "24012001000123": [1],  // LAS PERDICES
+  "24012001000345": [2],  // STRATA DATA
+  "24012001000567": [2, 3, 4],  // PA'LANTE
+  "24012001000891": [1],  // CELLARMAKER BREWING CO
+  "24023001000345": [1, 2],  // SHAMROCK HILLS VINEYARD AND WINERY
+  "24023001000567": [1, 2],  // TENUTE CAPALDO
+  "24023001000678": [2, 3],  // DE TIERRA
+  "24034001000123": [1, 2],  // LUNA HART
+  "24045001000123": [1],  // HUMMDINGER
+  "24045001000234": [2, 3, 4],  // TURKS HEAD
+  "24045001000567": [3, 2],  // LE FRAGHE (3=front artwork, 2=info/back)
+  "24045001000891": [1, 2, 3, 4],  // BEATBOX
+  "24067001000456": [2, 3],  // DOC SWINSON'S
+  "24078001000345": [1, 2],  // ANNE DE K
+  "24078001000678": [2, 3],  // MANOIR DU CARRA
+  "24078001000891": [2, 3, 4, 5],  // WINE CONNOISSEUR
+  "24089001000156": [2],  // DOMAINE CHANTEPIERRE
+  "24089001000456": [2, 3],  // DOMAINE DES FLORETS
+  "24089001000678": [2],  // LOST CAUSE MEADERY
+  "25335001000169": [2],  // FREE WILL BREWING
+  "25335001000295": [2, 3],  // POINT
+  "25335001000316": [2],  // RAPID LIBERTIES HAZY DIPA
+  "25335001000393": [1, 2],  // CUPCAKE
+  "25335001000421": [1],  // NICE SIZED MOUNTAINS
+  "25335001000428": [1],  // OUT OF ORDER: HERE GOES NOTHING
+  "25335001000491": [3, 2],  // LAVANTI (3=front artwork, 2=info/back)
+  "25335001000533": [1, 2, 3],  // CAIAROSSA
+  "25335001000561": [3, 2],  // SENORIO DE ODON (3=front artwork, 2=info/back)
+  "25335001000624": [2, 3],  // LA SOUFFRANDIERE
+  "25335001000650": [2, 3],  // AMATECO
+  "25335001000652": [2, 3],  // CASCADIA MANOR
+  "25335001000666": [2, 3],  // CHAMBERS
+  "25335001000694": [2],  // SOLE PURPOSE CASCADE
+  "25335001000708": [2],  // SAN FELICE
+  "25335001000736": [1, 2],  // L'OUVERTURE
+  "25335001000820": [2],  // MAC & JACKS BREWING CO.
+  "25335001000932": [1, 2],  // L'ECU
+  "25335001000960": [3, 2],  // DAISY CREEK (3=front artwork, 2=info/back)
+  "25335001000995": [1, 2, 3],  // THE REVERIES
+};
+
+/**
  * Load persisted Blob URLs from the manifest and apply them to matching
- * submissions. Called lazily on first getAllSubmissions / getSubmission if
+ * submissions. Also applies real TTB label images for submissions whose
+ * TTB ID has scraped images in /public/ttb-labels/.
+ *
+ * Called lazily on first getAllSubmissions / getSubmission if
  * not already applied, and eagerly after populate generates new images.
  */
 export async function applyManifestToSubmissions(): Promise<number> {
   ensureSeeded();
-  const manifest = await loadManifest();
-  if (!manifest) return 0;
 
-  let applied = 0;
-  for (const entry of manifest.labels) {
-    const sub = submissions.find((s) => s.productName === entry.productName);
-    if (!sub) continue;
+  // 1. Apply real TTB label images to all submissions
+  const products = getSampleProducts();
+  let ttbApplied = 0;
+  for (const sub of submissions) {
+    const product = products.find((p) => p.productName === sub.productName);
+    if (!product) continue;
+    const labelNums = TTB_LABEL_IMAGES[product.ttbId];
+    if (!labelNums || labelNums.length === 0) continue;
+
     const front = sub.labels.find((l) => l.slotName === "Front Label");
     const back = sub.labels.find((l) => l.slotName === "Back Label");
-    if (front) {
-      front.originalImageUrl = entry.frontUrl;
-      front.correctedImageUrl = entry.frontUrl;
+
+    // Array order determines assignment: [0]=front, [1]=back, [2+]=other
+    if (front && labelNums.length >= 1) {
+      const url = `${BLOB_BASE}/${product.ttbId}-${labelNums[0]}.png`;
+      front.originalImageUrl = url;
+      front.correctedImageUrl = url;
     }
-    if (back) {
-      back.originalImageUrl = entry.backUrl;
-      back.correctedImageUrl = entry.backUrl;
+    if (back && labelNums.length >= 2) {
+      const url = `${BLOB_BASE}/${product.ttbId}-${labelNums[1]}.png`;
+      back.originalImageUrl = url;
+      back.correctedImageUrl = url;
     }
-    applied++;
+    // Assign URLs to "Other Label N" slots (3rd+ images)
+    for (let li = 2; li < labelNums.length; li++) {
+      const otherLabel = sub.labels.find((l) => l.slotName === `Other Label ${li - 1}`);
+      if (otherLabel) {
+        const url = `${BLOB_BASE}/${product.ttbId}-${labelNums[li]}.png`;
+        otherLabel.originalImageUrl = url;
+        otherLabel.correctedImageUrl = url;
+      }
+    }
+    ttbApplied++;
   }
+
+  // 2. Apply Blob manifest URLs (AI-generated images) for remaining products
+  const manifest = await loadManifest();
+  let blobApplied = 0;
+  if (manifest) {
+    for (const entry of manifest.labels) {
+      const sub = submissions.find((s) => s.productName === entry.productName);
+      if (!sub) continue;
+      const product = products.find((p) => p.productName === sub.productName);
+      const hasTtbImage = product && product.ttbId in TTB_LABEL_IMAGES;
+      // Don't overwrite TTB label images with AI-generated ones
+      const front = sub.labels.find((l) => l.slotName === "Front Label");
+      const back = sub.labels.find((l) => l.slotName === "Back Label");
+      if (front && !hasTtbImage) {
+        front.originalImageUrl = entry.frontUrl;
+        front.correctedImageUrl = entry.frontUrl;
+      }
+      if (back && !(hasTtbImage && TTB_LABEL_IMAGES[product!.ttbId]?.includes(2))) {
+        back.originalImageUrl = entry.backUrl;
+        back.correctedImageUrl = entry.backUrl;
+      }
+      blobApplied++;
+    }
+  }
+
   manifestApplied = true;
-  return applied;
+  return ttbApplied + blobApplied;
 }
 
 /**
@@ -249,7 +380,14 @@ function buildFormFields(product: SampleProduct): Record<string, string> {
   if (front.age_statement) ff.ageStatement = front.age_statement;
   if (back.name_address) ff.nameAddress = back.name_address;
   if (back.country_origin) ff.countryOfOrigin = back.country_origin;
-  if (back.health_warning) ff.healthWarning = "GOVERNMENT WARNING: (1) According to the Surgeon General...";
+  if (back.health_warning) ff.healthWarning = back.health_warning;
+  if (back.sulfite_declaration) ff.sulfiteDeclaration = back.sulfite_declaration;
+  if (back.color_ingredients) ff.colorIngredients = back.color_ingredients;
+  if (back.commodity_statement) ff.commodityStatement = back.commodity_statement;
+  if (back.aspartame_declaration) ff.aspartameDeclaration = back.aspartame_declaration;
+  // Also check front label for these fields (can appear on either)
+  if (!ff.sulfiteDeclaration && front.sulfite_declaration) ff.sulfiteDeclaration = front.sulfite_declaration;
+  if (!ff.colorIngredients && front.color_ingredients) ff.colorIngredients = front.color_ingredients;
   return ff;
 }
 
@@ -268,6 +406,9 @@ function fieldKey(id: string): string {
     vintage_date: "vintage_date",
     varietal: "varietal",
     age_statement: "age_statement",
+    color_ingredients: "color_ingredients",
+    commodity_statement: "commodity_statement",
+    aspartame_declaration: "aspartame_declaration",
   };
   return map[id] || id;
 }
@@ -314,416 +455,211 @@ function buildLabel(
 }
 
 /**
- * Generate 42 realistic mock submissions from the sampleData product catalog.
+ * Submission catalog — the single source of truth for all mock submissions.
  *
- * Every submission has BOTH front and back labels. Most have no OCR
- * extracted fields yet — suitable for testing Tesseract.js field extraction.
+ * Each entry references a product by ttbId (from sampleData.ts) and defines
+ * the submission's status, submitter, and optional review data. No index
+ * coupling — entries can be added, removed, or reordered freely.
  *
- * Status distribution (42 total):
- *   - 18 submitted (no OCR — Tesseract testing targets)
- *   - 5  in_review (with OCR)
- *   - 7  approved  (with review)
- *   - 5  rejected  (with review + specific CFR findings)
- *   - 7  needs_revision (with review + specific findings)
+ * Every product has real TTB label images in /public/ttb-labels/.
+ *
+ * Status distribution (49 total):
+ *   - 19 submitted   (pending review — to-do queue)
+ *   - 8  in_review   (assigned, being examined)
+ *   - 10 approved    (passed all checks)
+ *   - 6  rejected    (failed compliance, specific CFR findings)
+ *   - 6  needs_revision (fixable issues, resubmission required)
  */
+interface SubmissionDef {
+  ttbId: string;
+  status: SubmissionStatus;
+  submitter: string;
+  daysAgo: number;
+  review?: {
+    decision: string;
+    reviewer: string;
+    notes: string;
+    findings: ReviewFinding[];
+  };
+}
+
+const SUBMISSIONS: SubmissionDef[] = [
+  // ── Beer ────────────────────────────────────────────────────────────────
+  { ttbId: "24003001000484", status: "submitted", submitter: "Cerveza Complice LLC", daysAgo: 0 },
+  { ttbId: "24003001000638", status: "submitted", submitter: "Hops N Drops Brewing LLC", daysAgo: 0 },
+  { ttbId: "24003001000414", status: "needs_revision", submitter: "Logyard Brewing Co.", daysAgo: 6,
+    review: { decision: "needs_revision", reviewer: "Jenny Park",
+      notes: "Government Warning uses title case instead of ALL CAPS. Must resubmit with corrected label.",
+      findings: [{ checklistItemId: "health_warning", severity: "error", message: "\"Government Warning:\" found in title case — must be \"GOVERNMENT WARNING:\" in ALL CAPS per TTB regulations." }] } },
+  { ttbId: "24003001000582", status: "in_review", submitter: "Hopfly Brewing Company", daysAgo: 2 },
+  { ttbId: "24003001000078", status: "submitted", submitter: "Künstler Brewing LLC", daysAgo: 1 },
+  { ttbId: "23356001000155", status: "approved", submitter: "Dogfish Head Craft Brewery", daysAgo: 10,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All mandatory fields present and compliant. ABV, net contents, and health warning verified.", findings: [] } },
+  { ttbId: "24003001000645", status: "in_review", submitter: "Sierra Nevada Brewing Co.", daysAgo: 2 },
+  { ttbId: "24012001000345", status: "needs_revision", submitter: "Steele Hall Brewing Co.", daysAgo: 4,
+    review: { decision: "needs_revision", reviewer: "Dave Morrison",
+      notes: "Class/type on label reads 'IPA' but COLA application specifies 'India Pale Ale'. Must be consistent per 27 CFR 7.24.",
+      findings: [{ checklistItemId: "class_type", severity: "warning", message: "Class/type on label ('IPA') does not match COLA application ('India Pale Ale'). Must be consistent per 27 CFR 7.24." }] } },
+  { ttbId: "24012001000891", status: "in_review", submitter: "Cellarmaker Brewing Co.", daysAgo: 3 },
+  { ttbId: "24045001000123", status: "approved", submitter: "Rubber Soul Brewing Co.", daysAgo: 8,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "Clean label, all fields verified. Approved.", findings: [] } },
+  { ttbId: "24045001000891", status: "submitted", submitter: "BeatBox Beverages LLC", daysAgo: 0 },
+  // New beer
+  { ttbId: "24003001000113", status: "in_review", submitter: "Burial Beer Co.", daysAgo: 2 },
+  { ttbId: "24003001000477", status: "submitted", submitter: "Triskelion Brewing Co.", daysAgo: 0 },
+  { ttbId: "24003001000525", status: "approved", submitter: "Save Me Brewing LLC", daysAgo: 9,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All mandatory fields compliant. Health warning, ABV, net contents verified.", findings: [] } },
+  { ttbId: "24003001000701", status: "submitted", submitter: "Hop Butcher Brewing Co.", daysAgo: 1 },
+
+  // ── Wine ────────────────────────────────────────────────────────────────
+  { ttbId: "24012001000123", status: "approved", submitter: "Las Perdices Winery", daysAgo: 12,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "Country of origin, importer statement, sulfite declaration, and all mandatory fields verified. Approved.", findings: [] } },
+  { ttbId: "24023001000345", status: "needs_revision", submitter: "Shamrock Hills Vineyard and Winery", daysAgo: 3,
+    review: { decision: "needs_revision", reviewer: "Dave Morrison",
+      notes: "Vintage date not visible on front label. Resubmit with legible date.",
+      findings: [{ checklistItemId: "vintage_date", severity: "warning", message: "Vintage date is illegible or missing from front label." }] } },
+  { ttbId: "24023001000567", status: "rejected", submitter: "Tenute Capaldo S.r.l.", daysAgo: 6,
+    review: { decision: "reject", reviewer: "Jenny Park",
+      notes: "Country of origin reads 'Italia' instead of 'Italy'. TTB requires country of origin in English on US market labels (27 CFR 4.39(a)).",
+      findings: [{ checklistItemId: "country_origin", severity: "error", message: "Country of origin must be stated in English. Label shows 'Italia' — must read 'Italy' or 'Product of Italy' (27 CFR 4.39(a))." }] } },
+  { ttbId: "24023001000678", status: "needs_revision", submitter: "De Tierra Vineyards", daysAgo: 4,
+    review: { decision: "needs_revision", reviewer: "Jenny Park",
+      notes: "Net contents shown in metric only. Wine labels must include US customary measure. Resubmit with corrected label.",
+      findings: [{ checklistItemId: "net_contents", severity: "error", message: "Net contents must include US customary measure (27 CFR 4.37). Metric-only is insufficient." }] } },
+  { ttbId: "24034001000123", status: "submitted", submitter: "Luna Hart Wines", daysAgo: 0 },
+  { ttbId: "24045001000234", status: "in_review", submitter: "Turks Head Vineyards", daysAgo: 2 },
+  { ttbId: "24045001000567", status: "submitted", submitter: "Le Fraghe Winery", daysAgo: 1 },
+  { ttbId: "24078001000345", status: "approved", submitter: "Anne De K Wines", daysAgo: 9,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "Appellation, varietal, vintage, and all mandatory fields verified. Sulfite declaration present. Approved.", findings: [] } },
+  { ttbId: "24078001000678", status: "submitted", submitter: "Manoir Du Carra", daysAgo: 0 },
+  { ttbId: "24078001000891", status: "rejected", submitter: "Wine Connoisseur LLC", daysAgo: 5,
+    review: { decision: "reject", reviewer: "Dave Morrison",
+      notes: "Sulfite declaration ('Contains Sulfites') not found on either label. Required for all wines containing ≥10 ppm sulfites (27 CFR 4.32(e)).",
+      findings: [{ checklistItemId: "sulfite_declaration", severity: "error", message: "Sulfite declaration required on wine labels containing ≥10 ppm SO₂ (27 CFR 4.32(e)). Statement not detected." }] } },
+  { ttbId: "24089001000156", status: "submitted", submitter: "Domaine Chantepierre", daysAgo: 0 },
+  { ttbId: "24089001000456", status: "submitted", submitter: "Domaine Des Florets", daysAgo: 1 },
+  { ttbId: "24089001000678", status: "rejected", submitter: "Lost Cause Meadery LLC", daysAgo: 5,
+    review: { decision: "reject", reviewer: "Jenny Park",
+      notes: "Alcohol content stated as '14% ABV'. Wine labels must spell out 'Alcohol XX% by Volume' per 27 CFR 4.36(a).",
+      findings: [{ checklistItemId: "alcohol_content", severity: "error", message: "Alcohol content must be stated as 'Alcohol XX% by Volume' on wine labels (27 CFR 4.36(a)). Abbreviation '14% ABV' is non-compliant." }] } },
+  // New wine
+  { ttbId: "24003001000190", status: "approved", submitter: "Chandler Plaza Winery", daysAgo: 7,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All fields compliant. Domestic wine, sulfite declaration present. Approved.", findings: [] } },
+  { ttbId: "24003001000200", status: "submitted", submitter: "Cimino Wine Estates", daysAgo: 0 },
+  { ttbId: "24003001000325", status: "in_review", submitter: "Craig and Carla Hawkins Wines", daysAgo: 2 },
+  { ttbId: "24003001000330", status: "approved", submitter: "Rutherford Hill Winery", daysAgo: 11,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "Napa Valley appellation, vintage, varietal, and all mandatory fields verified. Approved.", findings: [] } },
+  { ttbId: "24003001000393", status: "submitted", submitter: "Tenuta Mara Wines", daysAgo: 1 },
+  { ttbId: "24003001000421", status: "needs_revision", submitter: "Longhorn Cellars", daysAgo: 4,
+    review: { decision: "needs_revision", reviewer: "Dave Morrison",
+      notes: "Net contents format non-compliant. Must include both metric and US customary measure.",
+      findings: [{ checklistItemId: "net_contents", severity: "error", message: "Net contents must include US customary measure (27 CFR 4.37). Metric-only is insufficient." }] } },
+  { ttbId: "24003001000600", status: "submitted", submitter: "Arthur's Grand Reserve Winery", daysAgo: 0 },
+  { ttbId: "24003001000666", status: "rejected", submitter: "Lasorda Family Wines LLC", daysAgo: 6,
+    review: { decision: "reject", reviewer: "Jenny Park",
+      notes: "Sulfite declaration missing. Required for all wines containing ≥10 ppm SO₂ (27 CFR 4.32(e)).",
+      findings: [{ checklistItemId: "sulfite_declaration", severity: "error", message: "Sulfite declaration required for wines containing ≥10 ppm SO₂ (27 CFR 4.32(e)). Not detected on label." }] } },
+  { ttbId: "24003001000715", status: "submitted", submitter: "Grape Beginnings Winery", daysAgo: 0 },
+  { ttbId: "24003001000225", status: "in_review", submitter: "The Edge Wines", daysAgo: 3 },
+
+  // ── Spirits ─────────────────────────────────────────────────────────────
+  { ttbId: "23312001000445", status: "approved", submitter: "Crafted Cask Distillery", daysAgo: 11,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All fields compliant. Class/type, ABV, health warning, and name/address verified. Approved.", findings: [] } },
+  { ttbId: "24012001000567", status: "rejected", submitter: "Park Street Imports, Miami FL", daysAgo: 7,
+    review: { decision: "reject", reviewer: "Dave Morrison",
+      notes: "Country of origin 'Product of Mexico' present on back label but missing from front. Imported spirits must display country of origin conspicuously (27 CFR 5.63(b)).",
+      findings: [{ checklistItemId: "country_origin", severity: "error", message: "Country of origin must appear conspicuously on the brand label for imported spirits (27 CFR 5.63(b))." }] } },
+  { ttbId: "24067001000456", status: "submitted", submitter: "Doc Swinson's Distillery", daysAgo: 0 },
+  // New spirits
+  { ttbId: "24003001000001", status: "approved", submitter: "813 Spirits LLC", daysAgo: 10,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "ABV, health warning, class/type, and name/address all compliant. Approved.", findings: [] } },
+  { ttbId: "24003001000085", status: "submitted", submitter: "Phantasm Spirits Co.", daysAgo: 0 },
+  { ttbId: "24003001000169", status: "needs_revision", submitter: "Barley & Boar Distillery", daysAgo: 5,
+    review: { decision: "needs_revision", reviewer: "Jenny Park",
+      notes: "Age statement on label reads '2 Years' but must specify type of container per 27 CFR 5.74.",
+      findings: [{ checklistItemId: "age_statement", severity: "warning", message: "Age statement must include type of container (e.g., 'Aged 2 Years in Oak Barrels') per 27 CFR 5.74." }] } },
+  { ttbId: "24003001000281", status: "submitted", submitter: "Onda Spirits Inc.", daysAgo: 1 },
+  { ttbId: "24003001000350", status: "approved", submitter: "Camp Fuel Spirits LLC", daysAgo: 8,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All mandatory fields present. Health warning, ABV, net contents verified. Approved.", findings: [] } },
+  { ttbId: "24003001000561", status: "in_review", submitter: "Eclipse Distilling Co.", daysAgo: 2 },
+  { ttbId: "24003001000700", status: "submitted", submitter: "Filo De Trinchera Mezcal", daysAgo: 0 },
+  { ttbId: "24003001000736", status: "rejected", submitter: "Cat Whiskers Moonshine LLC", daysAgo: 4,
+    review: { decision: "reject", reviewer: "Dave Morrison",
+      notes: "Importer name and address missing. Required for all imported spirits (27 CFR 5.63(b)).",
+      findings: [{ checklistItemId: "name_address", severity: "error", message: "Importer name and address required on imported spirits labels (27 CFR 5.63(b)). Not found on label." }] } },
+];
+
 function generateMockSubmissions(): Submission[] {
   const products = getSampleProducts();
 
-  // Per-product overrides: status, submitter, daysAgo, review, OCR inclusion
-  const overrides: Array<{
-    status: SubmissionStatus;
-    submitter: string;
-    daysAgo: number;
-    includeOcr: boolean;
-    formFields?: Record<string, string>;
-    review?: {
-      decision: string;
-      reviewer: string;
-      notes: string;
-      findings: ReviewFinding[];
-    };
-  }> = [
-    // 0: Sierra Nevada Pale Ale — submitted, no OCR
-    { status: "submitted", submitter: "Sierra Nevada Brewing Co.", daysAgo: 0, includeOcr: false },
-    // 1: Dogfish Head 60 Minute IPA — submitted, no OCR
-    { status: "submitted", submitter: "Dogfish Head Craft Brewery", daysAgo: 1, includeOcr: false },
-    // 2: Goose Island Bourbon County Stout — in_review, with OCR
-    { status: "in_review", submitter: "Anheuser-Busch InBev", daysAgo: 2, includeOcr: true },
-    // 3: Blue Moon Belgian White — submitted, no OCR
-    { status: "submitted", submitter: "Blue Moon Brewing Company", daysAgo: 0, includeOcr: false },
-    // 4: Lagunitas IPNA — approved, with review
-    {
-      status: "approved", submitter: "Heineken USA Inc.", daysAgo: 5, includeOcr: true,
-      review: {
-        decision: "approve",
-        reviewer: "Jenny Park",
-        notes: "All fields match application. Non-alcoholic labeling is compliant.",
-        findings: [],
-      },
-    },
-    // 5: Robert Mondavi Cabernet — submitted, no OCR
-    { status: "submitted", submitter: "Constellation Brands, Inc.", daysAgo: 0, includeOcr: false },
-    // 6: Barefoot Moscato — submitted, no OCR
-    { status: "submitted", submitter: "E. & J. Gallo Winery", daysAgo: 1, includeOcr: false },
-    // 7: Kim Crawford Sauvignon Blanc — in_review, with OCR
-    { status: "in_review", submitter: "Constellation Brands, Inc.", daysAgo: 3, includeOcr: true },
-    // 8: Opus One — submitted, no OCR
-    { status: "submitted", submitter: "Opus One Winery", daysAgo: 0, includeOcr: false },
-    // 9: Jack Daniel's Tennessee Whiskey — submitted, no OCR
-    { status: "submitted", submitter: "Brown-Forman Corporation", daysAgo: 1, includeOcr: false },
-    // 10: Tito's Handmade Vodka — approved, with review
-    {
-      status: "approved", submitter: "Fifth Generation, Inc.", daysAgo: 7, includeOcr: true,
-      review: {
-        decision: "approve",
-        reviewer: "Dave Morrison",
-        notes: "Clean label, all fields verified. Approved.",
-        findings: [],
-      },
-    },
-    // 11: Hennessy V.S Cognac — submitted, no OCR
-    { status: "submitted", submitter: "Moet Hennessy USA, Inc.", daysAgo: 0, includeOcr: false },
-    // 12: Patron Silver Tequila — rejected, with review
-    {
-      status: "rejected", submitter: "The Patron Spirits Company", daysAgo: 4, includeOcr: true,
-      formFields: {
-        brandName: "Patron",
-        classType: "Tequila Silver",
-        alcoholContent: "40% Alc./Vol.",
-        netContents: "750 mL",
-      },
-      review: {
-        decision: "reject",
-        reviewer: "Dave Morrison",
-        notes: "Country of origin missing from back label. Required for imported product.",
-        findings: [
-          {
-            checklistItemId: "country_origin",
-            severity: "error",
-            message: "Country of origin statement is required for imported spirits (27 CFR 5.63).",
-          },
-        ],
-      },
-    },
-    // 13: Maker's Mark Bourbon — needs_revision, with review
-    {
-      status: "needs_revision", submitter: "Beam Suntory Inc.", daysAgo: 6, includeOcr: true,
-      review: {
-        decision: "needs_revision",
-        reviewer: "Jenny Park",
-        notes: "Government Warning uses title case instead of ALL CAPS. Must resubmit with corrected label.",
-        findings: [
-          {
-            checklistItemId: "health_warning",
-            severity: "error",
-            message: '"Government Warning:" found in title case — must be "GOVERNMENT WARNING:" in ALL CAPS.',
-          },
-        ],
-      },
-    },
-    // 14: Bell's Two Hearted Ale — submitted, no OCR
-    { status: "submitted", submitter: "Bell's Brewery, Inc.", daysAgo: 0, includeOcr: false },
-    // 15: Founders All Day IPA — submitted, no OCR
-    { status: "submitted", submitter: "Founders Brewing Co.", daysAgo: 0, includeOcr: false },
-    // 16: Yuengling Traditional Lager — submitted, no OCR
-    { status: "submitted", submitter: "D.G. Yuengling & Son, Inc.", daysAgo: 0, includeOcr: false },
-    // 17: New Belgium Fat Tire Amber Ale — submitted, no OCR
-    { status: "submitted", submitter: "New Belgium Brewing Company", daysAgo: 0, includeOcr: false },
-    // 18: Caymus Cabernet Sauvignon — submitted, no OCR
-    { status: "submitted", submitter: "Caymus Vineyards", daysAgo: 1, includeOcr: false },
-    // 19: Josh Cellars Chardonnay — submitted, no OCR
-    { status: "submitted", submitter: "Deutsch Family Wine & Spirits", daysAgo: 1, includeOcr: false },
-    // 20: Whispering Angel Rosé — needs_revision, with review
-    {
-      status: "needs_revision", submitter: "Sacha Lichine", daysAgo: 3, includeOcr: true,
-      review: {
-        decision: "needs_revision",
-        reviewer: "Dave Morrison",
-        notes: "Vintage date not visible on front label. Resubmit with legible date.",
-        findings: [{ checklistItemId: "vintage_date", severity: "warning", message: "Vintage date is illegible or missing from front label." }],
-      },
-    },
-    // 21: Woodford Reserve Double Oaked — in_review, with OCR
-    { status: "in_review", submitter: "Brown-Forman Corporation", daysAgo: 2, includeOcr: true },
-    // 22: Casamigos Blanco Tequila — approved, with review
-    {
-      status: "approved", submitter: "Diageo North America", daysAgo: 8, includeOcr: true,
-      review: {
-        decision: "approve",
-        reviewer: "Jenny Park",
-        notes: "All fields compliant. Approved.",
-        findings: [],
-      },
-    },
-    // 23: Grey Goose Vodka — submitted, no OCR
-    { status: "submitted", submitter: "Bacardi Limited", daysAgo: 1, includeOcr: false },
+  return SUBMISSIONS.map((def, idx) => {
+    const product = products.find((p) => p.ttbId === def.ttbId);
+    if (!product) return null;
 
-    // ---- Expanded catalog (products 24–41) ----
+    const includeOcr = true;
+    const created = daysAgo(def.daysAgo);
 
-    // 24: Samuel Adams Boston Lager — approved, clean domestic lager
-    {
-      status: "approved", submitter: "The Boston Beer Company", daysAgo: 10, includeOcr: true,
-      review: {
-        decision: "approve",
-        reviewer: "Jenny Park",
-        notes: "All mandatory fields present and compliant. ABV, net contents, and health warning verified.",
-        findings: [],
-      },
-    },
-    // 25: Guinness Draught Stout — rejected, missing importer statement
-    {
-      status: "rejected", submitter: "Diageo North America, Inc.", daysAgo: 5, includeOcr: true,
-      formFields: {
-        brandName: "Guinness",
-        classType: "Stout",
-        alcoholContent: "4.2% Alc. By Vol.",
-        netContents: "14.9 FL OZ (440 mL)",
-      },
-      review: {
-        decision: "reject",
-        reviewer: "Dave Morrison",
-        notes: "Back label is missing the mandatory 'Imported by' statement with US importer name and address. Required for all imported malt beverages under 27 CFR 7.63(b).",
-        findings: [
-          {
-            checklistItemId: "name_address",
-            severity: "error",
-            message: "Imported product must show US importer name and address on the brand or back label (27 CFR 7.63(b)).",
-          },
-        ],
-      },
-    },
-    // 26: Modelo Especial — needs_revision, net contents format issue
-    {
-      status: "needs_revision", submitter: "Crown Imports LLC", daysAgo: 3, includeOcr: true,
-      formFields: {
-        brandName: "Modelo",
-        classType: "Pilsner-Style Lager",
-        alcoholContent: "4.4% Alc. By Vol.",
-        netContents: "355 mL",
-      },
-      review: {
-        decision: "needs_revision",
-        reviewer: "Jenny Park",
-        notes: "Net contents shown in metric only (355 mL). Malt beverages sold in the US must show net contents in US customary measure, e.g., '12 FL OZ (355 mL)'. Resubmit with corrected label.",
-        findings: [
-          {
-            checklistItemId: "net_contents",
-            severity: "error",
-            message: "Net contents must include US customary measure for malt beverages (27 CFR 7.70). '355 mL' alone is insufficient — must read '12 FL OZ (355 mL)'.",
-          },
-        ],
-      },
-    },
-    // 27: Deschutes Fresh Squeezed IPA — submitted, no OCR
-    { status: "submitted", submitter: "Deschutes Brewery", daysAgo: 0, includeOcr: false },
-    // 28: Athletic Brewing Run Wild — in_review, non-alcoholic labeling under scrutiny
-    { status: "in_review", submitter: "Athletic Brewing Company", daysAgo: 2, includeOcr: true },
-    // 29: Kendall-Jackson Chardonnay — submitted, no OCR
-    { status: "submitted", submitter: "Jackson Family Wines", daysAgo: 1, includeOcr: false },
-    // 30: Silver Oak Cabernet — approved, clean premium domestic wine
-    {
-      status: "approved", submitter: "Silver Oak Cellars", daysAgo: 12, includeOcr: true,
-      review: {
-        decision: "approve",
-        reviewer: "Dave Morrison",
-        notes: "Appellation, varietal, vintage, and all mandatory fields verified. Sulfite declaration present. Approved.",
-        findings: [],
-      },
-    },
-    // 31: Santa Margherita Pinot Grigio — rejected, country of origin in Italian not English
-    {
-      status: "rejected", submitter: "Santa Margherita USA", daysAgo: 6, includeOcr: true,
-      formFields: {
-        brandName: "Santa Margherita",
-        classType: "Pinot Grigio",
-        alcoholContent: "Alcohol 12.5% by Volume",
-        netContents: "750 mL",
-      },
-      review: {
-        decision: "reject",
-        reviewer: "Jenny Park",
-        notes: "Country of origin reads 'Italia' instead of 'Italy'. TTB requires country of origin in English on US market labels (27 CFR 4.39(a)).",
-        findings: [
-          {
-            checklistItemId: "country_origin",
-            severity: "error",
-            message: "Country of origin must be stated in English. Label shows 'Italia' — must read 'Italy' or 'Product of Italy' (27 CFR 4.39(a)).",
-          },
-        ],
-      },
-    },
-    // 32: Cloudy Bay Sauvignon Blanc — needs_revision, sulfite declaration missing
-    {
-      status: "needs_revision", submitter: "Moet Hennessy USA, Inc.", daysAgo: 4, includeOcr: true,
-      formFields: {
-        brandName: "Cloudy Bay",
-        classType: "Sauvignon Blanc",
-        alcoholContent: "Alcohol 13.5% by Volume",
-        netContents: "750 mL",
-      },
-      review: {
-        decision: "needs_revision",
-        reviewer: "Dave Morrison",
-        notes: "Sulfite declaration ('Contains Sulfites') not found on either label. Required for all wines containing ≥10 ppm sulfites (27 CFR 4.32(e)). Resubmit with sulfite statement.",
-        findings: [
-          {
-            checklistItemId: "sulfite_declaration",
-            severity: "error",
-            message: "Sulfite declaration required on wine labels containing ≥10 ppm SO₂ (27 CFR 4.32(e)). Statement not detected.",
-          },
-        ],
-      },
-    },
-    // 33: Antinori Tignanello — in_review, imported Italian Super Tuscan
-    { status: "in_review", submitter: "Ste. Michelle Wine Estates", daysAgo: 2, includeOcr: true },
-    // 34: Buffalo Trace Bourbon — submitted, no OCR
-    { status: "submitted", submitter: "Sazerac Company", daysAgo: 0, includeOcr: false },
-    // 35: Wild Turkey 101 — rejected, proof statement format non-compliant
-    {
-      status: "rejected", submitter: "Campari Group", daysAgo: 7, includeOcr: true,
-      formFields: {
-        brandName: "Wild Turkey",
-        classType: "Kentucky Straight Bourbon Whiskey",
-        alcoholContent: "101 Proof",
-        netContents: "750 mL",
-      },
-      review: {
-        decision: "reject",
-        reviewer: "Jenny Park",
-        notes: "Alcohol content stated as '101 Proof' only. Spirits labels must show percentage alcohol by volume, e.g., '50.5% Alc./Vol. (101 Proof)'. Proof alone is not sufficient under 27 CFR 5.63(a).",
-        findings: [
-          {
-            checklistItemId: "alcohol_content",
-            severity: "error",
-            message: "Alcohol content must be stated as percentage by volume. '101 Proof' alone does not satisfy 27 CFR 5.63(a). Must read '50.5% Alc./Vol. (101 Proof)'.",
-          },
-        ],
-      },
-    },
-    // 36: Hendrick's Gin — approved, imported gin compliant
-    {
-      status: "approved", submitter: "William Grant & Sons, Inc.", daysAgo: 9, includeOcr: true,
-      review: {
-        decision: "approve",
-        reviewer: "Dave Morrison",
-        notes: "Country of origin, importer statement, ABV, and all mandatory fields verified. Label is compliant.",
-        findings: [],
-      },
-    },
-    // 37: Bacardi Superior White Rum — submitted, no OCR
-    { status: "submitted", submitter: "Bacardi Corporation", daysAgo: 0, includeOcr: false },
-    // 38: Don Julio Blanco — needs_revision, class designation incomplete
-    {
-      status: "needs_revision", submitter: "Diageo North America", daysAgo: 5, includeOcr: true,
-      formFields: {
-        brandName: "Don Julio",
-        classType: "Tequila",
-        alcoholContent: "40% Alc./Vol. (80 Proof)",
-        netContents: "750 mL",
-      },
-      review: {
-        decision: "needs_revision",
-        reviewer: "Jenny Park",
-        notes: "Class/type designation reads 'Tequila' but TTB Form 5100.31 application specifies 'Tequila Blanco'. Label must match the approved class/type on the COLA application (27 CFR 5.55).",
-        findings: [
-          {
-            checklistItemId: "class_type",
-            severity: "warning",
-            message: "Class/type on label ('Tequila') does not match COLA application ('Tequila Blanco'). Must be consistent per 27 CFR 5.55.",
-          },
-        ],
-      },
-    },
-    // 39: Johnnie Walker Black Label — submitted, no OCR
-    { status: "submitted", submitter: "Diageo North America", daysAgo: 1, includeOcr: false },
-    // 40: The Macallan 12 Year — rejected, age statement discrepancy
-    {
-      status: "rejected", submitter: "The Edrington Group USA", daysAgo: 8, includeOcr: true,
-      formFields: {
-        brandName: "The Macallan",
-        classType: "Single Malt Scotch Whisky",
-        alcoholContent: "43% Alc./Vol. (86 Proof)",
-        netContents: "750 mL",
-      },
-      review: {
-        decision: "reject",
-        reviewer: "Dave Morrison",
-        notes: "Age statement reads '12 Years' but batch analysis indicates components younger than 12 years. Age statement must reflect the youngest whisky in the blend (27 CFR 5.74). Rejected pending reformulation or label correction.",
-        findings: [
-          {
-            checklistItemId: "age_statement",
-            severity: "error",
-            message: "Age statement '12 Years' may be misleading if youngest component is under 12 years. Must reflect youngest whisky in bottle (27 CFR 5.74).",
-          },
-          {
-            checklistItemId: "country_origin",
-            severity: "warning",
-            message: "Country of origin shown as 'Scotland' — TTB prefers full country name 'United Kingdom' or 'Product of Scotland, United Kingdom'.",
-          },
-        ],
-      },
-    },
-    // 41: Jameson Irish Whiskey — approved, compliant import
-    {
-      status: "approved", submitter: "Pernod Ricard USA", daysAgo: 11, includeOcr: true,
-      review: {
-        decision: "approve",
-        reviewer: "Jenny Park",
-        notes: "All fields compliant. Country of origin, importer statement, health warning, and class/type verified. Approved.",
-        findings: [],
-      },
-    },
-  ];
+    const frontLabel = buildLabel(`slot-${idx}-0`, "Front Label", product, "front", includeOcr);
+    // Only include a back label when the product has ≥2 real label images.
+    // Single-label products (common for beer) should show "No Back Label Provided".
+    const realLabelCount = TTB_LABEL_IMAGES[product.ttbId]?.length ?? 0;
+    const labels = [frontLabel];
+    if (realLabelCount >= 2) {
+      labels.push(buildLabel(`slot-${idx}-1`, "Back Label", product, "back", includeOcr));
+    }
+    // Additional labels (3rd, 4th, ...) get "Other Label N" names
+    for (let li = 2; li < realLabelCount; li++) {
+      labels.push(buildLabel(`slot-${idx}-${li}`, `Other Label ${li - 1}`, product, "back", false));
+    }
 
-  return products.map((product, idx) => {
-    const o = overrides[idx] || { status: "submitted", submitter: "Unknown", daysAgo: 0, includeOcr: false };
-    const created = daysAgo(o.daysAgo);
-
-    const frontLabel = buildLabel(`slot-${idx}-0`, "Front Label", product, "front", o.includeOcr);
-    const backLabel = buildLabel(`slot-${idx}-1`, "Back Label", product, "back", o.includeOcr);
-
-    // Build OCR results map from expected fields if OCR is included
-    let serverValidation: Submission["serverValidation"];
-    if (o.includeOcr) {
-      const ocrResults: Record<string, string> = {};
-      for (const [k, v] of Object.entries(product.expectedFrontFields)) {
-        if (v) ocrResults[k] = v;
-      }
-      for (const [k, v] of Object.entries(product.expectedBackFields)) {
-        if (v) ocrResults[k] = v;
-      }
-      serverValidation = { completedAt: created, findings: [], ocrResults };
+    // Build OCR results map from expected fields
+    const ocrResults: Record<string, string> = {};
+    for (const [k, v] of Object.entries(product.expectedFrontFields)) {
+      if (v) ocrResults[k] = v;
+    }
+    for (const [k, v] of Object.entries(product.expectedBackFields)) {
+      if (v) ocrResults[k] = v;
     }
 
     const sub: Submission = {
       id: `SUB-${(1000 + idx).toString(36).toUpperCase()}`,
-      submitterId: o.submitter,
+      submitterId: def.submitter,
       createdAt: created,
       updatedAt: created,
-      status: o.status,
+      status: def.status,
       beverageCategory: product.category,
       productName: product.productName,
-      labels: [frontLabel, backLabel],
+      labels,
       reviews: [],
-      serverValidation,
-      formFields: o.formFields || buildFormFields(product),
+      serverValidation: { completedAt: created, findings: [], ocrResults },
+      formFields: buildFormFields(product),
     };
 
-    if (o.review) {
+    if (def.review) {
       sub.reviews.push({
         id: `REV-${idx}`,
         submissionId: sub.id,
-        reviewerId: o.review.reviewer,
+        reviewerId: def.review.reviewer,
         startedAt: created,
         completedAt: new Date(new Date(created).getTime() + 300_000).toISOString(),
         activeSeconds: 180 + Math.floor(Math.random() * 120),
-        decision: o.review.decision as ReviewRecord["decision"],
-        findings: o.review.findings,
-        notes: o.review.notes,
+        decision: def.review.decision as ReviewRecord["decision"],
+        findings: def.review.findings,
+        notes: def.review.notes,
         reviewType: "primary",
       });
     }
 
     return sub;
-  });
+  }).filter((s): s is Submission => s !== null);
 }

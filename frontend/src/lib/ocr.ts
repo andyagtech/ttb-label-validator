@@ -32,7 +32,76 @@ export interface ExtractedFields {
   countryOfOrigin?: string;
   sulfiteDeclaration?: string;
   ageStatement?: string;
+  colorIngredients?: string;
+  commodityStatement?: string;
+  aspartameDeclaration?: string;
   rawText?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Image preprocessing for OCR accuracy
+// ---------------------------------------------------------------------------
+
+/** Minimum width (px) for good Tesseract accuracy (~300 DPI equivalent). */
+const MIN_OCR_WIDTH = 1500;
+
+/**
+ * Preprocess a canvas for OCR:
+ *   1. Upscale small images (Tesseract needs ~300 DPI)
+ *   2. Convert to grayscale (removes color noise)
+ *   3. Enhance contrast (adaptive threshold-like adjustment)
+ *
+ * Returns a new canvas ready for OCR.
+ */
+export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
+  const srcW = source.width;
+  const srcH = source.height;
+
+  // 1. Determine scale factor — upscale small images
+  const scale = srcW < MIN_OCR_WIDTH ? Math.ceil(MIN_OCR_WIDTH / srcW) : 1;
+  const w = srcW * scale;
+  const h = srcH * scale;
+
+  const out = document.createElement("canvas");
+  out.width = w;
+  out.height = h;
+  const ctx = out.getContext("2d")!;
+
+  // Use bilinear interpolation for upscaling
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(source, 0, 0, w, h);
+
+  // 2. Grayscale + 3. Contrast enhancement
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+
+  // First pass: compute min/max luminance for contrast stretching
+  let minL = 255, maxL = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    if (gray < minL) minL = gray;
+    if (gray > maxL) maxL = gray;
+  }
+
+  // Second pass: convert to grayscale with contrast stretching
+  const range = maxL - minL || 1;
+  for (let i = 0; i < d.length; i += 4) {
+    let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    // Stretch contrast to fill 0-255 range
+    gray = ((gray - minL) / range) * 255;
+    // Clamp
+    gray = gray < 0 ? 0 : gray > 255 ? 255 : gray;
+    d[i] = d[i + 1] = d[i + 2] = gray;
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  if (scale > 1) {
+    console.log(`[OCR] Preprocessed: ${srcW}×${srcH} → ${w}×${h} (${scale}× upscale + grayscale + contrast)`);
+  } else {
+    console.log(`[OCR] Preprocessed: ${w}×${h} (grayscale + contrast)`);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,7 +109,8 @@ export interface ExtractedFields {
 // ---------------------------------------------------------------------------
 
 /**
- * Run Tesseract.js OCR on a canvas element.
+ * Run Tesseract.js OCR on a canvas element with preprocessing.
+ * Applies grayscale, contrast enhancement, and upscaling before recognition.
  * Returns the raw recognized text.
  * Requires: npm install tesseract.js
  */
@@ -51,10 +121,9 @@ export async function runTesseractOcr(canvas: HTMLCanvasElement): Promise<string
   }
 
   try {
-    // Dynamic import so Tesseract.js isn't bundled when disabled
+    const processed = preprocessForOcr(canvas);
     const Tesseract = await import("tesseract.js");
-    const dataUrl = canvas.toDataURL("image/png");
-
+    const dataUrl = processed.toDataURL("image/png");
     const result = await Tesseract.recognize(dataUrl, "eng", {
       logger: (m: { status: string; progress: number }) => {
         if (m.status === "recognizing text") {
@@ -62,7 +131,6 @@ export async function runTesseractOcr(canvas: HTMLCanvasElement): Promise<string
         }
       },
     });
-
     return result.data.text;
   } catch (err) {
     console.error("[OCR] Tesseract.js error:", err);
@@ -331,6 +399,9 @@ const FIELD_TO_CHECKLIST: Record<keyof ExtractedFields, string> = {
   countryOfOrigin: "country_origin",
   sulfiteDeclaration: "sulfite_declaration",
   ageStatement: "age_statement",
+  colorIngredients: "color_ingredients",
+  commodityStatement: "commodity_statement",
+  aspartameDeclaration: "aspartame_declaration",
   rawText: "", // not mapped to a checklist item
 };
 

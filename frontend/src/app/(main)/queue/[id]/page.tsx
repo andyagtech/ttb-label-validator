@@ -14,7 +14,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   CheckCircle2,
   XCircle,
@@ -33,10 +33,13 @@ import {
   Loader2,
   ZoomIn,
   X,
+  ChevronRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
-import { parseOcrText, type ExtractedFields } from "@/lib/ocr";
+import { parseOcrText, preprocessForOcr, type ExtractedFields } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
 import FormVsLabelTable from "@/components/FormVsLabelTable";
 import QuickRejectButton from "@/components/QuickRejectButton";
@@ -60,6 +63,37 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
 };
 
 // ---------------------------------------------------------------------------
+// Raw OCR text block with copy button
+// ---------------------------------------------------------------------------
+function RawOcrTextBlock({ text }: { text: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = React.useCallback(() => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [text]);
+  return (
+    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 relative">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Raw OCR Text</p>
+        <button
+          onClick={handleCopy}
+          title="Copy raw text"
+          className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-gray-400 hover:text-gray-600 rounded transition-colors"
+        >
+          {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+          {copied ? "Copied" : ""}
+        </button>
+      </div>
+      <pre className="text-[11px] text-gray-600 max-h-[120px] overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
+        {text}
+      </pre>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Tabs for left panel
 // ---------------------------------------------------------------------------
 type LeftTab = "side-by-side" | "history";
@@ -70,9 +104,11 @@ type LeftTab = "side-by-side" | "history";
 
 export default function TTBReviewPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [submission, setSubmission] = useState<Submission | null>(null);
+  const [queueIds, setQueueIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,17 +153,31 @@ export default function TTBReviewPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch submission
+  // Fetch submission (with sessionStorage fallback for serverless cold-starts)
   const fetchSubmission = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/queue/${id}`);
-      if (!res.ok) {
-        setError("Submission not found");
-        return;
+      if (res.ok) {
+        const data = await res.json();
+        setSubmission(data.submission);
+      } else {
+        // API returned 404 — try sessionStorage fallback (user-submitted items
+        // can be lost when Vercel recycles the serverless function instance).
+        let recovered = false;
+        try {
+          const cached = sessionStorage.getItem(`sub:${id}`);
+          if (cached) {
+            const parsed = JSON.parse(cached) as Submission;
+            setSubmission(parsed);
+            recovered = true;
+            console.log("[Review] Recovered submission from sessionStorage");
+          }
+        } catch { /* parse error — ignore */ }
+        if (!recovered) {
+          setError("Submission not found");
+        }
       }
-      const data = await res.json();
-      setSubmission(data.submission);
     } catch (err) {
       console.error("[Review] Failed to load submission", err);
       setError("Failed to load submission");
@@ -138,6 +188,19 @@ export default function TTBReviewPage() {
   useEffect(() => {
     fetchSubmission();
   }, [fetchSubmission]);
+
+  // Fetch queue list for Next navigation
+  useEffect(() => {
+    fetch("/api/queue?limit=100")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.submissions) setQueueIds(data.submissions.map((s: { id: string }) => s.id));
+      })
+      .catch(() => {});
+  }, []);
+
+  const currentIdx = queueIds.indexOf(id);
+  const nextId = currentIdx >= 0 && currentIdx < queueIds.length - 1 ? queueIds[currentIdx + 1] : null;
 
   // Auto-run Text Detect shortly after submission loads (Tesseract.js is in-browser, no API cost)
   useEffect(() => {
@@ -172,7 +235,8 @@ export default function TTBReviewPage() {
         canvas.height = img.naturalHeight;
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL("image/png");
+        const processed = preprocessForOcr(canvas);
+        const dataUrl = processed.toDataURL("image/png");
         const result = await Tesseract.recognize(dataUrl, "eng");
         const parsed = parseOcrText(result.data.text);
         perLabel.push({ name: label.slotName, text: result.data.text, fields: parsed });
@@ -199,8 +263,10 @@ export default function TTBReviewPage() {
   }, [submission]);
 
   // Merge all OCR sources: server OCR + detected fields
+  // Server results only appear AFTER Text Detect runs (so "Detected" column starts empty)
   const mergedOcr = useMemo((): Record<string, string> => {
     const merged: Record<string, string> = {};
+    if (!detectedFields) return merged; // Don't show anything until Text Detect runs
     // Server OCR results (snake_case keys → camelCase)
     if (submission?.serverValidation?.ocrResults) {
       const keyMap: Record<string, string> = {
@@ -208,7 +274,8 @@ export default function TTBReviewPage() {
         net_contents: "netContents", health_warning: "healthWarning", name_address: "nameAddress",
         country_origin: "countryOfOrigin", sulfite_declaration: "sulfiteDeclaration",
         appellation: "appellation", vintage_date: "vintageDate", varietal: "varietal",
-        age_statement: "ageStatement",
+        age_statement: "ageStatement", color_ingredients: "colorIngredients",
+        commodity_statement: "commodityStatement", aspartame_declaration: "aspartameDeclaration",
       };
       for (const [k, v] of Object.entries(submission.serverValidation.ocrResults)) {
         const camel = keyMap[k] || k;
@@ -216,10 +283,8 @@ export default function TTBReviewPage() {
       }
     }
     // Client-side Tesseract results override/fill gaps
-    if (detectedFields) {
-      for (const [k, v] of Object.entries(detectedFields)) {
-        if (v && k !== "rawText" && !merged[k]) merged[k] = v;
-      }
+    for (const [k, v] of Object.entries(detectedFields)) {
+      if (v && k !== "rawText" && !merged[k]) merged[k] = v;
     }
     return merged;
   }, [submission, detectedFields]);
@@ -419,8 +484,63 @@ export default function TTBReviewPage() {
               )}
             </button>
           ))}
+          {/* Next button — right-justified */}
+          {nextId && (
+            <button
+              onClick={() => router.push(`/queue/${nextId}`)}
+              className="ml-auto flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-500 hover:text-blue-600 transition"
+            >
+              Next
+              <ChevronRight size={13} />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Status banner — prominent display for already-reviewed submissions */}
+      {submission.reviews.length > 0 && !isPending && (() => {
+        const latestReview = submission.reviews[submission.reviews.length - 1];
+        const statusConfig: Record<string, { bg: string; border: string; text: string; icon: React.ReactNode }> = {
+          needs_revision: { bg: "bg-red-50", border: "border-red-200", text: "text-red-800", icon: <AlertTriangle size={16} className="text-red-500" /> },
+          reject: { bg: "bg-red-50", border: "border-red-200", text: "text-red-800", icon: <XCircle size={16} className="text-red-500" /> },
+          approve: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800", icon: <CheckCircle2 size={16} className="text-emerald-500" /> },
+        };
+        const cfg = statusConfig[latestReview.decision] || statusConfig.needs_revision;
+        const decisionLabel = latestReview.decision === "needs_revision" ? "Needs Revision"
+          : latestReview.decision === "reject" ? "Rejected"
+          : latestReview.decision === "approve" ? "Approved"
+          : latestReview.decision.charAt(0).toUpperCase() + latestReview.decision.slice(1);
+        return (
+          <div className={`${cfg.bg} border-b ${cfg.border}`}>
+            <div className="max-w-[1400px] mx-auto px-6 py-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5">{cfg.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-sm font-bold ${cfg.text}`}>{decisionLabel}</span>
+                    <span className={`text-xs ${cfg.text} opacity-70`}>
+                      — reviewed by {latestReview.reviewerId} on {formatDate(latestReview.completedAt)}
+                    </span>
+                  </div>
+                  {latestReview.notes && (
+                    <p className={`text-xs ${cfg.text} opacity-80 mt-1`}>{latestReview.notes}</p>
+                  )}
+                  {latestReview.findings.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {latestReview.findings.map((f, fi) => (
+                        <div key={fi} className={`flex items-start gap-1.5 text-xs ${cfg.text} opacity-90`}>
+                          {f.severity === "error" ? <XCircle size={12} className="mt-0.5 shrink-0" /> : <AlertTriangle size={12} className="mt-0.5 shrink-0" />}
+                          <span>{f.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div id="review-workspace" className="max-w-[1400px] mx-auto px-6 py-6 flex gap-6">
         {/* ============================================================== */}
@@ -446,6 +566,9 @@ export default function TTBReviewPage() {
                     {l.slotName}
                   </button>
                 ))}
+                {submission.labels.length === 1 && (
+                  <span className="text-xs text-gray-400 italic px-2">No Back Label Provided</span>
+                )}
 
                 {labelImageUrl && (
                   <button
@@ -509,12 +632,7 @@ export default function TTBReviewPage() {
                   </div>
                   {/* Raw text preview */}
                   {detectedFields?.rawText && (
-                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
-                      <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Raw OCR Text</p>
-                      <pre className="text-[11px] text-gray-600 max-h-[120px] overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
-                        {detectedFields.rawText}
-                      </pre>
-                    </div>
+                    <RawOcrTextBlock text={detectedFields.rawText} />
                   )}
                 </div>
 
@@ -529,6 +647,7 @@ export default function TTBReviewPage() {
                   onToggleCheck={toggleCheck}
                   fieldSources={fieldSources}
                   onFlagField={handleFlagField}
+                  beverageCategory={submission.beverageCategory}
                 />
               </div>
             </div>
