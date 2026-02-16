@@ -1,0 +1,312 @@
+    // 0: Cerveza Complice — needs_revision
+    {
+      status: "needs_revision", submitter: "Cerveza Complice Brewing Co.", daysAgo: 3, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Jenny Park",
+        notes: "Label requires corrections before approval. See findings.",
+        findings: [
+          { checklistItemId: "health_warning", severity: "error", message: ""Government Warning:" must be in ALL CAPS per TTB regulations." },
+        ],
+      },
+    },
+    // 1: Hops N Drops — needs_revision
+    {
+      status: "needs_revision", submitter: "Hops N Drops Brewing Co.", daysAgo: 10, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Dave Morrison",
+        notes: "Label requires corrections before approval. See findings.",
+        findings: [
+          { checklistItemId: "sulfite_declaration", severity: "error", message: "Sulfite declaration required for wines containing ≥10 ppm SO₂ (27 CFR 4.32(e))." },
+        ],
+      },
+    },
+    // 2: Logyard Brewing — needs_revision
+    {
+      status: "needs_revision", submitter: "Logyard Brewing Brewing Co.", daysAgo: 11, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Jenny Park",
+        notes: "Label requires corrections before approval. See findings.",
+        findings: [
+          { checklistItemId: "class_type", severity: "warning", message: "Class/type on label does not match COLA application (27 CFR 5.55)." },
+        ],
+      },
+    },
+    // 3: Hopfly Brewing Company — needs_revision
+    {
+      status: "needs_revision", submitter: "Hopfly Brewing Company Brewing Co.", daysAgo: 4, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Dave Morrison",
+        notes: "Label requires corrections before approval. See findings.",
+        findings: [
+          { checklistItemId: "vintage_date", severity: "warning", message: "Vintage date illegible or missing from front label." },
+        ],
+      },
+    },
+    // 4: KüNstler Brewing — needs_revision
+    {
+      status: "needs_revision", submitter: "KüNstler Brewing Brewing Co.", daysAgo: 3, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Jenny Park",
+        notes: "Label requires corrections before approval. See findings.",
+        findings: [
+          { checklistItemId: "health_warning", severity: "error", message: ""Government Warning:" must be in ALL CAPS per TTB regulations." },
+        ],
+      },
+    },
+    // 5: Burial Beer Co. — needs_revision
+    {
+      status: "needs_revision", submitter: "Burial Beer Co. Brewing Co.", daysAgo: 7, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Dave Morrison",
+        notes: "Label requires corrections before approval. See findings.",
+        findings: [
+          { checklistItemId: "sulfite_declaration", severity: "error", message: "Sulfite declaration required for wines containing ≥10 ppm SO₂ (27 CFR 4.32(e))." },
+        ],
+      },
+    },
+    // 6: Save Me #1 — needs_revision
+    {
+      status: "needs_revision", submitter: "Save Me #1 Brewing Co.", daysAgo: 1, includeOcr: true,
+      review: {
+        decision: "needs_revision",
+        reviewer: "Jenny Park",
+        notes: "Label requires corrections before approval. See findings.",
+        findings: [
+          { checklistItemId: "class_type", severity: "warning", message: "Class/type on label does not match COLA application (27 CFR 5.55)." },
+        ],
+      },
+    },
+    // 7: Hop Butcher For The World — in_review
+    { status: "in_review", submitter: "Hop Butcher For The World Brewing Co.", daysAgo: 7, includeOcr: true },
+    // 8: Broken Symmetry — in_review
+    { status: "in_review", submitter: "Broken Symmetry Brewing Co.", daysAgo: 11, includeOcr: true },
+    // 9: Triskelion — in_review
+    { status: "in_review", submitter: "Triskelion Brewing Co.", daysAgo: 7, includeOcr: true },
+    // 10: Mortalis Brewing Company — in_review
+    { status: "in_review", submitter: "Mortalis Brewing Company Brewing Co.", daysAgo: 0, includeOcr: true },
+    // 11: Dogfish Head — in_review
+    { status: "in_review", submitter: "Dogfish Head Brewing Co.", daysAgo: 11, includeOcr: true },
+    // 12: Sierra Nevada — in_review
+    { status: "in_review", submitter: "Sierra Nevada Brewing Co.", daysAgo: 4, includeOcr: true },
+    // 13: Strata Data — in_review
+    { status: "in_review", submitter: "Strata Data Brewing Co.", daysAgo: 4, includeOcr: true },
+    // 14: Cellarmaker Brewing Co — in_review
+    { status: "in_review", submitter: "Cellarmaker Brewing Co Brewing Co.", daysAgo: 5, includeOcr: true },
+    // 15: Hummdinger — approved
+    {
+      status: "approved", submitter: "Hummdinger Brewing Co.", daysAgo: 1, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 16: Beatbox — approved
+    {
+      status: "approved", submitter: "Beatbox Brewing Co.", daysAgo: 8, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 17: Grape Beginnings Winery — approved
+    {
+      status: "approved", submitter: "Grape Beginnings Winery Wine Estates", daysAgo: 3, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 18: Longhorn Cellars — approved
+    {
+      status: "approved", submitter: "Longhorn Cellars Wine Estates", daysAgo: 9, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 19: Craig And Carla Hawkins — approved
+    {
+      status: "approved", submitter: "Craig And Carla Hawkins Wine Estates", daysAgo: 4, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 20: Arthur'S Grand Reserve — approved
+    {
+      status: "approved", submitter: "Arthur'S Grand Reserve Wine Estates", daysAgo: 10, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 21: Lasorda Family Wines — approved
+    {
+      status: "approved", submitter: "Lasorda Family Wines Wine Estates", daysAgo: 7, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 22: The Edge — approved
+    {
+      status: "approved", submitter: "The Edge Wine Estates", daysAgo: 10, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 23: Chandler Plaza — approved
+    {
+      status: "approved", submitter: "Chandler Plaza Wine Estates", daysAgo: 9, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Dave Morrison",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 24: Tenuta Mara — approved
+    {
+      status: "approved", submitter: "Tenuta Mara Wine Estates", daysAgo: 6, includeOcr: true,
+      review: {
+        decision: "approve",
+        reviewer: "Jenny Park",
+        notes: "All mandatory fields present and compliant. Approved.",
+        findings: [],
+      },
+    },
+    // 25: Cimino — rejected
+    {
+      status: "rejected", submitter: "Cimino Wine Estates", daysAgo: 11, includeOcr: true,
+      review: {
+        decision: "reject",
+        reviewer: "Dave Morrison",
+        notes: "Label does not meet TTB requirements. See findings.",
+        findings: [
+          { checklistItemId: "alcohol_content", severity: "error", message: "Alcohol content must be stated as percentage by volume (27 CFR 5.63(a))." },
+        ],
+      },
+    },
+    // 26: Rutherford Hill — rejected
+    {
+      status: "rejected", submitter: "Rutherford Hill Wine Estates", daysAgo: 6, includeOcr: true,
+      review: {
+        decision: "reject",
+        reviewer: "Jenny Park",
+        notes: "Label does not meet TTB requirements. See findings.",
+        findings: [
+          { checklistItemId: "name_address", severity: "error", message: "Importer name and address required for imported products (27 CFR 7.63(b))." },
+        ],
+      },
+    },
+    // 27: Las Perdices — rejected
+    {
+      status: "rejected", submitter: "Las Perdices Wine Estates", daysAgo: 0, includeOcr: true,
+      review: {
+        decision: "reject",
+        reviewer: "Dave Morrison",
+        notes: "Label does not meet TTB requirements. See findings.",
+        findings: [
+          { checklistItemId: "net_contents", severity: "error", message: "Net contents must include US customary measure (27 CFR 7.70)." },
+        ],
+      },
+    },
+    // 28: Shamrock Hills Vineyard And Winery — rejected
+    {
+      status: "rejected", submitter: "Shamrock Hills Vineyard And Winery Wine Estates", daysAgo: 10, includeOcr: true,
+      review: {
+        decision: "reject",
+        reviewer: "Jenny Park",
+        notes: "Label does not meet TTB requirements. See findings.",
+        findings: [
+          { checklistItemId: "country_origin", severity: "error", message: "Country of origin statement missing or not in English (27 CFR 4.39(a) / 5.63(b))." },
+        ],
+      },
+    },
+    // 29: Tenute Capaldo — rejected
+    {
+      status: "rejected", submitter: "Tenute Capaldo Wine Estates", daysAgo: 1, includeOcr: true,
+      review: {
+        decision: "reject",
+        reviewer: "Dave Morrison",
+        notes: "Label does not meet TTB requirements. See findings.",
+        findings: [
+          { checklistItemId: "alcohol_content", severity: "error", message: "Alcohol content must be stated as percentage by volume (27 CFR 5.63(a))." },
+        ],
+      },
+    },
+    // 30: De Tierra — rejected
+    {
+      status: "rejected", submitter: "De Tierra Wine Estates", daysAgo: 3, includeOcr: true,
+      review: {
+        decision: "reject",
+        reviewer: "Jenny Park",
+        notes: "Label does not meet TTB requirements. See findings.",
+        findings: [
+          { checklistItemId: "name_address", severity: "error", message: "Importer name and address required for imported products (27 CFR 7.63(b))." },
+        ],
+      },
+    },
+    // 31: Luna Hart — submitted
+    { status: "submitted", submitter: "Luna Hart Wine Estates", daysAgo: 7, includeOcr: false },
+    // 32: Turks Head — submitted
+    { status: "submitted", submitter: "Turks Head Wine Estates", daysAgo: 1, includeOcr: false },
+    // 33: Le Fraghe — submitted
+    { status: "submitted", submitter: "Le Fraghe Wine Estates", daysAgo: 11, includeOcr: false },
+    // 34: Anne De K — submitted
+    { status: "submitted", submitter: "Anne De K Wine Estates", daysAgo: 10, includeOcr: false },
+    // 35: Manoir Du Carra — submitted
+    { status: "submitted", submitter: "Manoir Du Carra Wine Estates", daysAgo: 6, includeOcr: false },
+    // 36: Wine Connoisseur — submitted
+    { status: "submitted", submitter: "Wine Connoisseur Wine Estates", daysAgo: 10, includeOcr: false },
+    // 37: Domaine Chantepierre — submitted
+    { status: "submitted", submitter: "Domaine Chantepierre Wine Estates", daysAgo: 9, includeOcr: false },
+    // 38: Domaine Des Florets — submitted
+    { status: "submitted", submitter: "Domaine Des Florets Wine Estates", daysAgo: 0, includeOcr: false },
+    // 39: Lost Cause Meadery — submitted
+    { status: "submitted", submitter: "Lost Cause Meadery Wine Estates", daysAgo: 11, includeOcr: false },
+    // 40: Filo De Trinchera Mezcal Artesanal — submitted
+    { status: "submitted", submitter: "Filo De Trinchera Mezcal Artesanal Spirits Inc.", daysAgo: 5, includeOcr: false },
+    // 41: Cat Whiskers — submitted
+    { status: "submitted", submitter: "Cat Whiskers Spirits Inc.", daysAgo: 0, includeOcr: false },
+    // 42: Phantasm — submitted
+    { status: "submitted", submitter: "Phantasm Spirits Inc.", daysAgo: 2, includeOcr: false },
+    // 43: Barley & Boar — submitted
+    { status: "submitted", submitter: "Barley & Boar Spirits Inc.", daysAgo: 9, includeOcr: false },
+    // 44: Camp Fuel — submitted
+    { status: "submitted", submitter: "Camp Fuel Spirits Inc.", daysAgo: 10, includeOcr: false },
+    // 45: 813 — submitted
+    { status: "submitted", submitter: "813 Spirits Inc.", daysAgo: 5, includeOcr: false },
+    // 46: Eclipse — submitted
+    { status: "submitted", submitter: "Eclipse Spirits Inc.", daysAgo: 5, includeOcr: false },
+    // 47: Onda — submitted
+    { status: "submitted", submitter: "Onda Spirits Inc.", daysAgo: 10, includeOcr: false },
+    // 48: Crafted Cask — submitted
+    { status: "submitted", submitter: "Crafted Cask Spirits Inc.", daysAgo: 5, includeOcr: false },
+    // 49: Pa'Lante — submitted
+    { status: "submitted", submitter: "Pa'Lante Spirits Inc.", daysAgo: 2, includeOcr: false },
+    // 50: Doc Swinson'S — submitted
+    { status: "submitted", submitter: "Doc Swinson'S Spirits Inc.", daysAgo: 5, includeOcr: false },

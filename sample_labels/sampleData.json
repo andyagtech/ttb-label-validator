@@ -1,0 +1,1519 @@
+{
+  "exportedAt": "2026-02-15T08:44:46.290Z",
+  "count": 51,
+  "labels": [
+    {
+      "key": "cerveza-complice-front",
+      "displayName": "Cerveza Complice (Front)",
+      "colaSource": {
+        "ttbId": "24003001000484",
+        "brand": "CERVEZA COMPLICE",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "BEER",
+        "originCode": "",
+        "origin": "KENTUCKY",
+        "permit": "",
+        "approved": "01/10/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "CERVEZA COMPLICE",
+        "classType": "Beer",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "CERVEZA COMPLICE",
+        "class_type": "Beer",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "hops-n-drops-front",
+      "displayName": "Hops N Drops (Front)",
+      "colaSource": {
+        "ttbId": "24003001000638",
+        "brand": "HOPS N DROPS",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "BEER",
+        "originCode": "",
+        "origin": "WASHINGTON",
+        "permit": "",
+        "approved": "01/08/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "HOPS N DROPS",
+        "classType": "Beer",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "HOPS N DROPS",
+        "class_type": "Beer",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "logyard-brewing-cherry-raspberry-front",
+      "displayName": "Logyard Brewing Cherry Raspberry (Front)",
+      "colaSource": {
+        "ttbId": "24003001000414",
+        "brand": "LOGYARD BREWING",
+        "fancifulName": "CHERRY RASPBERRY",
+        "classCode": "",
+        "classType": "MALT BEVERAGES SPECIALITIES - FLAVORED",
+        "originCode": "",
+        "origin": "PENNSYLVANIA",
+        "permit": "",
+        "approved": "01/09/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "LOGYARD BREWING",
+        "classType": "Malt Beverages Specialities - Flavored",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "LOGYARD BREWING",
+        "class_type": "Malt Beverages Specialities - Flavored",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "hopfly-brewing-company-crater-lake-front",
+      "displayName": "Hopfly Brewing Company Crater Lake (Front)",
+      "colaSource": {
+        "ttbId": "24003001000582",
+        "brand": "HOPFLY BREWING COMPANY",
+        "fancifulName": "CRATER LAKE",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "NORTH CAROLINA",
+        "permit": "",
+        "approved": "01/05/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "HOPFLY BREWING COMPANY",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "HOPFLY BREWING COMPANY",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "k-nstler-brewing-hop-train-front",
+      "displayName": "KüNstler Brewing Hop Train (Front)",
+      "colaSource": {
+        "ttbId": "24003001000078",
+        "brand": "KÜNSTLER BREWING",
+        "fancifulName": "HOP TRAIN",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "TEXAS",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "KÜNSTLER BREWING",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "KÜNSTLER BREWING",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "burial-beer-co-unworshipped-front",
+      "displayName": "Burial Beer Co. Unworshipped (Front)",
+      "colaSource": {
+        "ttbId": "24003001000113",
+        "brand": "BURIAL BEER CO.",
+        "fancifulName": "UNWORSHIPPED",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "NORTH CAROLINA",
+        "permit": "",
+        "approved": "01/08/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "BURIAL BEER CO.",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "BURIAL BEER CO.",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "save-me-1-front",
+      "displayName": "Save Me #1 (Front)",
+      "colaSource": {
+        "ttbId": "24003001000525",
+        "brand": "SAVE ME #1",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "ALASKA",
+        "permit": "",
+        "approved": "01/09/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "SAVE ME #1",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "SAVE ME #1",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "hop-butcher-for-the-world-treez-freez-front",
+      "displayName": "Hop Butcher For The World Treez Freez (Front)",
+      "colaSource": {
+        "ttbId": "24003001000701",
+        "brand": "HOP BUTCHER FOR THE WORLD",
+        "fancifulName": "TREEZ FREEZ",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "ILLINOIS",
+        "permit": "",
+        "approved": "01/08/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "HOP BUTCHER FOR THE WORLD",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "HOP BUTCHER FOR THE WORLD",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "broken-symmetry-all-connecticut-pilsner-front",
+      "displayName": "Broken Symmetry All Connecticut Pilsner (Front)",
+      "colaSource": {
+        "ttbId": "24003001000722",
+        "brand": "BROKEN SYMMETRY",
+        "fancifulName": "ALL CONNECTICUT PILSNER",
+        "classCode": "",
+        "classType": "BEER",
+        "originCode": "",
+        "origin": "CONNECTICUT",
+        "permit": "",
+        "approved": "01/08/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "BROKEN SYMMETRY",
+        "classType": "Beer",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "BROKEN SYMMETRY",
+        "class_type": "Beer",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "triskelion-front",
+      "displayName": "Triskelion (Front)",
+      "colaSource": {
+        "ttbId": "24003001000477",
+        "brand": "TRISKELION",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "BEER",
+        "originCode": "",
+        "origin": "CONNECTICUT",
+        "permit": "",
+        "approved": "01/05/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "TRISKELION",
+        "classType": "Beer",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "TRISKELION",
+        "class_type": "Beer",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "mortalis-brewing-company-experiments-in-the-kitche-front",
+      "displayName": "Mortalis Brewing Company Experiments In The Kitchen (Front)",
+      "colaSource": {
+        "ttbId": "24003001000008",
+        "brand": "MORTALIS BREWING COMPANY",
+        "fancifulName": "EXPERIMENTS IN THE KITCHEN",
+        "classCode": "",
+        "classType": "MALT BEVERAGES SPECIALITIES - FLAVORED",
+        "originCode": "",
+        "origin": "NEW YORK",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "MORTALIS BREWING COMPANY",
+        "classType": "Malt Beverages Specialities - Flavored",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "MORTALIS BREWING COMPANY",
+        "class_type": "Malt Beverages Specialities - Flavored",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "dogfish-head-60-minute-ipa-front",
+      "displayName": "Dogfish Head 60 Minute Ipa (Front)",
+      "colaSource": {
+        "ttbId": "23356001000155",
+        "brand": "DOGFISH HEAD",
+        "fancifulName": "60 MINUTE IPA",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "DELAWARE",
+        "permit": "",
+        "approved": "01/02/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "DOGFISH HEAD",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "DOGFISH HEAD",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "sierra-nevada-20th-street-ale-front",
+      "displayName": "Sierra Nevada 20th Street Ale (Front)",
+      "colaSource": {
+        "ttbId": "24003001000645",
+        "brand": "SIERRA NEVADA",
+        "fancifulName": "20TH STREET ALE",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/08/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "SIERRA NEVADA",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "SIERRA NEVADA",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "strata-data-front",
+      "displayName": "Strata Data (Front)",
+      "colaSource": {
+        "ttbId": "24012001000345",
+        "brand": "STRATA DATA",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "ALABAMA",
+        "permit": "",
+        "approved": "01/16/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "STRATA DATA",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "STRATA DATA",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "cellarmaker-brewing-co-mo-strata-india-pale-ale-front",
+      "displayName": "Cellarmaker Brewing Co Mo Strata India Pale Ale (Front)",
+      "colaSource": {
+        "ttbId": "24012001000891",
+        "brand": "CELLARMAKER BREWING CO",
+        "fancifulName": "MO STRATA INDIA PALE ALE",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/19/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "CELLARMAKER BREWING CO",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "CELLARMAKER BREWING CO",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "hummdinger-front",
+      "displayName": "Hummdinger (Front)",
+      "colaSource": {
+        "ttbId": "24045001000123",
+        "brand": "HUMMDINGER",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "ALE",
+        "originCode": "",
+        "origin": "PENNSYLVANIA",
+        "permit": "",
+        "approved": "02/14/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "HUMMDINGER",
+        "classType": "Ale",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "HUMMDINGER",
+        "class_type": "Ale",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "beatbox-lemonade-hard-tea-front",
+      "displayName": "Beatbox Lemonade Hard Tea (Front)",
+      "colaSource": {
+        "ttbId": "24045001000891",
+        "brand": "BEATBOX",
+        "fancifulName": "LEMONADE HARD TEA",
+        "classCode": "",
+        "classType": "MALT BEVERAGES SPECIALITIES",
+        "originCode": "",
+        "origin": "MEXICO",
+        "permit": "",
+        "approved": "02/20/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "beer",
+        "brandName": "BEATBOX",
+        "classType": "Malt Beverages Specialities",
+        "alcoholContent": "5.5% Alc. By Vol.",
+        "netContents": "12 FL OZ (355 mL)"
+      },
+      "expectedFields": {
+        "brand_name": "BEATBOX",
+        "class_type": "Malt Beverages Specialities",
+        "alcohol_content": "5.5% Alc. By Vol.",
+        "net_contents": "12 FL OZ (355 mL)"
+      }
+    },
+    {
+      "key": "grape-beginnings-winery-harvest-moon-front",
+      "displayName": "Grape Beginnings Winery Harvest Moon (Front)",
+      "colaSource": {
+        "ttbId": "24003001000715",
+        "brand": "GRAPE BEGINNINGS WINERY",
+        "fancifulName": "HARVEST MOON",
+        "classCode": "",
+        "classType": "DESSERT FLAVORED WINE",
+        "originCode": "",
+        "origin": "MICHIGAN",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "GRAPE BEGINNINGS WINERY",
+        "classType": "Dessert Flavored Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "MICHIGAN"
+      },
+      "expectedFields": {
+        "brand_name": "GRAPE BEGINNINGS WINERY",
+        "class_type": "Dessert Flavored Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "longhorn-cellars-front",
+      "displayName": "Longhorn Cellars (Front)",
+      "colaSource": {
+        "ttbId": "24003001000421",
+        "brand": "LONGHORN CELLARS",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "ROSE WINE",
+        "originCode": "",
+        "origin": "TEXAS",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "LONGHORN CELLARS",
+        "classType": "Rose Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "TEXAS"
+      },
+      "expectedFields": {
+        "brand_name": "LONGHORN CELLARS",
+        "class_type": "Rose Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "craig-and-carla-hawkins-love-is-more-than-a-feelin-front",
+      "displayName": "Craig And Carla Hawkins Love Is More Than A Feeling (Front)",
+      "colaSource": {
+        "ttbId": "24003001000325",
+        "brand": "CRAIG AND CARLA HAWKINS",
+        "fancifulName": "LOVE IS MORE THAN A FEELING",
+        "classCode": "",
+        "classType": "TABLE RED WINE",
+        "originCode": "",
+        "origin": "SOUTH AFRICA (UNION OF)",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "CRAIG AND CARLA HAWKINS",
+        "classType": "Table Red Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "SOUTH AFRICA (UNION OF)"
+      },
+      "expectedFields": {
+        "brand_name": "CRAIG AND CARLA HAWKINS",
+        "class_type": "Table Red Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "arthurs-grand-reserve-front",
+      "displayName": "Arthur'S Grand Reserve (Front)",
+      "colaSource": {
+        "ttbId": "24003001000600",
+        "brand": "ARTHUR'S GRAND RESERVE",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "DESSERT /PORT/SHERRY/(COOKING) WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "ARTHUR'S GRAND RESERVE",
+        "classType": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "ARTHUR'S GRAND RESERVE",
+        "class_type": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "lasorda-family-wines-super-tuscan-blend-front",
+      "displayName": "Lasorda Family Wines Super Tuscan Blend (Front)",
+      "colaSource": {
+        "ttbId": "24003001000666",
+        "brand": "LASORDA FAMILY WINES",
+        "fancifulName": "SUPER TUSCAN BLEND",
+        "classCode": "",
+        "classType": "DESSERT /PORT/SHERRY/(COOKING) WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/17/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "LASORDA FAMILY WINES",
+        "classType": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "LASORDA FAMILY WINES",
+        "class_type": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "the-edge-front",
+      "displayName": "The Edge (Front)",
+      "colaSource": {
+        "ttbId": "24003001000225",
+        "brand": "THE EDGE",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE RED WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/03/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "THE EDGE",
+        "classType": "Table Red Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "THE EDGE",
+        "class_type": "Table Red Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "chandler-plaza-front",
+      "displayName": "Chandler Plaza (Front)",
+      "colaSource": {
+        "ttbId": "24003001000190",
+        "brand": "CHANDLER PLAZA",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "TEXAS",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "CHANDLER PLAZA",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "TEXAS"
+      },
+      "expectedFields": {
+        "brand_name": "CHANDLER PLAZA",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "tenuta-mara-guiry-front",
+      "displayName": "Tenuta Mara Guiry (Front)",
+      "colaSource": {
+        "ttbId": "24003001000393",
+        "brand": "TENUTA MARA",
+        "fancifulName": "GUIRY",
+        "classCode": "",
+        "classType": "TABLE RED WINE",
+        "originCode": "",
+        "origin": "ITALY",
+        "permit": "",
+        "approved": "01/22/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "TENUTA MARA",
+        "classType": "Table Red Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "ITALY"
+      },
+      "expectedFields": {
+        "brand_name": "TENUTA MARA",
+        "class_type": "Table Red Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "cimino-front",
+      "displayName": "Cimino (Front)",
+      "colaSource": {
+        "ttbId": "24003001000200",
+        "brand": "CIMINO",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE RED WINE",
+        "originCode": "",
+        "origin": "ITALY",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "CIMINO",
+        "classType": "Table Red Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "ITALY"
+      },
+      "expectedFields": {
+        "brand_name": "CIMINO",
+        "class_type": "Table Red Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "rutherford-hill-ajt-collection-front",
+      "displayName": "Rutherford Hill Ajt Collection (Front)",
+      "colaSource": {
+        "ttbId": "24003001000330",
+        "brand": "RUTHERFORD HILL",
+        "fancifulName": "AJT COLLECTION",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/03/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "RUTHERFORD HILL",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "RUTHERFORD HILL",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "las-perdices-front",
+      "displayName": "Las Perdices (Front)",
+      "colaSource": {
+        "ttbId": "24012001000123",
+        "brand": "LAS PERDICES",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "ARGENTINA",
+        "permit": "",
+        "approved": "01/16/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "LAS PERDICES",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "ARGENTINA"
+      },
+      "expectedFields": {
+        "brand_name": "LAS PERDICES",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "shamrock-hills-vineyard-and-winery-shamrock-rose-front",
+      "displayName": "Shamrock Hills Vineyard And Winery Shamrock Rose' (Front)",
+      "colaSource": {
+        "ttbId": "24023001000345",
+        "brand": "SHAMROCK HILLS VINEYARD AND WINERY",
+        "fancifulName": "SHAMROCK ROSE'",
+        "classCode": "",
+        "classType": "ROSE WINE",
+        "originCode": "",
+        "origin": "MISSOURI",
+        "permit": "",
+        "approved": "02/14/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "SHAMROCK HILLS VINEYARD AND WINERY",
+        "classType": "Rose Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "MISSOURI"
+      },
+      "expectedFields": {
+        "brand_name": "SHAMROCK HILLS VINEYARD AND WINERY",
+        "class_type": "Rose Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "tenute-capaldo-front",
+      "displayName": "Tenute Capaldo (Front)",
+      "colaSource": {
+        "ttbId": "24023001000567",
+        "brand": "TENUTE CAPALDO",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "ITALY",
+        "permit": "",
+        "approved": "01/29/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "TENUTE CAPALDO",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "ITALY"
+      },
+      "expectedFields": {
+        "brand_name": "TENUTE CAPALDO",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "de-tierra-front",
+      "displayName": "De Tierra (Front)",
+      "colaSource": {
+        "ttbId": "24023001000678",
+        "brand": "DE TIERRA",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/26/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "DE TIERRA",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "DE TIERRA",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "luna-hart-front",
+      "displayName": "Luna Hart (Front)",
+      "colaSource": {
+        "ttbId": "24034001000123",
+        "brand": "LUNA HART",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "02/06/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "LUNA HART",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "LUNA HART",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "turks-head-left-bank-front",
+      "displayName": "Turks Head Left Bank (Front)",
+      "colaSource": {
+        "ttbId": "24045001000234",
+        "brand": "TURKS HEAD",
+        "fancifulName": "LEFT BANK",
+        "classCode": "",
+        "classType": "DESSERT /PORT/SHERRY/(COOKING) WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "02/15/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "TURKS HEAD",
+        "classType": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "TURKS HEAD",
+        "class_type": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "le-fraghe-front",
+      "displayName": "Le Fraghe (Front)",
+      "colaSource": {
+        "ttbId": "24045001000567",
+        "brand": "LE FRAGHE",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE RED WINE",
+        "originCode": "",
+        "origin": "ITALY",
+        "permit": "",
+        "approved": "02/15/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "LE FRAGHE",
+        "classType": "Table Red Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "ITALY"
+      },
+      "expectedFields": {
+        "brand_name": "LE FRAGHE",
+        "class_type": "Table Red Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "anne-de-k-front",
+      "displayName": "Anne De K (Front)",
+      "colaSource": {
+        "ttbId": "24078001000345",
+        "brand": "ANNE DE K",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "FRANCE",
+        "permit": "",
+        "approved": "03/22/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "ANNE DE K",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "FRANCE"
+      },
+      "expectedFields": {
+        "brand_name": "ANNE DE K",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "manoir-du-carra-le-soly-front",
+      "displayName": "Manoir Du Carra Le Soly (Front)",
+      "colaSource": {
+        "ttbId": "24078001000678",
+        "brand": "MANOIR DU CARRA",
+        "fancifulName": "LE SOLY",
+        "classCode": "",
+        "classType": "TABLE WHITE WINE",
+        "originCode": "",
+        "origin": "FRANCE",
+        "permit": "",
+        "approved": "03/25/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "MANOIR DU CARRA",
+        "classType": "Table White Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "FRANCE"
+      },
+      "expectedFields": {
+        "brand_name": "MANOIR DU CARRA",
+        "class_type": "Table White Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "wine-connoisseur-imagery-front",
+      "displayName": "Wine Connoisseur Imagery (Front)",
+      "colaSource": {
+        "ttbId": "24078001000891",
+        "brand": "WINE CONNOISSEUR",
+        "fancifulName": "IMAGERY",
+        "classCode": "",
+        "classType": "TABLE RED WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "04/10/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "WINE CONNOISSEUR",
+        "classType": "Table Red Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "WINE CONNOISSEUR",
+        "class_type": "Table Red Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "domaine-chantepierre-front",
+      "displayName": "Domaine Chantepierre (Front)",
+      "colaSource": {
+        "ttbId": "24089001000156",
+        "brand": "DOMAINE CHANTEPIERRE",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "DESSERT /PORT/SHERRY/(COOKING) WINE",
+        "originCode": "",
+        "origin": "FRANCE",
+        "permit": "",
+        "approved": "04/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "DOMAINE CHANTEPIERRE",
+        "classType": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "FRANCE"
+      },
+      "expectedFields": {
+        "brand_name": "DOMAINE CHANTEPIERRE",
+        "class_type": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "domaine-des-florets-front",
+      "displayName": "Domaine Des Florets (Front)",
+      "colaSource": {
+        "ttbId": "24089001000456",
+        "brand": "DOMAINE DES FLORETS",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "DESSERT /PORT/SHERRY/(COOKING) WINE",
+        "originCode": "",
+        "origin": "FRANCE",
+        "permit": "",
+        "approved": "04/05/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "DOMAINE DES FLORETS",
+        "classType": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "FRANCE"
+      },
+      "expectedFields": {
+        "brand_name": "DOMAINE DES FLORETS",
+        "class_type": "Dessert /Port/Sherry/(Cooking) Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "lost-cause-meadery-im-an-og-front",
+      "displayName": "Lost Cause Meadery I'M An Og (Front)",
+      "colaSource": {
+        "ttbId": "24089001000678",
+        "brand": "LOST CAUSE MEADERY",
+        "fancifulName": "I'M AN OG",
+        "classCode": "",
+        "classType": "HONEY BASED TABLE WINE",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "04/08/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "wine",
+        "brandName": "LOST CAUSE MEADERY",
+        "classType": "Honey Based Table Wine",
+        "alcoholContent": "Alcohol 13.5% by Volume",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "LOST CAUSE MEADERY",
+        "class_type": "Honey Based Table Wine",
+        "alcohol_content": "Alcohol 13.5% by Volume",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "filo-de-trinchera-mezcal-artesanal-front",
+      "displayName": "Filo De Trinchera Mezcal Artesanal (Front)",
+      "colaSource": {
+        "ttbId": "24003001000700",
+        "brand": "FILO DE TRINCHERA MEZCAL ARTESANAL",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "MEZCAL FB",
+        "originCode": "",
+        "origin": "MEXICO",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "FILO DE TRINCHERA MEZCAL ARTESANAL",
+        "classType": "Mezcal Fb",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "MEXICO"
+      },
+      "expectedFields": {
+        "brand_name": "FILO DE TRINCHERA MEZCAL ARTESANAL",
+        "class_type": "Mezcal Fb",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "cat-whiskers-moonshine-front",
+      "displayName": "Cat Whiskers Moonshine (Front)",
+      "colaSource": {
+        "ttbId": "24003001000736",
+        "brand": "CAT WHISKERS",
+        "fancifulName": "MOONSHINE",
+        "classCode": "",
+        "classType": "OTHER SPECIALTIES & PROPRIETARIES",
+        "originCode": "",
+        "origin": "UTAH",
+        "permit": "",
+        "approved": "01/22/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "CAT WHISKERS",
+        "classType": "Other Specialties & Proprietaries",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "UTAH"
+      },
+      "expectedFields": {
+        "brand_name": "CAT WHISKERS",
+        "class_type": "Other Specialties & Proprietaries",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "phantasm-blanco-front",
+      "displayName": "Phantasm Blanco (Front)",
+      "colaSource": {
+        "ttbId": "24003001000085",
+        "brand": "PHANTASM",
+        "fancifulName": "BLANCO",
+        "classCode": "",
+        "classType": "AGAVE SPIRITS",
+        "originCode": "",
+        "origin": "OHIO",
+        "permit": "",
+        "approved": "01/10/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "PHANTASM",
+        "classType": "Agave Spirits",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "OHIO"
+      },
+      "expectedFields": {
+        "brand_name": "PHANTASM",
+        "class_type": "Agave Spirits",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "barley-boar-front",
+      "displayName": "Barley & Boar (Front)",
+      "colaSource": {
+        "ttbId": "24003001000169",
+        "brand": "BARLEY & BOAR",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "OTHER GIN",
+        "originCode": "",
+        "origin": "CALIFORNIA",
+        "permit": "",
+        "approved": "01/09/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "BARLEY & BOAR",
+        "classType": "Other Gin",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "CALIFORNIA"
+      },
+      "expectedFields": {
+        "brand_name": "BARLEY & BOAR",
+        "class_type": "Other Gin",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "camp-fuel-legendary-cocktail-front",
+      "displayName": "Camp Fuel Legendary Cocktail (Front)",
+      "colaSource": {
+        "ttbId": "24003001000350",
+        "brand": "CAMP FUEL",
+        "fancifulName": "LEGENDARY COCKTAIL",
+        "classCode": "",
+        "classType": "OTHER SPECIALTIES & PROPRIETARIES",
+        "originCode": "",
+        "origin": "ALASKA",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "CAMP FUEL",
+        "classType": "Other Specialties & Proprietaries",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "ALASKA"
+      },
+      "expectedFields": {
+        "brand_name": "CAMP FUEL",
+        "class_type": "Other Specialties & Proprietaries",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "813-cafe-front",
+      "displayName": "813 Cafe (Front)",
+      "colaSource": {
+        "ttbId": "24003001000001",
+        "brand": "813",
+        "fancifulName": "CAFE",
+        "classCode": "",
+        "classType": "OTHER SPECIALTIES & PROPRIETARIES",
+        "originCode": "",
+        "origin": "MEXICO",
+        "permit": "",
+        "approved": "01/05/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "813",
+        "classType": "Other Specialties & Proprietaries",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "MEXICO"
+      },
+      "expectedFields": {
+        "brand_name": "813",
+        "class_type": "Other Specialties & Proprietaries",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "eclipse-front",
+      "displayName": "Eclipse (Front)",
+      "colaSource": {
+        "ttbId": "24003001000561",
+        "brand": "ECLIPSE",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "STRAIGHT BOURBON WHISKY",
+        "originCode": "",
+        "origin": "INDIANA",
+        "permit": "",
+        "approved": "01/04/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "ECLIPSE",
+        "classType": "Straight Bourbon Whisky",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "INDIANA"
+      },
+      "expectedFields": {
+        "brand_name": "ECLIPSE",
+        "class_type": "Straight Bourbon Whisky",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "onda-passion-fruit-front",
+      "displayName": "Onda Passion Fruit (Front)",
+      "colaSource": {
+        "ttbId": "24003001000281",
+        "brand": "ONDA",
+        "fancifulName": "PASSION FRUIT",
+        "classCode": "",
+        "classType": "OTHER SPECIALTIES & PROPRIETARIES",
+        "originCode": "",
+        "origin": "NEW YORK",
+        "permit": "",
+        "approved": "01/05/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "ONDA",
+        "classType": "Other Specialties & Proprietaries",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "NEW YORK"
+      },
+      "expectedFields": {
+        "brand_name": "ONDA",
+        "class_type": "Other Specialties & Proprietaries",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "crafted-cask-front",
+      "displayName": "Crafted Cask (Front)",
+      "colaSource": {
+        "ttbId": "23312001000445",
+        "brand": "CRAFTED CASK",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "STRAIGHT RYE WHISKY",
+        "originCode": "",
+        "origin": "KENTUCKY",
+        "permit": "",
+        "approved": "11/09/2023"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "CRAFTED CASK",
+        "classType": "Straight Rye Whisky",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "KENTUCKY"
+      },
+      "expectedFields": {
+        "brand_name": "CRAFTED CASK",
+        "class_type": "Straight Rye Whisky",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "palante-front",
+      "displayName": "Pa'Lante (Front)",
+      "colaSource": {
+        "ttbId": "24012001000567",
+        "brand": "PA'LANTE",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "OTHER RUM GOLD FB",
+        "originCode": "",
+        "origin": "MEXICO",
+        "permit": "",
+        "approved": "01/12/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "PA'LANTE",
+        "classType": "Other Rum Gold Fb",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "MEXICO"
+      },
+      "expectedFields": {
+        "brand_name": "PA'LANTE",
+        "class_type": "Other Rum Gold Fb",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    },
+    {
+      "key": "doc-swinsons-front",
+      "displayName": "Doc Swinson'S (Front)",
+      "colaSource": {
+        "ttbId": "24067001000456",
+        "brand": "DOC SWINSON'S",
+        "fancifulName": "",
+        "classCode": "",
+        "classType": "STRAIGHT RYE WHISKY",
+        "originCode": "",
+        "origin": "WASHINGTON",
+        "permit": "",
+        "approved": "03/18/2024"
+      },
+      "generation": {
+        "labelType": "front",
+        "category": "spirits",
+        "brandName": "DOC SWINSON'S",
+        "classType": "Straight Rye Whisky",
+        "alcoholContent": "40% Alc./Vol. (80 Proof)",
+        "netContents": "750 mL",
+        "countryOfOrigin": "WASHINGTON"
+      },
+      "expectedFields": {
+        "brand_name": "DOC SWINSON'S",
+        "class_type": "Straight Rye Whisky",
+        "alcohol_content": "40% Alc./Vol. (80 Proof)",
+        "net_contents": "750 mL"
+      }
+    }
+  ]
+}
