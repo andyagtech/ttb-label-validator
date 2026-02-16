@@ -49,12 +49,15 @@ const PAD = 10;
 
 /**
  * Preprocess a canvas for OCR:
- *   1. Upscale small images (Tesseract needs ~300 DPI)
+ *   1. Upscale small images to ≥1500px wide (~300 DPI)
  *   2. Convert to grayscale (removes color noise)
  *   3. Mild sharpening (unsharp mask — improves text edges)
  *   4. Percentile-based contrast stretching (robust to outliers)
- *   5. Inversion detection (fix light-on-dark labels — Tesseract 4+ needs dark-on-light)
- *   6. White padding (helps Tesseract's layout analysis, per official docs)
+ *   5. Inversion detection (fix light-on-dark labels — Tesseract needs dark-on-light)
+ *   6. 10px white padding (helps Tesseract layout analysis)
+ *
+ * Note: We intentionally do NOT binarize (Otsu etc.) — Tesseract 4+ LSTM
+ * engine performs better with grayscale input than forced B&W.
  *
  * Returns a new canvas ready for OCR.
  */
@@ -260,19 +263,21 @@ export function parseOcrText(rawText: string): ExtractedFields {
   const abvPatterns = [
     // "Alcohol 5% by volume" / "Alcohol 5% by vol"
     /alcohol\s*(?:\(alc\))?\s+(\d+\.?\d*)\s*%\s*by\s+vol(?:ume)?/i,
+    // "Alcohol by volume: 4.5%" (Serving Facts format)
+    /alcohol\s+by\s+volume:\s*(\d+\.?\d*)\s*%/i,
     // "5% Alc. By Vol." / "5% ALC BY VOL"
     /(\d+\.?\d*)\s*%\s*alc\.?\s*by\s*vol\.?/i,
     // "5% ALC./VOL." / "5% ALC/VOL" / "5% ALC./VOL"
     /(\d+\.?\d*)\s*%\s*alc\.?\s*\/\s*vol\.?/i,
-    // "ALC. 5% BY VOL." / "ALC 5% BY VOL"
-    /alc\.?\s*(\d+\.?\d*)\s*%\s*by\s*vol\.?/i,
+    // "ALC. 5% BY VOL." / "ALC 5% BY VOL" — also handle comma OCR misread: "ALC, 5%"
+    /alc[.,]?\s*(\d+\.?\d*)\s*%\s*by\s*vol\.?/i,
     // "ALC./VOL. 5%" / "ALC/VOL 5%"
     /alc\.?\s*\/\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
     // "5% Alcohol by volume"
     /(\d+\.?\d*)\s*%\s*alcohol\s*(?:\(alc\))?\s*(?:by\s+vol(?:ume)?|\/\s*vol(?:ume)?)/i,
-    // Loose fallback: any "X% alc" or "alc X%"
+    // Loose fallback: any "X% alc" or "alc X%" — handle comma misread
     /(\d+\.?\d*)\s*%\s*alc/i,
-    /alc\.?\s*(\d+\.?\d*)\s*%/i,
+    /alc[.,]?\s*(\d+\.?\d*)\s*%/i,
   ];
   for (const pat of abvPatterns) {
     const m = text.match(pat);
@@ -334,13 +339,17 @@ export function parseOcrText(rawText: string): ExtractedFields {
   // Fallback 2: first short, prominent line (mixed case, single word OK)
   // Handles cases like "Hennessy" or "Barefoot" appearing alone
   if (!fields.brandName) {
-    for (const line of lines.slice(0, 5)) {
+    for (const line of lines.slice(0, 8)) {
       // Skip lines that are clearly not brand names
       if (line.length < 3 || line.length > 40) continue;
       if (/government\s+warning/i.test(line)) continue;
       if (/contains?\s+sulfites?/i.test(line)) continue;
       if (/^\d/.test(line)) continue; // starts with number
       if (/alc|vol|proof|oz|ml|fl\b/i.test(line)) continue; // measurement-like
+      if (/\b(front|back)\s+label\b/i.test(line)) continue; // template annotations
+      if (/^\d+["″']\s*x\s*\d/i.test(line)) continue; // dimension annotations (3" x 3.5")
+      if (/serving\s+facts|nutrition/i.test(line)) continue; // nutrition heading
+      if (/bottled\s+by|distilled|produced|imported|distributed|canned\s+by/i.test(line)) continue;
       // Accept the first short prominent line as brand name
       fields.brandName = line;
       break;
@@ -349,10 +358,13 @@ export function parseOcrText(rawText: string): ExtractedFields {
 
   // --- Class / type designation ---
   const classPatterns = [
-    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+beer|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|blonde\s+ale)\b/i,
-    /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe)\b/i,
-    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|hard\s+seltzer|hard\s+cider|wine\s+cooler)\b/i,
+    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+beer|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|blonde\s+ale|cream\s+ale|kolsch|bock|doppelbock)\b/i,
+    /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth)\b/i,
+    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
+    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|rye\s+whiskey)\b/i,
+    /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
+    /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water)\b/i,
+    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
   ];
   for (const pat of classPatterns) {
     const m = text.match(pat);
@@ -363,11 +375,11 @@ export function parseOcrText(rawText: string): ExtractedFields {
   }
 
   // --- Name & address ---
-  // Strategy 1: Look for explicit "Imported by..." / "Bottled by..." / etc.
-  // These patterns are the most reliable and avoid health warning bleed.
+  // Strategy 1: Match on joined text — handles common producer prefixes
+  const NA_PREFIX = /(?:imported|bottled|produced\s*&?\s*bottled|produced|distributed|blended\s*&?\s*bottled|distilled\s*&?\s*bottled|distilled|brewed|made|packed|canned|vinted|cellared)\s+(?:by|for|in)(?:\s|$)/i;
   const naPatterns = [
-    /((?:imported|bottled|produced|distributed|blended|distilled|brewed|made|packed|canned)\s+(?:by|for|in)\s+[^.]+?,\s*[A-Z]{2}\s*\d{5})/i,
-    /((?:imported|bottled|produced|distributed|blended|distilled|brewed|made|packed|canned)\s+(?:by|for|in)\s+[^.]+?,\s*[A-Z]{2})\b/i,
+    new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2}\\s*\\d{5})`, "i"),
+    new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2})\\b`, "i"),
   ];
   for (const pat of naPatterns) {
     const m = text.match(pat);
@@ -376,35 +388,46 @@ export function parseOcrText(rawText: string): ExtractedFields {
       break;
     }
   }
-  // Strategy 2: Fallback — find "City, STATE ZIPCODE" and grab context before it,
-  // but stop at sentence boundaries to avoid health warning bleed.
+  // Strategy 2: Multi-line scan — producer prefix may be on one line, address on the next
+  if (!fields.nameAddress) {
+    for (let i = 0; i < lines.length; i++) {
+      if (NA_PREFIX.test(lines[i])) {
+        // Grab this line plus up to 2 following lines for the address
+        let combined = lines[i];
+        for (let j = 1; j <= 2 && i + j < lines.length; j++) {
+          combined += " " + lines[i + j];
+        }
+        // Try to extract "prefix ... City, ST ZIP" or "prefix ... City, ST"
+        const m = combined.match(new RegExp(`(${NA_PREFIX.source}.+?,\\s*[A-Z]{2}(?:\\s*\\d{5})?)`, "i"));
+        if (m) { fields.nameAddress = m[1].trim(); break; }
+        // If no state pattern, just grab the prefix line + next line
+        fields.nameAddress = combined.slice(0, 120).trim();
+        break;
+      }
+    }
+  }
+  // Strategy 3: Fallback — find "City, STATE ZIPCODE" and grab context before it
   if (!fields.nameAddress) {
     const addressMatch = text.match(/[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
     if (addressMatch) {
       const idx = text.indexOf(addressMatch[0]);
       const start = Math.max(0, idx - 80);
       let grabbed = text.slice(start, idx + addressMatch[0].length).trim();
-      // Clean up: if the grabbed text starts mid-sentence (from health warning etc.),
-      // look for the start of the actual company/importer line
-      const importerStart = grabbed.search(/(?:imported|bottled|produced|distributed|blended|distilled|brewed|made|packed|canned)\s+(?:by|for|in)\s/i);
+      const importerStart = grabbed.search(NA_PREFIX);
       if (importerStart > 0) {
         grabbed = grabbed.slice(importerStart).trim();
       } else {
-        // If no importer keyword, try to find a clean sentence start (capital letter after break)
         const cleanStart = grabbed.search(/[A-Z][\w\s&',.-]+,\s*[A-Z]{2}/);
-        if (cleanStart > 0) {
-          grabbed = grabbed.slice(cleanStart).trim();
-        }
+        if (cleanStart > 0) grabbed = grabbed.slice(cleanStart).trim();
       }
       fields.nameAddress = grabbed;
     } else {
-      // Fallback: "City, ST" pattern
       const cityStateMatch = text.match(/([\w\s]+,\s*[A-Z]{2})\b/);
       if (cityStateMatch) {
         const idx = text.indexOf(cityStateMatch[0]);
         const start = Math.max(0, idx - 80);
         let grabbed = text.slice(start, idx + cityStateMatch[0].length).trim();
-        const importerStart = grabbed.search(/(?:imported|bottled|produced|distributed)\s+(?:by|for|in)\s/i);
+        const importerStart = grabbed.search(NA_PREFIX);
         if (importerStart > 0) grabbed = grabbed.slice(importerStart).trim();
         fields.nameAddress = grabbed;
       }

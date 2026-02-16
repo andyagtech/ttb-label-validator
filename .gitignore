@@ -94,3 +94,4 @@ frontend/public/ttb-labels/*.png
 *.tmp
 *.temp
 .cache/
+scripts/pp_out/
