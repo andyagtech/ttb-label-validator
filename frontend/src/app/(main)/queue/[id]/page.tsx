@@ -218,7 +218,13 @@ export default function TTBReviewPage() {
     setDetecting(true);
     setDetectError(null);
     try {
-      const Tesseract = await import("tesseract.js");
+      const { createWorker } = await import("tesseract.js");
+      // Create a persistent worker for all labels (avoid re-loading model per label)
+      const worker = await createWorker("eng");
+      await worker.setParameters({
+        tessedit_pageseg_mode: "6",       // Single uniform block — better for labels
+        preserve_interword_spaces: "1",   // Keep word spacing for field parsing
+      });
       const perLabel: { name: string; text: string; fields: ExtractedFields }[] = [];
       for (const label of submission.labels) {
         const imgUrl = label.correctedImageUrl || label.originalImageUrl;
@@ -237,10 +243,11 @@ export default function TTBReviewPage() {
         ctx.drawImage(img, 0, 0);
         const processed = preprocessForOcr(canvas);
         const dataUrl = processed.toDataURL("image/png");
-        const result = await Tesseract.recognize(dataUrl, "eng");
-        const parsed = parseOcrText(result.data.text);
-        perLabel.push({ name: label.slotName, text: result.data.text, fields: parsed });
+        const { data: { text } } = await worker.recognize(dataUrl);
+        const parsed = parseOcrText(text);
+        perLabel.push({ name: label.slotName, text, fields: parsed });
       }
+      await worker.terminate();
       // Merge fields from all labels, tracking which label each field came from
       const merged: ExtractedFields = { rawText: perLabel.map((l) => l.text).join("\n\n") };
       const sources: Record<string, string> = {};

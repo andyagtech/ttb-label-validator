@@ -44,12 +44,17 @@ export interface ExtractedFields {
 
 /** Minimum width (px) for good Tesseract accuracy (~300 DPI equivalent). */
 const MIN_OCR_WIDTH = 1500;
+/** White padding added around image to help Tesseract page segmentation. */
+const PAD = 10;
 
 /**
  * Preprocess a canvas for OCR:
  *   1. Upscale small images (Tesseract needs ~300 DPI)
  *   2. Convert to grayscale (removes color noise)
- *   3. Enhance contrast (adaptive threshold-like adjustment)
+ *   3. Mild sharpening (unsharp mask — improves text edges)
+ *   4. Percentile-based contrast stretching (robust to outliers)
+ *   5. Inversion detection (fix light-on-dark labels — Tesseract 4+ needs dark-on-light)
+ *   6. White padding (helps Tesseract's layout analysis, per official docs)
  *
  * Returns a new canvas ready for OCR.
  */
@@ -62,45 +67,94 @@ export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
   const w = srcW * scale;
   const h = srcH * scale;
 
+  // 6. Create output canvas with white padding
   const out = document.createElement("canvas");
-  out.width = w;
-  out.height = h;
+  out.width = w + PAD * 2;
+  out.height = h + PAD * 2;
   const ctx = out.getContext("2d")!;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, out.width, out.height);
 
-  // Use bilinear interpolation for upscaling
+  // Draw upscaled image with padding offset
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(source, 0, 0, w, h);
+  ctx.drawImage(source, PAD, PAD, w, h);
 
-  // 2. Grayscale + 3. Contrast enhancement
-  const imgData = ctx.getImageData(0, 0, w, h);
+  const totalW = out.width;
+  const totalH = out.height;
+  const totalPx = totalW * totalH;
+  const imgData = ctx.getImageData(0, 0, totalW, totalH);
   const d = imgData.data;
 
-  // First pass: compute min/max luminance for contrast stretching
-  let minL = 255, maxL = 0;
-  for (let i = 0; i < d.length; i += 4) {
-    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-    if (gray < minL) minL = gray;
-    if (gray > maxL) maxL = gray;
+  // 2. Convert to grayscale
+  const gray = new Uint8Array(totalPx);
+  for (let i = 0; i < totalPx; i++) {
+    const off = i * 4;
+    gray[i] = Math.round(0.299 * d[off] + 0.587 * d[off + 1] + 0.114 * d[off + 2]);
   }
 
-  // Second pass: convert to grayscale with contrast stretching
-  const range = maxL - minL || 1;
-  for (let i = 0; i < d.length; i += 4) {
-    let gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-    // Stretch contrast to fill 0-255 range
-    gray = ((gray - minL) / range) * 255;
-    // Clamp
-    gray = gray < 0 ? 0 : gray > 255 ? 255 : gray;
-    d[i] = d[i + 1] = d[i + 2] = gray;
+  // 3. Mild sharpening — unsharp mask (amount=0.3) with 3×3 box blur
+  const sharp = new Uint8Array(totalPx);
+  const amt = 0.3;
+  for (let y = 0; y < totalH; y++) {
+    for (let x = 0; x < totalW; x++) {
+      const idx = y * totalW + x;
+      if (y === 0 || y === totalH - 1 || x === 0 || x === totalW - 1) {
+        sharp[idx] = gray[idx];
+        continue;
+      }
+      // 3×3 box blur
+      let sum = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          sum += gray[(y + dy) * totalW + (x + dx)];
+        }
+      }
+      const blurred = sum / 9;
+      const val = gray[idx] + amt * (gray[idx] - blurred);
+      sharp[idx] = Math.max(0, Math.min(255, Math.round(val)));
+    }
+  }
+
+  // 4. Percentile-based contrast stretching (1st/99th percentile — robust to outliers)
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < totalPx; i++) hist[sharp[i]]++;
+  const lo1 = Math.floor(totalPx * 0.01);
+  const hi1 = Math.floor(totalPx * 0.99);
+  let cumLo = 0, cumHi = 0;
+  let pLo = 0, pHi = 255;
+  for (let i = 0; i < 256; i++) {
+    cumLo += hist[i];
+    if (cumLo >= lo1) { pLo = i; break; }
+  }
+  for (let i = 255; i >= 0; i--) {
+    cumHi += hist[i];
+    if (cumHi >= (totalPx - hi1)) { pHi = i; break; }
+  }
+  const range = pHi - pLo || 1;
+
+  // 5. Detect inversion — if >55% of pixels are dark, the label has a dark background
+  let darkCount = 0;
+  for (let i = 0; i < totalPx; i++) {
+    if (sharp[i] < 128) darkCount++;
+  }
+  const isInverted = darkCount > totalPx * 0.55;
+
+  // Apply contrast stretching (+ inversion if needed)
+  for (let i = 0; i < totalPx; i++) {
+    const off = i * 4;
+    let v = ((sharp[i] - pLo) / range) * 255;
+    v = v < 0 ? 0 : v > 255 ? 255 : v;
+    if (isInverted) v = 255 - v;
+    d[off] = d[off + 1] = d[off + 2] = v;
   }
   ctx.putImageData(imgData, 0, 0);
 
-  if (scale > 1) {
-    console.log(`[OCR] Preprocessed: ${srcW}×${srcH} → ${w}×${h} (${scale}× upscale + grayscale + contrast)`);
-  } else {
-    console.log(`[OCR] Preprocessed: ${w}×${h} (grayscale + contrast)`);
-  }
+  const parts = [`grayscale`, `sharpen`, `contrast(p1=${pLo},p99=${pHi})`];
+  if (isInverted) parts.push("inverted");
+  if (scale > 1) parts.unshift(`${scale}× upscale`);
+  parts.push(`${PAD}px pad`);
+  console.log(`[OCR] Preprocessed: ${srcW}×${srcH} → ${totalW}×${totalH} (${parts.join(" + ")})`);
   return out;
 }
 
@@ -110,7 +164,9 @@ export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
 
 /**
  * Run Tesseract.js OCR on a canvas element with preprocessing.
- * Applies grayscale, contrast enhancement, and upscaling before recognition.
+ * Uses the worker API with tuned parameters:
+ *   - PSM 6 (single uniform block) — better for label images than full-page mode
+ *   - preserve_interword_spaces — keeps word spacing for field parsing
  * Returns the raw recognized text.
  * Requires: npm install tesseract.js
  */
@@ -122,16 +178,16 @@ export async function runTesseractOcr(canvas: HTMLCanvasElement): Promise<string
 
   try {
     const processed = preprocessForOcr(canvas);
-    const Tesseract = await import("tesseract.js");
+    const { createWorker } = await import("tesseract.js");
     const dataUrl = processed.toDataURL("image/png");
-    const result = await Tesseract.recognize(dataUrl, "eng", {
-      logger: (m: { status: string; progress: number }) => {
-        if (m.status === "recognizing text") {
-          console.log(`[OCR] Tesseract progress: ${Math.round(m.progress * 100)}%`);
-        }
-      },
+    const worker = await createWorker("eng");
+    await worker.setParameters({
+      tessedit_pageseg_mode: "6",       // Single uniform block of text
+      preserve_interword_spaces: "1",   // Keep spaces between words
     });
-    return result.data.text;
+    const { data: { text } } = await worker.recognize(dataUrl);
+    await worker.terminate();
+    return text;
   } catch (err) {
     console.error("[OCR] Tesseract.js error:", err);
     return "";
@@ -377,6 +433,33 @@ export function parseOcrText(rawText: string): ExtractedFields {
   const countryMatch = text.match(countryPatterns);
   if (countryMatch) {
     fields.countryOfOrigin = countryMatch[0].trim();
+  }
+
+  // --- Age statement (spirits) ---
+  const agePatterns = [
+    /\b(aged\s+(?:a\s+minimum\s+of\s+)?(\d+)\s+years?)\b/i,
+    /\b((\d+)\s+years?\s+old)\b/i,
+    /\b((\d+)\s*-?\s*yr\.?\s*old)\b/i,
+  ];
+  for (const pat of agePatterns) {
+    const m = text.match(pat);
+    if (m) {
+      fields.ageStatement = m[0].trim();
+      break;
+    }
+  }
+
+  // --- Appellation (wine) ---
+  const appellationPatterns = [
+    /\b(napa\s+valley|sonoma\s+(?:county|coast|valley)|paso\s+robles|russian\s+river\s+valley|willamette\s+valley|columbia\s+valley|walla\s+walla\s+valley|finger\s+lakes|long\s+island|central\s+coast|santa\s+barbara\s+county|monterey\s+county|mendocino\s+county|lodi|alexander\s+valley|dry\s+creek\s+valley|anderson\s+valley|carneros|los\s+carneros|stags\s+leap|oakville|rutherford|st\.?\s*helena|calistoga)\b/i,
+    /\b(bordeaux|burgundy|champagne|côtes?\s+du\s+rhône|loire\s+valley|alsace|languedoc|provence|rioja|ribera\s+del\s+duero|chianti|barolo|barbaresco|prosecco|valpolicella|mosel|rheingau|marlborough|barossa\s+valley|mclaren\s+vale|margaret\s+river|hunter\s+valley|stellenbosch|mendoza|maipo\s+valley|casablanca\s+valley)\b/i,
+  ];
+  for (const pat of appellationPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      fields.appellation = m[0].trim();
+      break;
+    }
   }
 
   return fields;
