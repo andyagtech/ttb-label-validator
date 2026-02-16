@@ -73,9 +73,10 @@ node crawl-ttb-records.mjs --headless     # run without browser window (no CAPTC
 **Usage:**
 ```bash
 cd scripts
-node download-ttb-images.mjs --all          # download for ALL records
+node download-ttb-images.mjs --all              # download for ALL records
+node download-ttb-images.mjs --all --limit 25    # download 25 NEW records (skips existing)
 node download-ttb-images.mjs --ttbid 24003001000484   # single ID
-node download-ttb-images.mjs --all --force   # re-download even if files exist
+node download-ttb-images.mjs --all --force       # re-download even if files exist
 ```
 
 **Output:** `sample_labels/ttb_labels_direct/{ttbId}-1.png`, `{ttbId}-2.png`, etc.
@@ -94,6 +95,8 @@ node download-ttb-images.mjs --all --force   # re-download even if files exist
      - Too white (> 95% white pixels — signatures or blank pages)
    - Saves remaining images as `{ttbId}-1.png`, `{ttbId}-2.png`, etc.
 3. Waits 4 seconds between requests to be polite to the TTB server
+
+**`--limit N` flag:** When specified, the script stops after successfully downloading N *new* records (skips don't count toward the limit). Records are interleaved by category (beer → wine → spirits round-robin) for a diverse mix.
 
 **Typical yield:** Each COLA form contains 1–5 label images (front, back, neck strip, side panel). Many forms only have 1 image (front label only).
 
@@ -213,7 +216,7 @@ node generate-sample-data.mjs
 | `scripts/crop-labels-ai.mjs` | Stage 3 (alt): AI-based crop from form screenshots |
 | `scripts/crop-labels-sam.py` | Stage 3 (alt): SAM-HQ segmentation-based crop |
 | `scripts/generate-sample-data.mjs` | Stage 4: Generate sampleData.ts |
-| `sample_labels/ttb_cola_records.json` | All discovered COLA records (75 currently) |
+| `sample_labels/ttb_cola_records.json` | All discovered COLA records (221 currently) |
 | `sample_labels/ttb_labels_direct/` | Raw downloaded label images |
 | `sample_labels/ttb_images/` | Full form screenshots (legacy pipeline) |
 | `frontend/public/ttb-labels/` | Production label images (verified clean) |
