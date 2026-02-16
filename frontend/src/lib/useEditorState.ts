@@ -912,6 +912,14 @@ export function useEditorState(): EditorStateReturn {
       if (res.ok) {
         const data = await res.json();
         setSubmittedId(data.submission.id);
+        // Cache submission in sessionStorage so the review page can recover it
+        // even if the serverless instance loses it (cold-start on Vercel).
+        try {
+          sessionStorage.setItem(
+            `sub:${data.submission.id}`,
+            JSON.stringify(data.submission),
+          );
+        } catch { /* quota exceeded — non-critical */ }
       }
     } catch (err) {
       console.error("Failed to submit to queue:", err);

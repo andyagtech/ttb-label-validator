@@ -80,10 +80,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "beverageCategory and productName are required" }, { status: 400 });
     }
 
+    const sender = submitterId || "anonymous";
+
+    // Duplicate guard: if a "submitted" submission with the same product name
+    // and submitter already exists, return it instead of creating a duplicate.
+    const existing = getAllSubmissions().find(
+      (s) =>
+        s.productName === productName &&
+        s.submitterId === sender &&
+        s.status === "submitted",
+    );
+    if (existing) {
+      return NextResponse.json({ submission: existing, duplicate: true }, { status: 200 });
+    }
+
     const submission = createSubmission({
       beverageCategory,
       productName,
-      submitterId: submitterId || "anonymous",
+      submitterId: sender,
       labels: labels || [],
       serverValidation,
       formFields,
