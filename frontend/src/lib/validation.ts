@@ -207,6 +207,38 @@ export const RULE_CITATIONS: Record<string, Citation> = {
     referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5?toc=1",
   },
 
+  // Sulfite — wine (mandatory)
+  sulfite_wine_missing: {
+    chapter: "1",
+    section: "§4.32(e)",
+    summary: "Sulfite declaration is mandatory for wine (virtually all wines contain ≥ 10 ppm SO₂) per 27 CFR §4.32(e).",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4",
+  },
+
+  // Color ingredient disclosures
+  color_ingredients_present: {
+    chapter: "1",
+    section: "§7.62",
+    summary: "Color ingredient disclosures found. Required if coloring materials are added.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+
+  // Commodity statement — spirits
+  commodity_statement_present: {
+    chapter: "1",
+    section: "§5.63",
+    summary: "Commodity statement found. Required for certain spirits containers.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5",
+  },
+
+  // Aspartame declaration — beer
+  aspartame_declaration_present: {
+    chapter: "1",
+    section: "§7.63",
+    summary: "Aspartame declaration found. Required for malt beverages containing aspartame.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+
   // Cross-field rules — wine
   varietal_requires_appellation: {
     chapter: "1",
@@ -303,6 +335,24 @@ export const FIELD_CITATIONS: Record<string, Citation> = {
     section: "27 CFR §5.74",
     summary: "Age statement required for certain spirits types (e.g., straight bourbon < 4 years).",
     referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.74",
+  },
+  colorIngredients: {
+    chapter: "1",
+    section: "27 CFR §7.62",
+    summary: "If coloring materials are added (e.g., caramel color, FD&C dyes), disclosure is mandatory.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  commodityStatement: {
+    chapter: "1",
+    section: "27 CFR §5.63",
+    summary: "Commodity statement required for distilled spirits in certain circumstances.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5",
+  },
+  aspartameDeclaration: {
+    chapter: "1",
+    section: "27 CFR §7.63",
+    summary: "\"Phenylketonurics: Contains Phenylalanine\" required for malt beverages containing aspartame.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
   },
 };
 
@@ -944,7 +994,30 @@ export function validateExtractedFields(
   results.push(...validateNetContents(fields.netContents, category));
 
   // --- Category-specific fields ---
-  if (category === "wine" || category === "beer") {
+
+  // Sulfite declaration: MANDATORY for wine (virtually all wines ≥ 10 ppm SO₂), optional for beer
+  if (category === "wine") {
+    if (fields.sulfiteDeclaration) {
+      results.push({
+        ruleId: "sulfite_present",
+        checklistItemId: "sulfite_declaration",
+        severity: "info",
+        message: "Sulfite declaration found.",
+        pass: true,
+        citation: citationFor("sulfite_present"),
+      });
+    } else {
+      results.push({
+        ruleId: "sulfite_wine_missing",
+        checklistItemId: "sulfite_declaration",
+        severity: "error",
+        message: "Sulfite declaration not found — required on wine labels per 27 CFR §4.32(e).",
+        suggestion: '"Contains Sulfites" must appear on the label. Virtually all wines contain ≥ 10 ppm SO₂.',
+        pass: false,
+        citation: citationFor("sulfite_wine_missing"),
+      });
+    }
+  } else if (category === "beer") {
     if (fields.sulfiteDeclaration) {
       results.push({
         ruleId: "sulfite_present",
@@ -957,6 +1030,7 @@ export function validateExtractedFields(
     }
   }
 
+  // Age statement: conditional for spirits
   if (category === "spirits" && labelPosition === "front") {
     if (fields.ageStatement) {
       results.push({
@@ -968,6 +1042,42 @@ export function validateExtractedFields(
         citation: citationFor("age_statement_present"),
       });
     }
+  }
+
+  // Color ingredient disclosures: conditional for all categories (if present, note it)
+  if (fields.colorIngredients) {
+    results.push({
+      ruleId: "color_ingredients_present",
+      checklistItemId: "color_ingredients",
+      severity: "info",
+      message: "Color ingredient disclosures found.",
+      pass: true,
+      citation: citationFor("color_ingredients_present"),
+    });
+  }
+
+  // Commodity statement: conditional for spirits
+  if (category === "spirits" && fields.commodityStatement) {
+    results.push({
+      ruleId: "commodity_statement_present",
+      checklistItemId: "commodity_statement",
+      severity: "info",
+      message: "Commodity statement found.",
+      pass: true,
+      citation: citationFor("commodity_statement_present"),
+    });
+  }
+
+  // Aspartame declaration: conditional for beer
+  if (category === "beer" && fields.aspartameDeclaration) {
+    results.push({
+      ruleId: "aspartame_declaration_present",
+      checklistItemId: "aspartame_declaration",
+      severity: "info",
+      message: "Aspartame declaration found.",
+      pass: true,
+      citation: citationFor("aspartame_declaration_present"),
+    });
   }
 
   // --- Cross-field rules ---

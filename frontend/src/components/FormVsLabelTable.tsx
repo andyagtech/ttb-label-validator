@@ -31,8 +31,22 @@ import { MatchResult } from "@/lib/fuzzyMatch";
 import { FIELD_LABELS } from "@/lib/styles";
 import { FIELD_CITATIONS } from "@/lib/validation";
 import type { ExtractedFields } from "@/lib/ocr";
+import type { BeverageCategory } from "@/lib/types";
 
-const REQUIRED_FIELDS = new Set(["brandName", "classType", "netContents", "healthWarning", "nameAddress"]);
+/** Base required fields for all categories */
+const BASE_REQUIRED = ["brandName", "classType", "netContents", "healthWarning", "nameAddress"];
+
+/** Category-specific required fields per TTB regulations */
+function getRequiredFields(category?: BeverageCategory): Set<string> {
+  const fields = [...BASE_REQUIRED];
+  if (category === "wine" || category === "spirits") {
+    fields.push("alcoholContent"); // 27 CFR §4.36 (wine), §5.37 (spirits)
+  }
+  if (category === "wine") {
+    fields.push("sulfiteDeclaration"); // 27 CFR §4.32(e) — virtually all wines
+  }
+  return new Set(fields);
+}
 
 function verdictIcon(verdict: MatchResult["verdict"], size = 14) {
   switch (verdict) {
@@ -85,6 +99,8 @@ interface FormVsLabelTableProps {
   fieldSources?: Record<string, string>;
   /** Callback when agent clicks the 🛑 stop sign to flag a field as a finding */
   onFlagField?: (fieldKey: string, fieldLabel: string, formValue: string | undefined, detectedValue: string | undefined) => void;
+  /** Beverage category — used to determine which fields are mandatory per TTB regulations */
+  beverageCategory?: BeverageCategory;
 }
 
 export default function FormVsLabelTable({
@@ -97,8 +113,10 @@ export default function FormVsLabelTable({
   onToggleCheck,
   fieldSources,
   onFlagField,
+  beverageCategory,
 }: FormVsLabelTableProps) {
   const hasOcr = detectedFields || Object.keys(mergedOcr).length > 0;
+  const REQUIRED_FIELDS = getRequiredFields(beverageCategory);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -203,6 +221,16 @@ export default function FormVsLabelTable({
                         <span className="font-medium">{verdictLabel(matchResult.verdict)}</span>
                       </span>
                     )}
+                    {/* ALL CAPS check badge for Health Warning */}
+                    {key === "healthWarning" && detectedVal && (
+                      /^GOVERNMENT WARNING/.test(detectedVal)
+                        ? <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded border bg-emerald-100 text-emerald-700 border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 size={10} /> ALL CAPS ✓
+                          </span>
+                        : <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded border bg-red-100 text-red-700 border-red-200 flex items-center gap-1">
+                            <XCircle size={10} /> NOT ALL CAPS ✗
+                          </span>
+                    )}
                   </div>
 
                   {/* Two-column values: Submitted vs Detected */}
@@ -295,23 +323,6 @@ export default function FormVsLabelTable({
         })}
       </div>
 
-      {/* Government Warning special check */}
-      {mergedOcr.healthWarning && (
-        <div className="px-4 py-2.5 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
-            {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
-              ? <CheckCircle2 size={13} className="text-emerald-500" />
-              : <XCircle size={13} className="text-red-500" />
-            }
-            <span className="text-[11px] font-medium text-gray-700">
-              {/^GOVERNMENT WARNING/.test(mergedOcr.healthWarning)
-                ? '"GOVERNMENT WARNING:" found in ALL CAPS ✓'
-                : '"GOVERNMENT WARNING:" is NOT in ALL CAPS — required by 27 CFR'
-              }
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

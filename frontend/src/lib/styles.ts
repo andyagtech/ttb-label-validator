@@ -22,7 +22,10 @@ export type OcrFieldKey =
   | "appellation"
   | "vintageDate"
   | "varietal"
-  | "ageStatement";
+  | "ageStatement"
+  | "colorIngredients"
+  | "commodityStatement"
+  | "aspartameDeclaration";
 
 /** Union of fuzzy-match verdict values. */
 type Verdict = MatchResult["verdict"];
@@ -61,7 +64,7 @@ export interface StatusStyle {
 
 export const STATUS_STYLES: Record<SubmissionStatus, StatusStyle> = {
   draft: { label: "Draft", color: "text-gray-500", bg: "bg-gray-100" },
-  submitted: { label: "Pending Review", color: "text-amber-600", bg: "bg-amber-50" },
+  submitted: { label: "Needs Review", color: "text-amber-600", bg: "bg-amber-50" },
   in_review: { label: "In Review", color: "text-blue-600", bg: "bg-blue-50" },
   approved: { label: "Approved", color: "text-emerald-600", bg: "bg-emerald-50" },
   rejected: { label: "Rejected", color: "text-red-600", bg: "bg-red-50" },
@@ -105,6 +108,9 @@ export const FIELD_LABELS: Record<OcrFieldKey, string> = {
   vintageDate: "Vintage",
   varietal: "Varietal",
   ageStatement: "Age Statement",
+  colorIngredients: "Color Ingredient Disclosures",
+  commodityStatement: "Commodity Statement",
+  aspartameDeclaration: "Aspartame Declaration",
 };
 
 // ---------------------------------------------------------------------------
