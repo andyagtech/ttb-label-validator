@@ -11,7 +11,7 @@ AI-powered alcohol label verification tool for TTB (Alcohol and Tobacco Tax and 
 | README with setup & run instructions | ✅ | This file |
 | Documentation of approach & assumptions | ✅ | [Approach & Core Concept](#approach--core-concept) below, plus `docs/INFRASTRUCTURE_JUSTIFICATION.md` |
 | Deployed Application URL | ✅ | **[https://ttb-demo-pipeline.vercel.app](https://ttb-demo-pipeline.vercel.app)** |
-| Working prototype | ✅ | Live at the URL above — 24 pre-loaded submissions ready to review |
+| Working prototype | ✅ | Live at the URL above — 49 pre-loaded submissions ready to review |
 
 ## Core Functionality: The Review Queue
 
@@ -124,7 +124,96 @@ This turns a 5–10 minute manual review into a quick scan of pre-populated resu
 - This is a standalone proof-of-concept, not integrated with the actual COLA system
 - No authentication required for the prototype (production would use Cognito/Azure AD)
 - Label images are either AI-generated test labels or uploaded photos — no direct camera capture
-- The 24 mock submissions use realistic data from the TTB Public COLA Registry
+- The 49 mock submissions use realistic data from the TTB Public COLA Registry
+
+## Review Queue Data: Real vs. Generated
+
+The review queue contains **49 submissions** across beer, wine, and spirits. This section explains exactly which data is real and which is fabricated for the proof of concept.
+
+### What's Real: Data from the TTB Public COLA Registry
+
+Every submission is anchored to a **real, approved COLA record** from the [TTB Public COLA Online](https://www.ttbonline.gov/colasonline/publicSearchColasBasic.do) database. The following fields were scraped directly from the TTB detail pages and are authentic:
+
+| Field | Source | Example |
+|---|---|---|
+| **TTB ID** | COLA detail page | `24003001000484` |
+| **Brand Name** | COLA detail page | `CERVEZA COMPLICE` |
+| **Fanciful Name** | COLA detail page | `HARVEST MOON` |
+| **Class/Type Code** | COLA detail page | `DESSERT FLAVORED WINE`, `ALE`, `WHISKEY` |
+| **Origin** | COLA detail page | `CALIFORNIA`, `ITALY`, `TEXAS` |
+| **Approval Date** | COLA detail page | `01/04/2024` |
+| **Label artwork** | COLA form screenshots | Actual label images from TTB submissions |
+
+The label images were obtained by screenshotting the TTB COLA Online form pages (which display the submitted label artwork), then using an AI vision pipeline (Gemini 2.0 Flash + SAM-HQ) to crop individual labels from the form screenshots. These are the **actual labels that were submitted to and approved by TTB**.
+
+### What's Generated: Proof-of-Concept Data
+
+The following fields do **not** come from the TTB registry and are generated defaults or hand-written scenarios to make the demo functional:
+
+| Field | How It's Generated | Why |
+|---|---|---|
+| **Alcohol content** | Category defaults: `5.5% Alc. By Vol.` (beer), `Alcohol 13.5% by Volume` (wine), `40% Alc./Vol. (80 Proof)` (spirits) | The Public COLA page does not display the actual ABV |
+| **Net contents** | Category defaults: `12 FL OZ (355 mL)` (beer), `750 mL` (wine/spirits) | Not available on Public COLA page |
+| **Health warning** | Standard prescribed text (identical for all products) | Not available on Public COLA page; the actual text is mandated by 27 CFR Part 16 |
+| **Name & address** | Generated from brand name + origin (e.g., `Dogfish Head Craft Brewery, Delaware`) | Not available on Public COLA page |
+| **Sulfite declaration** | `Contains Sulfites` auto-added for all wine products | Not available on Public COLA page |
+| **Submission status** | Manually assigned to create realistic distribution (19 submitted, 8 in review, 10 approved, 6 rejected, 6 needs revision) | Real statuses are all "Approved" since we only scraped approved COLAs |
+| **Review decisions & findings** | Hand-written with specific CFR citations (e.g., "Country of origin reads 'Italia' instead of 'Italy' — 27 CFR 4.39(a)") | Fabricated to demonstrate realistic review scenarios |
+| **Submitter names** | Plausible company names matching the brand | Not available on Public COLA page |
+| **Reviewer names** | Fictional agents: Jenny Park, Dave Morrison | N/A — agents don't exist in the Public COLA system |
+| **Timestamps** | Relative dates ("X days ago") | N/A |
+
+### The Data Pipeline
+
+```
+TTB Public COLA Online
+        │
+        ├─ crawl-ttb-records.mjs ──→ ttb_cola_records.json (75 records)
+        │   Scrapes: TTB ID, Brand Name, Fanciful Name,
+        │            Class/Type, Origin, Approval Date
+        │
+        ├─ download-ttb-images.mjs ──→ sample_labels/ttb_images/ (form screenshots)
+        │   Downloads: Full form page screenshots containing label artwork
+        │
+        ├─ crop-labels-sam.py ──→ frontend/public/ttb-labels/ (47 cropped label PNGs)
+        │   AI pipeline: Gemini 2.0 Flash (detect) → SAM-HQ (segment) → crop
+        │
+        └─ generate-sample-data.mjs ──→ frontend/src/lib/sampleData.ts
+            Combines scraped fields with generated defaults (ABV, net contents, etc.)
+            Outputs TypeScript with ColaSource (real) + ExpectedFields (mixed)
+                                         │
+                                         ▼
+                              frontend/src/lib/store.ts
+                              SUBMISSIONS catalog (49 entries)
+                              + hand-written review scenarios
+                              + status assignments
+                              + TTB_LABEL_IMAGES manifest
+```
+
+### How to Tell Real from Generated in the UI
+
+When reviewing a submission in the queue:
+
+- **Label images** — If the product has a non-"submitted" status, you're looking at **real TTB label artwork** cropped from actual COLA form submissions. Products in "submitted" status use SVG placeholder images.
+- **Form vs. Label table** — The **Brand Name** and **Class/Type** columns under "Submitted" show real data from the TTB registry. The **Alcohol Content**, **Net Contents**, and **Health Warning** values are generated defaults.
+- **Review findings** — All findings on pre-reviewed items (approved, rejected, needs revision) are hand-written scenarios designed to demonstrate realistic CFR-cited compliance issues. They reference real regulation sections but are applied to these products for demonstration purposes.
+
+### Fields Available on the TTB Public COLA Page
+
+For reference, the TTB Public COLA Online detail page exposes only these fields for each approved COLA:
+
+- TTB ID (unique identifier)
+- Status (Approved/Disapproved/Surrendered)
+- Brand Name
+- Fanciful Name
+- Class/Type Code (beverage classification)
+- Origin Code (state or country)
+- Permit number
+- Approval Date
+- Type of Application (original, amendment, etc.)
+- Label images (embedded in the form page as `<img>` elements)
+
+Notably absent: alcohol content, net contents, health warning text, name & address, sulfite declaration, appellation, vintage, varietal, and age statement. These fields exist on the actual COLA application form (TTB Form 5100.31) but are **not publicly accessible** through the online lookup tool.
 
 ## Testing the Agent Workflow
 
@@ -132,7 +221,7 @@ The fastest way to see the core functionality:
 
 ### 1. Open the Review Queue
 
-Go to **[/queue](https://ttb-demo-pipeline.vercel.app/queue)** — you'll see 24 pre-loaded submissions with status badges, typeahead search, and pagination.
+Go to **[/queue](https://ttb-demo-pipeline.vercel.app/queue)** — you'll see 49 pre-loaded submissions with status badges, typeahead search, and pagination.
 
 ### 2. Pick a Submission
 
@@ -356,7 +445,7 @@ flowchart TB
         U2["Client-side image processing"]
         U3["Validation rules engine"]
         U4["Lambda OCR / Flatten"]
-        U5["77 unit tests"]
+        U5["115 unit tests"]
     end
 
     style Current fill:#fef3c7,stroke:#f59e0b
@@ -409,7 +498,7 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 - **Guided onboarding** — coach marks, beverage category selector, graphic vs. photo chooser
 - **Category-aware checklist** — different rules for wine, beer, and spirits
 - **Multi-label question** — "Does this file have more than one label?" with auto-split into Front+Back
-- **Front/back label tabs** — plus custom label slots (strip labels, neck labels)
+- **Front/back label tabs** — plus "Other Label N" tabs for submissions with 3+ label images (neck strips, side panels, etc.)
 - **Data tab** — inspect, edit, and re-validate extracted fields; view raw text and JSON
 - **Inline value editing** — correct OCR results directly in the checklist
 - **Auto-detected vs manual items** — clear visual distinction with confidence scores
@@ -464,18 +553,20 @@ The Lambda proxy keeps the OpenRouter API key server-side. CORS is configured fo
 ### Review Queue (Agent View)
 - **`/queue` page** — dashboard showing all submissions with status badges, category icons, submitter, timestamps, and filter tabs (All / Pending / Reviewed). **Typeahead search** filters instantly as you type across product name, submitter, category, and ID. Pagination for large queues.
 - **`/queue/[id]` review page** — full agent review workspace with 2-tab layout:
-  - **Label + Data** (side-by-side) — label artwork on the left with **Front Label / Back Label / Zoom** buttons; **Form vs. Label Verification** table on the right showing submitted form data vs. detected OCR data with label source badges (Front/Back), interactive checkboxes on the right side, 🛑 flag buttons for cited rejections, match/mismatch color coding, and **REQ** badges on legally required fields.
+  - **Label + Data** (side-by-side) — label artwork on the left with **Front Label / Back Label / Other Label N / Zoom** buttons; **Form vs. Label Verification** table on the right showing submitted form data vs. detected OCR data with label source badges (Front/Back), interactive checkboxes on the right side, 🛑 flag buttons for cited rejections, match/mismatch color coding, **REQ** badges on legally required fields, and inline **ALL CAPS ✓** badge on Health Warning.
   - **History** — full audit trail of previous reviews with findings
 - **Auto Text Detect** — **Tesseract.js** runs automatically when the page loads (~2-3s), parsing each label separately to track which label (Front/Back) each field came from. Populates the comparison table with no manual clicks. Agent can re-run manually if needed. No API key required.
 - **Zoom lightbox** — full-screen dark overlay for inspecting label artwork at maximum size
-- **Government Warning check** — verifies "GOVERNMENT WARNING:" is in ALL CAPS (title case is rejected per TTB rules)
+- **Government Warning check** — verifies "GOVERNMENT WARNING:" is in ALL CAPS (title case is rejected per TTB rules); inline **ALL CAPS ✓** badge on the Health Warning row
 - **🛑 Flag button** — per-field stop sign button adds a cited finding (e.g., `Name & Address: submitted "..." but label shows "..."`) and auto-sets decision to Reject
 - **Quick Reject** — one-click button that auto-populates findings from all detected mismatches and missing required fields, sets the decision to "Reject", and writes a summary note
 - **Field typeahead** — Findings field selector with autocomplete from all FIELD_LABELS, completes on Enter/Tab
 - **Decision panel** — sticky sidebar with reviewer name, decision buttons (Approve / Reject / Needs Revision / Escalate), findings editor with field typeahead, and notes
 - **Live timer** — tracks active review time per session
 - **End-to-end flow** — "Submit to Agent Queue" button on the Submission Simulator sends processed images, checklists, and OCR-extracted fields to the agent review queue. Agent sees the actual corrected label artwork.
-- **Mock seed data** — 24 realistic submissions across beer/wine/spirits with various statuses, pre-populated COLA form fields, and label images
+- **Status banner** — prominent banner at the top of the review page for reviewed submissions (needs revision, rejected, approved) showing decision, reviewer, notes, and findings — no need to click through to History tab
+- **Persistent queue filters** — category and status filter selections persist in URL search params across page navigations
+- **Mock seed data** — 49 realistic submissions across beer/wine/spirits with various statuses, pre-populated COLA form fields, and real TTB label images
 - **REST API** — `GET /api/queue`, `POST /api/queue`, `GET /api/queue/[id]`, `PATCH /api/queue/[id]`, `POST /api/queue/[id]` (submit review)
 
 ## Technical Stack
@@ -560,7 +651,7 @@ ttb_cola_project/
 │   │   │   ├── validation.ts    # TTB validation rules engine (category-aware)
 │   │   │   ├── fuzzyMatch.ts    # Levenshtein fuzzy matching for form comparison
 │   │   │   ├── types.ts         # TypeScript types — checklist, review, submission
-│   │   │   ├── store.ts         # In-memory submission store + 24 mock seed submissions
+│   │   │   ├── store.ts         # In-memory submission store + 49 mock seed submissions
 │   │   │   ├── agentStore.ts    # In-memory agent store + 5 seed agents + stats helpers
 │   │   │   ├── styles.ts        # Shared design tokens, color maps, utility formatters
 │   │   │   └── __tests__/       # Unit tests (Vitest) — 115 tests

@@ -59,7 +59,7 @@
 | **Review timer** | ⭐ | Live elapsed time tracking per review session |
 | **End-to-end submission flow** | ⭐ | "Submit to Agent Queue" bridges simulator → agent review |
 | **Batch CSV export** | ⭐ | Export batch processing results as CSV |
-| **8 mock submissions with realistic data** | ⭐ | Pre-seeded queue with various statuses and categories |
+| **49 mock submissions with realistic data** | ⭐ | Pre-seeded queue with various statuses and categories |
 | **Form fields in mock data** | ⭐ | Pre-populated COLA application data for comparison |
 | **Label images (SVG placeholders) in mock data** | ⭐ | Agents see label artwork on review page |
 | **Guided walkthrough (Submission Simulator)** | ⭐ | 8-step guided tour with highlight effects |
@@ -188,9 +188,9 @@ The **Test Label Generator** (`/generate`) provides a dedicated UI for generatin
 
 ## 5. Unit Test Coverage
 
-**77 tests** across 3 test suites. All passing.
+**115 tests** across 6 test suites. All passing.
 
-### `fuzzyMatch.test.ts` — 14 tests
+### `fuzzyMatch.test.ts` — 22 tests
 
 | Suite | Test | Verifies |
 |-------|------|----------|
@@ -209,7 +209,20 @@ The **Test Label Generator** (`/generate`) provides a dedicated UI for generatin
 | | handles smart quote mismatch gracefully | `"Stone's"` vs `"Stone\u2019s"` → exact (100) |
 | | scores close match for minor typos | `"Old Tom Distilery"` vs `"Old Tom Distillery"` → match (≥90) |
 
-### `validation.test.ts` — 31 tests
+### `fuzzyMatch.test.ts` (continued) — additional tests
+
+| Suite | Test | Verifies |
+|-------|------|----------|
+| **compareFields** | handles accent characters | `é` ↔ `e` normalization |
+| | handles token overlap scoring | Token-based similarity for multi-word values |
+| | handles containment with prefixes | `"750 mL"` contained in `"NET CONT. 750 mL"` |
+| | scores partial matches by character overlap | Partial string similarity |
+| | handles whitespace variations | Extra spaces, tabs normalized |
+| | handles dash normalization in matching | em/en dashes → hyphens |
+| | scores zero for completely different strings | Floor case |
+| | handles numeric-heavy strings | ABV/volume comparisons |
+
+### `validation.test.ts` — 36 tests
 
 | Suite | Test | Verifies |
 |-------|------|----------|
@@ -288,10 +301,12 @@ The **Test Label Generator** (`/generate`) provides a dedicated UI for generatin
 | `smartcrop` | `smartcrop.ts` | `detectLabelBounds` — edge-based crop | — (Canvas API, visual) |
 | `sharpen` | `sharpen.ts` | `sharpenCanvas` — unsharp mask | — (Canvas API, visual) |
 | `ocr` | `ocr.ts` | `parseOcrText`, `runTesseractOcr`, `runServerOcr`, `applyExtractedFields` | ✅ 32 tests |
-| `validation` | `validation.ts` | `validateExtractedFields` — 10+ rule functions | ✅ 31 tests |
-| `fuzzyMatch` | `fuzzyMatch.ts` | `normalize`, `compareFields` | ✅ 14 tests |
+| `validation` | `validation.ts` | `validateExtractedFields` — 10+ rule functions | ✅ 36 tests |
+| `fuzzyMatch` | `fuzzyMatch.ts` | `normalize`, `compareFields` | ✅ 22 tests |
+| `store` | `store.ts` | `getAllSubmissions`, `getSubmission`, `createSubmission`, `updateSubmissionStatus`, `addReview` | ✅ 13 tests |
+| `agentStore` | `agentStore.ts` | Agent CRUD, global + per-agent statistics | ✅ 6 tests |
+| `explain` | `explain.ts` | AI explanation generation and fallback | ✅ 6 tests |
 | `types` | `types.ts` | Interfaces, `getChecklistTemplate` | — (type definitions) |
-| `store` | `store.ts` | `getAllSubmissions`, `getSubmission`, `createSubmission`, `updateSubmissionStatus`, `addReview` | — (data layer, tested via API) |
 
 ---
 
@@ -316,7 +331,7 @@ The **Test Label Generator** (`/generate`) provides a dedicated UI for generatin
 
 | Document | Path | Lines | Content |
 |----------|------|-------|---------|
-| **README** | `README.md` | ~600 | Setup, architecture, features, API docs, error handling, trade-offs |
+| **README** | `README.md` | ~820 | Setup, architecture, features, API docs, error handling, trade-offs |
 | **Testing Guide** | `docs/TESTING_GUIDE.md` | ~250 | Exact testing instructions, manual flows, infra tests, smoke checklist |
 | **Coverage Matrix** | `docs/COVERAGE.md` | this file | Full feature/test/walkthrough inventory |
 | **Build Plan** | `docs/PLAN.md` | 66 | Original phased build plan |

@@ -50,7 +50,7 @@ aws lambda create-function-url-config \
   --function-name ttb-ocr-proxy \
   --auth-type NONE \
   --cors '{
-    "AllowOrigins": ["http://localhost:3000", "https://ttb-label-validator.vercel.app"],
+    "AllowOrigins": ["http://localhost:3000", "https://ttb-demo-pipeline.vercel.app"],
     "AllowMethods": ["POST", "GET", "OPTIONS"],
     "AllowHeaders": ["Content-Type"]
   }' \

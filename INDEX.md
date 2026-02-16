@@ -94,6 +94,9 @@ The app uses **Next.js route groups** for a blue/green deployment pattern:
 | `FormComparison.tsx` | Side-by-side COLA form vs. label comparison with Levenshtein fuzzy matching and similarity bars |
 | `BatchUpload.tsx` | Multi-file drag-and-drop upload modal with sequential OCR processing, progress bar, CSV export |
 | `WalkthroughPanel.tsx` | Guided tutorial panel with element highlighting, keyboard nav, contextual tips (accepts custom steps) |
+| `FormVsLabelTable.tsx` | Form vs. Label comparison table for review page — submitted vs detected values, label source badges, match scores, checkboxes, 🛑 flag buttons, inline ALL CAPS badge on Health Warning |
+| `DecisionPanel.tsx` | Review decision sidebar — reviewer name, 4 decision buttons, findings editor with field typeahead, notes |
+| `QuickRejectButton.tsx` | One-click auto-populate findings from all detected mismatches and missing required fields |
 | `AgentWalkthroughSteps.tsx` | Step definitions for the agent queue and review page walkthroughs |
 
 ### `frontend/src/lib/` — Core Logic (No UI)
@@ -110,20 +113,23 @@ The app uses **Next.js route groups** for a blue/green deployment pattern:
 | `fuzzyMatch.ts` | Levenshtein distance with Unicode normalization, case folding, punctuation stripping. Used by FormComparison for "STONE'S THROW" ↔ "Stone's Throw" matching |
 | `types.ts` | TypeScript types — `LabelSlot`, `ChecklistItem`, `BeverageCategory`, `Submission`, `ReviewRecord`, `ReviewFinding`, `ReviewDecision`, `ExtractedFields` |
 | `styles.ts` | Centralized design tokens, color maps (category, status, verdict), shared Tailwind class strings, utility formatters (`timeAgo`, `formatDate`, `formatSeconds`) |
-| `store.ts` | In-memory submission store — 24 realistic mock seed submissions (14 from sampleData + 10 extras), CRUD operations, review workflow state machine. Loads persistent Blob image URLs from Vercel Blob on init. Server-side singleton that resets on redeploy |
+| `store.ts` | In-memory submission store — 49 realistic mock submissions (from 50 products in sampleData), CRUD operations, review workflow state machine. Loads persistent Blob image URLs from Vercel Blob on init. Server-side singleton that resets on redeploy |
 | `agentStore.ts` | In-memory agent store — 5 seed agents (Jenny Park, Dave Morrison, etc.), agent CRUD, global + per-agent statistics computed from submission reviews |
 | `blobStorage.ts` | Vercel Blob Storage utilities — upload label images, scan-based manifest reconstruction, list/delete helpers |
 | `generateLabel.ts` | Reusable server-side label generation via Gemini — `buildPrompt()`, `generateLabelImage()`, `generateBothLabels()` |
 | `imageTransfer.ts` | In-memory image transfer between pages (replaces sessionStorage for large images) |
-| `sampleData.ts` | 14 sample product definitions with COLA record fields, label generation params, expected OCR fields. `getSampleProducts()` groups front/back pairs |
+| `sampleData.ts` | 50 sample product definitions with COLA record fields, label generation params, expected OCR fields. `getSampleProducts()` groups front/back pairs |
 
-### `frontend/src/lib/__tests__/` — Unit Tests (77 total)
+### `frontend/src/lib/__tests__/` — Unit Tests (115 total)
 
 | Test File | Count | Covers |
 |-----------|-------|--------|
-| `validation.test.ts` | 31 | Government warning (caps, both statements), ABV format (7 formats), net contents (category-aware), presence rules, class/type lookup, cross-field rules, full sample label integration |
+| `validation.test.ts` | 36 | Government warning (caps, both statements), ABV format (7 formats), net contents (category-aware), presence rules, class/type lookup, cross-field rules, full sample label integration |
 | `ocr.test.ts` | 32 | Alcohol content parsing, net contents, government warning, sulfite, brand name, class/type, country of origin, vintage, name/address extraction |
-| `fuzzyMatch.test.ts` | 14 | Normalization, Levenshtein scoring, Dave's "STONE'S THROW" case, smart quotes, empty/edge cases |
+| `fuzzyMatch.test.ts` | 22 | Normalization, Levenshtein scoring, Dave's "STONE'S THROW" case, smart quotes, accent normalization, token overlap, containment |
+| `store.test.ts` | 13 | Submission store CRUD, seeding, status updates, review submission |
+| `agentStore.test.ts` | 6 | Agent store operations, stats computation |
+| `explain.test.ts` | 6 | AI explanation generation and fallback |
 
 ### `frontend/src/types/`
 
