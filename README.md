@@ -455,6 +455,22 @@ flowchart TB
 
 **This is an agent-facing tool.** The primary users are 47 TTB compliance agents reviewing ~605 label applications per business day. The prototype has two views: an **Agent Review View** (review queue, pre-processed fields, validation, checklist, approve/reject) and a **Submission Simulator** (image upload, correction, OCR — simulating what a backend ingestion pipeline would produce from COLA). At production scale, Lambda compute uses **<5% of default capacity** and total annual cost is ~$1,800 vs. $50K–$200K for vendor alternatives. Full analysis: [`docs/INFRASTRUCTURE_JUSTIFICATION.md`](docs/INFRASTRUCTURE_JUSTIFICATION.md).
 
+### Data Storage
+
+This prototype uses **no external database** — all data lives in code, on disk, and on a CDN. Production would swap the in-memory store for PostgreSQL/DynamoDB (same API surface — see Production Path above).
+
+| What | Where | Details |
+|------|-------|---------|
+| **Submission store** | In-memory singleton (`frontend/src/lib/store.ts`) | 51 mock submissions generated on first access from `SUBMISSIONS` catalog. Resets on Vercel serverless cold-start / redeploy. User-created submissions are cached in `sessionStorage` as a fallback. |
+| **Product definitions** | `frontend/src/lib/sampleData.ts` | 51 products (17 beer, 23 wine, 11 spirits) with expected front/back field values for validation comparison. |
+| **Label images (production)** | Vercel Blob CDN | `https://rcptligvu3vbkguv.public.blob.vercel-storage.com/ttb-labels/{ttbId}-{N}.png` — served to the browser via `BLOB_BASE` in `store.ts`. |
+| **Label images (local)** | `frontend/public/ttb-labels/` | 105 PNG files — local copies of the Blob CDN images, used during development. Gitignored from the Vercel build (served from Blob instead). |
+| **Label ↔ slot mapping** | `TTB_LABEL_IMAGES` in `store.ts` | Maps each `ttbId` to an ordered array of image numbers. Array order determines assignment: `[0]` → Front Label, `[1]` → Back Label, `[2+]` → Other Labels. |
+| **Scraping artifacts** | `sample_labels/` | Raw TTB form screenshots (`ttb_images/`), direct label downloads (`ttb_labels_direct/`), SAM-cropped labels (`ttb_labels_sam/`), metadata JSON files. See [`SCRAPER.md`](SCRAPER.md). |
+| **Scraping scripts** | `scripts/` | `crawl-ttb-records.mjs`, `download-ttb-images.mjs`, `crop-labels-ai.mjs`, `crop-labels-sam.py`, `generate-sample-data.mjs`, and others. See [`SCRAPER.md`](SCRAPER.md) for the full pipeline. |
+| **TTB record database** | `sample_labels/ttb_cola_records.json` | 201 COLA records scraped from TTB.gov with product details, permit info, and form field values. |
+| **Agent store** | In-memory singleton (`frontend/src/lib/agentStore.ts`) | 5 seed agents with roles and performance stats. Same ephemeral model as submission store. |
+
 ### Two-Tier OCR Strategy
 
 | | Tier 1: Quick Check | Tier 2: AI Extract |
@@ -686,8 +702,20 @@ ttb_cola_project/
 │   ├── openapi.yaml             # OpenAPI 3.1 spec for all API endpoints
 │   ├── VALIDATION_AND_REVIEW_ARCHITECTURE.md # Two-tier validation + review queue design
 │   └── INFRASTRUCTURE_JUSTIFICATION.md # Capacity analysis, cost projections, roadmap
+├── scripts/                     # Data pipeline scripts (see SCRAPER.md)
+│   ├── crawl-ttb-records.mjs    # Probe TTB COLA detail pages → ttb_cola_records.json
+│   ├── download-ttb-images.mjs  # Download label images from TTB form pages
+│   ├── crop-labels-ai.mjs       # Gemini 2.0 Flash vision-based label cropping
+│   ├── crop-labels-sam.py       # Gemini + SAM-HQ pixel-precise segmentation
+│   └── generate-sample-data.mjs # Generate sampleData.ts + TTB_LABEL_IMAGES block
+├── sample_labels/               # Scraping artifacts and intermediate data
+│   ├── ttb_cola_records.json    # 201 COLA records scraped from TTB.gov
+│   ├── ttb_images/              # Raw TTB form screenshots (PNG)
+│   ├── ttb_labels_direct/       # Direct image downloads from TTB
+│   ├── ttb_labels_sam/          # SAM-HQ cropped labels
+│   └── *.json                   # Metadata: clean_label_map, form_fields, blob URLs
 ├── references/                  # TTB reference documents (PDFs, markdown)
-├── sample_labels/               # Test label images (PNG, JPG, HEIC)
+├── SCRAPER.md                   # Data pipeline documentation (4-stage process)
 ├── .gitignore                   # Root gitignore (OS, IDE, env, deps, build, Vercel)
 └── INDEX.md                     # Repo structure guide
 ```
