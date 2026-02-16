@@ -72,26 +72,50 @@ function parseOcrText(rawText) {
       if (/^\d/.test(line)) continue;
       if (/alc|vol|proof|oz|ml|fl\b/i.test(line)) continue;
       if (/\b(front|back)\s+label\b/i.test(line)) continue;
-      if (/^\d+["″']\s*x\s*\d/i.test(line)) continue;
-      if (/serving\s+facts|nutrition/i.test(line)) continue;
+      if (/^\d+["\u2033']\s*x\s*\d/i.test(line)) continue;
+      if (/serving/i.test(line)) continue;
       if (/bottled\s+by|distilled|produced|imported|distributed|canned\s+by/i.test(line)) continue;
+      if (/[=\[\]~|{}@#$^*<>]/.test(line)) continue;
+      if (/calories|carbohydrate|protein|fat:/i.test(line)) continue;
       fields.brandName = line; break;
     }
   }
 
   // --- Class / type ---
+  // (compound types first so "tequila seltzer" beats "tequila")
   const classPatterns = [
+    /\b(\d+%\s+(?:cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|chenin\s+blanc|semillon|muscat|moscato|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits))\b/i,
+    /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water)\b/i,
+    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
+    /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
     /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+beer|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|blonde\s+ale|cream\s+ale|kolsch|bock|doppelbock)\b/i,
     /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth)\b/i,
     /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
     /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|rye\s+whiskey)\b/i,
-    /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
-    /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water)\b/i,
-    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
   ];
   for (const pat of classPatterns) {
     const m = text.match(pat);
     if (m) { fields.classType = m[0].trim(); break; }
+  }
+
+  // Brand fallback 3: extract brand from product-name lines
+  if (!fields.brandName && fields.classType) {
+    const classLower = fields.classType.toLowerCase();
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      const classIdx = lineLower.indexOf(classLower);
+      if (classIdx > 0) {
+        const before = line.slice(0, classIdx).trim();
+        if (before.length >= 2 && before.length <= 40 && !/\d/.test(before)) {
+          fields.brandName = before; break;
+        }
+      }
+    }
+  }
+  // Brand fallback 4: extract brand from URL
+  if (!fields.brandName) {
+    const urlMatch = text.match(/\b([A-Za-z][A-Za-z]+)\.com\b/i);
+    if (urlMatch) { fields.brandName = urlMatch[1].toUpperCase(); }
   }
 
   // --- Name & address ---
@@ -119,6 +143,17 @@ function parseOcrText(rawText) {
       }
     }
   }
+  // Post-correct merged state codes (NAPACA → NAPA, CA)
+  if (fields.nameAddress) {
+    const US_STATES = /\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)$/;
+    fields.nameAddress = fields.nameAddress.replace(
+      /([A-Za-z]{3,})([A-Z]{2})\s*(-\s*USA|[+]\s*USA)?\s*$/,
+      (_match, city, st, usa) => {
+        if (US_STATES.test(st)) return `${city}, ${st}${usa ? " USA" : ""}`;
+        return _match;
+      },
+    );
+  }
   // Fallback: City, ST ZIP
   if (!fields.nameAddress) {
     const addressMatch = text.match(/[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
@@ -145,7 +180,10 @@ function parseOcrText(rawText) {
   // --- Varietal ---
   const varietalPatterns = /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|gewürztraminer|chenin\s+blanc|semillon|muscat|moscato)\b/i;
   const varietalMatch = text.match(varietalPatterns);
-  if (varietalMatch) fields.varietal = varietalMatch[0].trim();
+  if (varietalMatch) {
+    fields.varietal = varietalMatch[0].trim();
+    if (!fields.classType) fields.classType = fields.varietal;
+  }
 
   // --- Vintage date ---
   const vintageMatch = text.match(/\b(19|20)\d{2}\b/);
@@ -260,10 +298,18 @@ const FIELDS = [
   "vintageDate", "varietal", "appellation",
 ];
 
-function scoreField(gtVal, tVal) {
+function scoreField(gtVal, tVal, field) {
   if (!tVal && !gtVal) return { score: null, label: "" }; // both empty, skip
   if (!tVal && gtVal) return { score: 0, label: "❌ MISS" };
   if (tVal && !gtVal) return { score: null, label: "➕ EXTRA" };
+  // For ABV, normalize: extract just the numeric percentage for comparison
+  if (field === "alcoholContent") {
+    const gtNum = gtVal.match(/(\d+\.?\d*)\s*%/);
+    const tNum = tVal.match(/(\d+\.?\d*)\s*%/);
+    if (gtNum && tNum && gtNum[1] === tNum[1]) {
+      return { score: 1, label: "✅ HIT" };
+    }
+  }
   const gtLower = gtVal.toLowerCase().slice(0, 40);
   const tLower = tVal.toLowerCase().slice(0, 40);
   if (tLower.includes(gtLower.slice(0, 15)) || gtLower.includes(tLower.slice(0, 15))) {
@@ -294,8 +340,8 @@ for (const key of Object.keys(GROUND_TRUTH)) {
     const ppVal = ppParsed[field] || null;
     if (!gtVal && !rawVal && !ppVal) continue;
 
-    const rawScore = scoreField(gtVal, rawVal);
-    const ppScore = scoreField(gtVal, ppVal);
+    const rawScore = scoreField(gtVal, rawVal, field);
+    const ppScore = scoreField(gtVal, ppVal, field);
     if (rawScore.score !== null) { totalFields++; rawHits += rawScore.score; }
     else if (ppScore.score !== null) { totalFields++; }
     if (ppScore.score !== null && rawScore.score === null) { ppHits += ppScore.score; }

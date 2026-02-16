@@ -348,29 +348,60 @@ export function parseOcrText(rawText: string): ExtractedFields {
       if (/alc|vol|proof|oz|ml|fl\b/i.test(line)) continue; // measurement-like
       if (/\b(front|back)\s+label\b/i.test(line)) continue; // template annotations
       if (/^\d+["″']\s*x\s*\d/i.test(line)) continue; // dimension annotations (3" x 3.5")
-      if (/serving\s+facts|nutrition/i.test(line)) continue; // nutrition heading
+      if (/serving/i.test(line)) continue; // nutrition/serving info
       if (/bottled\s+by|distilled|produced|imported|distributed|canned\s+by/i.test(line)) continue;
+      if (/[=\[\]~|{}@#$^*<>]/.test(line)) continue; // OCR noise characters
+      if (/calories|carbohydrate|protein|fat:/i.test(line)) continue; // nutrition data
       // Accept the first short prominent line as brand name
       fields.brandName = line;
       break;
     }
   }
-
   // --- Class / type designation ---
+  // (detected before brand name so brand fallbacks can use classType)
   const classPatterns = [
-    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+beer|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|blonde\s+ale|cream\s+ale|kolsch|bock|doppelbock)\b/i,
-    /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth)\b/i,
-    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|rye\s+whiskey)\b/i,
-    /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
+    // "100% Sangiovese" / "100% Corn Neutral Spirits" — percentage + varietal/type
+    /\b(\d+%\s+(?:cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|chenin\s+blanc|semillon|muscat|moscato|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits))\b/i,
+    // Compound spirits types (must be before generic spirits so "tequila seltzer" beats "tequila")
     /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water)\b/i,
     /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
+    /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
+    // Beer
+    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+beer|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|blonde\s+ale|cream\s+ale|kolsch|bock|doppelbock)\b/i,
+    // Wine
+    /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth)\b/i,
+    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
+    // Spirits (generic — last so compound types win)
+    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|rye\s+whiskey)\b/i,
   ];
   for (const pat of classPatterns) {
     const m = text.match(pat);
     if (m) {
       fields.classType = m[0].trim();
       break;
+    }
+  }
+
+  // Brand fallback 3: extract brand from product-name lines ("ONDA TEQUILA SELTZER" → "ONDA")
+  if (!fields.brandName && fields.classType) {
+    const classLower = fields.classType.toLowerCase();
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      const classIdx = lineLower.indexOf(classLower);
+      if (classIdx > 0) {
+        const before = line.slice(0, classIdx).trim();
+        if (before.length >= 2 && before.length <= 40 && !/\d/.test(before)) {
+          fields.brandName = before;
+          break;
+        }
+      }
+    }
+  }
+  // Brand fallback 4: extract brand from URL ("BARLEYANDBOAR.COM" → "BARLEYANDBOAR")
+  if (!fields.brandName) {
+    const urlMatch = text.match(/\b([A-Za-z][A-Za-z]+)\.com\b/i);
+    if (urlMatch) {
+      fields.brandName = urlMatch[1].toUpperCase();
     }
   }
 
@@ -406,6 +437,20 @@ export function parseOcrText(rawText: string): ExtractedFields {
       }
     }
   }
+  // Strategy 2b: Post-correct common OCR merge errors in nameAddress
+  // e.g. "NAPACA" → "NAPA, CA", "ATASCADEROCA" → "ATASCADERO, CA"
+  if (fields.nameAddress) {
+    const US_STATES = /\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)$/;
+    fields.nameAddress = fields.nameAddress.replace(
+      /([A-Za-z]{3,})([A-Z]{2})\s*(-\s*USA|[+]\s*USA)?\s*$/,
+      (_match, city, st, usa) => {
+        if (US_STATES.test(st)) {
+          return `${city}, ${st}${usa ? " USA" : ""}`;
+        }
+        return _match;
+      },
+    );
+  }
   // Strategy 3: Fallback — find "City, STATE ZIPCODE" and grab context before it
   if (!fields.nameAddress) {
     const addressMatch = text.match(/[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
@@ -440,6 +485,10 @@ export function parseOcrText(rawText: string): ExtractedFields {
   const varietalMatch = text.match(varietalPatterns);
   if (varietalMatch) {
     fields.varietal = varietalMatch[0].trim();
+    // Use varietal as classType fallback — e.g. "Pinot Noir" is both varietal and class
+    if (!fields.classType) {
+      fields.classType = fields.varietal;
+    }
   }
 
   // --- Vintage date ---
