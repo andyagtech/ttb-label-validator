@@ -12,7 +12,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   XCircle,
@@ -70,7 +70,8 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
   spirits: <GlassWater size={14} className={CATEGORY_TEXT.spirits} />,
 };
 
-type FilterStatus = "all" | "pending" | "reviewed";
+type FilterStatus = "all" | "submitted" | "in_review" | "approved" | "rejected" | "needs_revision";
+type FilterCategory = "all" | "beer" | "wine" | "spirits";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -83,10 +84,18 @@ const TYPEAHEAD_LIMIT = 100;
 
 export default function TTBQueuePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [allItems, setAllItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
-  const [filter, setFilter] = useState<FilterStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>(() => {
+    const sp = searchParams.get("status");
+    return sp && ["submitted","in_review","approved","rejected","needs_revision"].includes(sp) ? sp as FilterStatus : "all";
+  });
+  const [categoryFilter, setCategoryFilter] = useState<FilterCategory>(() => {
+    const cp = searchParams.get("category");
+    return cp && ["beer","wine","spirits"].includes(cp) ? cp as FilterCategory : "all";
+  });
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -96,7 +105,7 @@ export default function TTBQueuePage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Stats (fetched separately so they reflect the full dataset)
-  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  const [stats, setStats] = useState({ total: 0, submitted: 0, in_review: 0, approved: 0, rejected: 0, needs_revision: 0 });
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -109,25 +118,12 @@ export default function TTBQueuePage() {
     });
   }, []);
 
-  // Build API URL — fetches up to TYPEAHEAD_LIMIT items for client-side filtering
-  const buildUrl = useCallback(
-    (statusFilter: FilterStatus) => {
-      const params = new URLSearchParams();
-      params.set("page", "1");
-      params.set("limit", String(TYPEAHEAD_LIMIT));
-      if (statusFilter === "pending") params.set("status", "submitted,in_review");
-      else if (statusFilter === "reviewed") params.set("status", "approved,rejected,needs_revision");
-      return `/api/queue?${params.toString()}`;
-    },
-    [],
-  );
-
+  // Fetch all items for client-side filtering (categories + statuses)
   const fetchQueue = useCallback(
-    async (f?: FilterStatus) => {
-      const useFilter = f ?? filter;
+    async () => {
       setLoading(true);
       try {
-        const res = await fetch(buildUrl(useFilter));
+        const res = await fetch(`/api/queue?page=1&limit=${TYPEAHEAD_LIMIT}`);
         const data = await res.json();
         setAllItems(data.submissions || []);
         setPage(1);
@@ -136,23 +132,27 @@ export default function TTBQueuePage() {
       }
       setLoading(false);
     },
-    [filter, buildUrl],
+    [],
   );
 
   // Fetch stats (unfiltered totals for the stat cards)
   const fetchStats = useCallback(async () => {
     try {
-      const [allRes, pendingRes, approvedRes, rejectedRes] = await Promise.all([
+      const [allRes, submittedRes, inReviewRes, approvedRes, rejectedRes, needsRevRes] = await Promise.all([
         fetch("/api/queue?limit=1").then((r) => r.json()),
-        fetch("/api/queue?limit=1&status=submitted,in_review").then((r) => r.json()),
+        fetch("/api/queue?limit=1&status=submitted").then((r) => r.json()),
+        fetch("/api/queue?limit=1&status=in_review").then((r) => r.json()),
         fetch("/api/queue?limit=1&status=approved").then((r) => r.json()),
         fetch("/api/queue?limit=1&status=rejected").then((r) => r.json()),
+        fetch("/api/queue?limit=1&status=needs_revision").then((r) => r.json()),
       ]);
       setStats({
         total: allRes.total ?? 0,
-        pending: pendingRes.total ?? 0,
+        submitted: submittedRes.total ?? 0,
+        in_review: inReviewRes.total ?? 0,
         approved: approvedRes.total ?? 0,
         rejected: rejectedRes.total ?? 0,
+        needs_revision: needsRevRes.total ?? 0,
       });
     } catch {
       // Stats are non-critical
@@ -163,9 +163,10 @@ export default function TTBQueuePage() {
     setSeeding(true);
     try {
       await fetch("/api/queue/seed", { method: "POST" });
-      await fetchQueue("all");
+      await fetchQueue();
       setSearchInput("");
-      setFilter("all");
+      setStatusFilter("all");
+      setCategoryFilter("all");
       await fetchStats();
     } catch (err) {
       console.error("[Queue] Failed to seed queue", err);
@@ -175,10 +176,19 @@ export default function TTBQueuePage() {
 
   // Initial load
   useEffect(() => {
-    fetchQueue("all");
+    fetchQueue();
     fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync filters to URL search params (shallow — no re-fetch)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (categoryFilter !== "all") params.set("category", categoryFilter);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    const qs = params.toString();
+    router.replace(qs ? `/queue?${qs}` : "/queue", { scroll: false });
+  }, [categoryFilter, statusFilter, router]);
 
   // Typeahead: debounced search resets page on input change
   const handleSearchInput = useCallback((value: string) => {
@@ -191,28 +201,27 @@ export default function TTBQueuePage() {
     setPage(1);
   }, []);
 
-  // Filter change handler
-  const handleFilterChange = useCallback(
-    (f: FilterStatus) => {
-      setFilter(f);
-      setPage(1);
-      fetchQueue(f);
-    },
-    [fetchQueue],
-  );
-
-  // Client-side typeahead filter + sort + paginate
+  // Client-side filtering: category + status + search
   const filtered = useMemo(() => {
-    if (!searchInput.trim()) return allItems;
-    const q = searchInput.trim().toLowerCase();
-    return allItems.filter((item) =>
-      item.productName.toLowerCase().includes(q) ||
-      item.submitterId.toLowerCase().includes(q) ||
-      item.beverageCategory.toLowerCase().includes(q) ||
-      item.id.toLowerCase().includes(q) ||
-      item.status.toLowerCase().includes(q)
-    );
-  }, [allItems, searchInput]);
+    let items = allItems;
+    if (categoryFilter !== "all") {
+      items = items.filter((item) => item.beverageCategory === categoryFilter);
+    }
+    if (statusFilter !== "all") {
+      items = items.filter((item) => item.status === statusFilter);
+    }
+    if (searchInput.trim()) {
+      const q = searchInput.trim().toLowerCase();
+      items = items.filter((item) =>
+        item.productName.toLowerCase().includes(q) ||
+        item.submitterId.toLowerCase().includes(q) ||
+        item.beverageCategory.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        item.status.toLowerCase().includes(q)
+      );
+    }
+    return items;
+  }, [allItems, categoryFilter, statusFilter, searchInput]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -281,7 +290,7 @@ export default function TTBQueuePage() {
               Review Queue
             </h1>
             <p style={{ fontSize: 14, color: C.medGray, marginTop: 4 }}>
-              {stats.total} total submissions · {stats.pending} pending review
+              {stats.total} total submissions · {stats.submitted + stats.in_review} pending review
             </p>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -305,7 +314,7 @@ export default function TTBQueuePage() {
               Submission Simulator →
             </Link>
             <button
-              onClick={() => { fetchQueue(); fetchStats(); }}
+              onClick={() => { fetchQueue(); fetchStats(); setCategoryFilter("all"); setStatusFilter("all"); }}
               aria-label="Refresh queue"
               style={{
                 display: "inline-flex",
@@ -328,33 +337,37 @@ export default function TTBQueuePage() {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Stats — all 5 statuses shown so numbers visibly sum to total */}
         <div
           id="queue-stats"
           aria-live="polite"
-          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}
+          style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 24 }}
         >
-          {[
-            { n: stats.total, label: "Total", color: C.darkNavy, border: C.border },
-            { n: stats.pending, label: "Pending Review", color: "#e5a000", border: "#f5d78e" },
-            { n: stats.approved, label: "Approved", color: C.green, border: "#b7e4c7" },
-            { n: stats.rejected, label: "Rejected", color: C.red, border: "#f5c6cb" },
-          ].map((s) => (
-            <div
+          {([
+            { n: stats.submitted, label: "Needs Review", color: "#e5a000", border: "#f5d78e", filter: "submitted" as FilterStatus },
+            { n: stats.in_review, label: "In Review", color: C.navy, border: "#a8c4e0", filter: "in_review" as FilterStatus },
+            { n: stats.approved, label: "Approved", color: C.green, border: "#b7e4c7", filter: "approved" as FilterStatus },
+            { n: stats.rejected, label: "Rejected", color: C.red, border: "#f5c6cb", filter: "rejected" as FilterStatus },
+            { n: stats.needs_revision, label: "Needs Revision", color: "#d97706", border: "#fcd9a0", filter: "needs_revision" as FilterStatus },
+          ]).map((s) => (
+            <button
               key={s.label}
+              onClick={() => { setStatusFilter(statusFilter === s.filter ? "all" : s.filter); setPage(1); }}
               style={{
-                background: C.white,
+                background: statusFilter === s.filter ? "#f0f5ff" : C.white,
                 borderRadius: 8,
-                border: `1px solid ${s.border}`,
+                border: statusFilter === s.filter ? `2px solid ${C.navy}` : `1px solid ${s.border}`,
                 padding: 16,
+                cursor: "pointer",
+                textAlign: "left",
+                transition: "all 0.15s",
               }}
             >
               <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.n}</div>
-              <div style={{ fontSize: 12, color: C.medGray }}>{s.label}</div>
-            </div>
+              <div style={{ fontSize: 11, color: C.medGray, marginTop: 2 }}>{s.label}</div>
+            </button>
           ))}
         </div>
-
         {/* Search bar — typeahead (filters as you type) */}
         <div
           style={{
@@ -414,43 +427,125 @@ export default function TTBQueuePage() {
           </div>
         </div>
 
-        {/* Filter tabs */}
-        <div id="queue-filters" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16 }} data-walkthrough="queue-filters">
-          {(
-            [
+        {/* Filter bar: Category + Status */}
+        <div id="queue-filters" style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }} data-walkthrough="queue-filters">
+          {/* Category filter row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.medGray, textTransform: "uppercase", letterSpacing: "0.05em", minWidth: 60 }}>Type</span>
+            {([
+              ["all", "All Types", null],
+              ["beer", "Beer", CATEGORY_ICON.beer],
+              ["wine", "Wine", CATEGORY_ICON.wine],
+              ["spirits", "Spirits", CATEGORY_ICON.spirits],
+            ] as [FilterCategory, string, React.ReactNode | null][]).map(([key, label, icon]) => {
+              const count = key === "all" ? allItems.length : allItems.filter((i) => i.beverageCategory === key).length;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setCategoryFilter(key); setPage(1); }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "5px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderRadius: 20,
+                    border: categoryFilter === key ? `1.5px solid ${C.navy}` : `1px solid ${C.border}`,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    background: categoryFilter === key ? C.navy : C.white,
+                    color: categoryFilter === key ? C.white : C.darkGray,
+                  }}
+                >
+                  {icon && <span style={{ display: "flex", filter: categoryFilter === key ? "brightness(10)" : "none" }}>{icon}</span>}
+                  {label}
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "1px 5px",
+                    borderRadius: 8,
+                    background: categoryFilter === key ? "rgba(255,255,255,0.25)" : C.lightGray,
+                    color: categoryFilter === key ? "rgba(255,255,255,0.9)" : C.medGray,
+                  }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Status filter row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.medGray, textTransform: "uppercase", letterSpacing: "0.05em", minWidth: 60 }}>Status</span>
+            {([
               ["all", "All"],
-              ["pending", "Pending"],
-              ["reviewed", "Reviewed"],
-            ] as [FilterStatus, string][]
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => handleFilterChange(key)}
-              style={{
-                padding: "6px 14px",
-                fontSize: 13,
-                fontWeight: 600,
-                borderRadius: 4,
-                border: "none",
-                cursor: "pointer",
-                transition: "background 0.15s",
-                background: filter === key ? C.darkNavy : C.lightGray,
-                color: filter === key ? C.white : C.darkGray,
-              }}
-            >
-              {label}
-            </button>
-          ))}
-          {searchInput && (
-            <span style={{ fontSize: 12, color: C.medGray, marginLeft: 8 }}>
-              Showing {totalItems} result{totalItems !== 1 ? "s" : ""} for &ldquo;{searchInput}&rdquo;
+              ["submitted", "Needs Review"],
+              ["in_review", "In Review"],
+              ["approved", "Approved"],
+              ["rejected", "Rejected"],
+              ["needs_revision", "Needs Revision"],
+            ] as [FilterStatus, string][]).map(([key, label]) => {
+              const sc = key !== "all" ? STATUS_STYLES[key] : null;
+              const count = key === "all" ? allItems.length : allItems.filter((i) => i.status === key).length;
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setStatusFilter(key); setPage(1); }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "5px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderRadius: 20,
+                    border: statusFilter === key ? `1.5px solid ${C.navy}` : `1px solid ${C.border}`,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    background: statusFilter === key ? C.navy : C.white,
+                    color: statusFilter === key ? C.white : C.darkGray,
+                  }}
+                >
+                  {sc && <span style={{ display: "flex", filter: statusFilter === key ? "brightness(10)" : "none" }}>{STATUS_ICONS[key]}</span>}
+                  {label}
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "1px 5px",
+                    borderRadius: 8,
+                    background: statusFilter === key ? "rgba(255,255,255,0.25)" : C.lightGray,
+                    color: statusFilter === key ? "rgba(255,255,255,0.9)" : C.medGray,
+                  }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Active filter summary */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {(categoryFilter !== "all" || statusFilter !== "all" || searchInput) && (
+              <button
+                onClick={() => { setCategoryFilter("all"); setStatusFilter("all"); setSearchInput(""); setPage(1); }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "3px 10px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  borderRadius: 12,
+                  border: `1px solid ${C.border}`,
+                  cursor: "pointer",
+                  background: C.white,
+                  color: C.medGray,
+                }}
+              >
+                <X size={10} /> Clear filters
+              </button>
+            )}
+            <span style={{ flex: 1 }} />
+            <span style={{ fontSize: 12, color: C.medGray }}>
+              {totalItems} item{totalItems !== 1 ? "s" : ""}
+              {totalPages > 1 && ` · Page ${safePage} of ${totalPages}`}
             </span>
-          )}
-          <span style={{ flex: 1 }} />
-          <span style={{ fontSize: 12, color: C.medGray }}>
-            {totalItems} item{totalItems !== 1 ? "s" : ""}
-            {totalPages > 1 && ` · Page ${page} of ${totalPages}`}
-          </span>
+          </div>
         </div>
 
         {/* Table */}
@@ -562,7 +657,16 @@ export default function TTBQueuePage() {
                   return (
                     <tr
                       key={item.id}
-                      onClick={() => router.push(`/queue/${item.id}`)}
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey) {
+                          window.open(`/queue/${item.id}`, "_blank");
+                        } else {
+                          router.push(`/queue/${item.id}`);
+                        }
+                      }}
+                      onAuxClick={(e) => {
+                        if (e.button === 1) window.open(`/queue/${item.id}`, "_blank");
+                      }}
                       style={{
                         background: i % 2 === 1 ? "#fafafa" : C.white,
                         borderBottom: `1px solid ${C.border}`,
@@ -575,8 +679,14 @@ export default function TTBQueuePage() {
                       }
                     >
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: C.darkNavy }}>{item.productName}</div>
-                        <div style={{ fontSize: 10, color: C.lightGrayText, fontFamily: "monospace" }}>{item.id}</div>
+                        <Link
+                          href={`/queue/${item.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ textDecoration: "none", color: "inherit" }}
+                        >
+                          <div style={{ fontSize: 14, fontWeight: 600, color: C.darkNavy }}>{item.productName}</div>
+                          <div style={{ fontSize: 10, color: C.lightGrayText, fontFamily: "monospace" }}>{item.id}</div>
+                        </Link>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <span
