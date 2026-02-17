@@ -242,15 +242,18 @@ function parseOcrText(rawText) {
 // ---------------------------------------------------------------------------
 // Sharp-based preprocessing (mirrors browser-side preprocessForOcr)
 // ---------------------------------------------------------------------------
-async function preprocessImage(inputPath) {
-  const meta = await sharp(inputPath).metadata();
+async function preprocessImage(input) {
+  // Accept either a file path (string) or { buffer: Buffer }
+  const src = typeof input === "string" ? sharp(input) : sharp(input.buffer);
+  const meta = await src.metadata();
   const MIN_WIDTH = 1500;
   const PAD = 10;
   const scale = meta.width < MIN_WIDTH ? Math.ceil(MIN_WIDTH / meta.width) : 1;
   const w = meta.width * scale;
   const h = meta.height * scale;
 
-  const buf = await sharp(inputPath)
+  const srcAgain = typeof input === "string" ? sharp(input) : sharp(input.buffer);
+  const buf = await srcAgain
     .resize(w, h, { kernel: "lanczos3" })
     .grayscale()
     .sharpen({ sigma: 1, m1: 0.3, m2: 0.3 })
@@ -392,7 +395,7 @@ async function main() {
         // Preprocess
         const ppBuf = await preprocessImage(img.path);
 
-        // OCR
+        // OCR — Pass 1 (0° normal)
         const startMs = Date.now();
         const { data } = await worker.recognize(ppBuf);
         const ocrMs = Date.now() - startMs;
@@ -402,15 +405,35 @@ async function main() {
         const charCount = data.text.length;
         const wordCount = data.text.split(/\s+/).filter(Boolean).length;
         const confidence = data.confidence;
+        let rotationUsed = null;
+        let rotationMs = 0;
 
-        // Build expected fields based on label position + record
-        const expected = {};
-        if (record) {
-          expected.brandName = record.brandName || record.brand;
-          if (label !== "front") {
-            // Back labels should have health warning, name/address
-            expected.healthWarning = "GOVERNMENT WARNING";  // just check prefix
+        // Pass 2: Rotation — if healthWarning missing, try 90° and 270°
+        // Safeguard: skip rotation if initial OCR was slow (>5s = huge image)
+        const MAX_OCR_FOR_ROTATION = 5000;
+        if (!parsed.healthWarning && ocrMs < MAX_OCR_FOR_ROTATION) {
+          const rotStart = Date.now();
+          for (const deg of [90, 270]) {
+            // Downscale to max 2000px before rotation to keep processing fast
+            const rotBuf = await sharp(img.path)
+              .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+              .rotate(deg)
+              .toBuffer();
+            const rotPP = await preprocessImage({ buffer: rotBuf });
+            const { data: rotData } = await worker.recognize(rotPP);
+            const rotParsed = parseOcrText(rotData.text);
+            // Merge any new fields from rotation
+            for (const [k, v] of Object.entries(rotParsed)) {
+              if (v && !parsed[k]) {
+                parsed[k] = v;
+              }
+            }
+            if (parsed.healthWarning) {
+              rotationUsed = deg;
+              break;
+            }
           }
+          rotationMs = Date.now() - rotStart;
         }
 
         // Score available fields
@@ -431,15 +454,17 @@ async function main() {
 
         results.push({
           ttbId, imageNum: img.num, label, category,
-          ocrMs, charCount, wordCount, confidence,
+          ocrMs, rotationMs, rotationUsed, totalMs: ocrMs + rotationMs,
+          charCount, wordCount, confidence,
           rawTextPreview: data.text.slice(0, 200).replace(/\n/g, "↵"),
           parsed, fieldScores, brandScore,
           fieldsExtracted: Object.keys(fieldScores).length,
           brandName: record?.brandName || record?.brand || "",
         });
 
+        const rotTag = rotationUsed ? ` +rot${rotationUsed}°(${rotationMs}ms)` : (rotationMs > 0 ? ` +rot(${rotationMs}ms,miss)` : "");
         const fieldList = Object.keys(fieldScores).join(", ") || "(none)";
-        console.log(` ${ocrMs}ms, conf=${confidence?.toFixed(0)}%, ${Object.keys(fieldScores).length} fields [${fieldList}]`);
+        console.log(` ${ocrMs}ms${rotTag}, conf=${confidence?.toFixed(0)}%, ${Object.keys(fieldScores).length} fields [${fieldList}]`);
       } catch (err) {
         console.log(` ERROR: ${err.message}`);
         results.push({
@@ -468,8 +493,18 @@ function generateReport(results) {
   const avgOcrMs = successful.length
     ? (successful.reduce((s, r) => s + r.ocrMs, 0) / successful.length).toFixed(0)
     : 0;
+  const avgTotalMs = successful.length
+    ? (successful.reduce((s, r) => s + (r.totalMs || r.ocrMs), 0) / successful.length).toFixed(0)
+    : 0;
   const avgConfidence = successful.length
     ? (successful.reduce((s, r) => s + (r.confidence || 0), 0) / successful.length).toFixed(1)
+    : 0;
+
+  // Rotation stats
+  const rotationAttempted = successful.filter(r => r.rotationMs > 0);
+  const rotationSuccess = successful.filter(r => r.rotationUsed);
+  const avgRotMs = rotationAttempted.length
+    ? (rotationAttempted.reduce((s, r) => s + r.rotationMs, 0) / rotationAttempted.length).toFixed(0)
     : 0;
 
   // Field extraction rates
@@ -552,9 +587,12 @@ function generateReport(results) {
 | Metric | Value |
 |--------|-------|
 | **Images processed** | ${totalImages} (${errors.length} errors) |
-| **Avg OCR time** | ${avgOcrMs}ms per image |
+| **Avg OCR time (pass 1 only)** | ${avgOcrMs}ms per image |
+| **Avg total time (with rotation)** | ${avgTotalMs}ms per image |
 | **Avg Tesseract confidence** | ${avgConfidence}% |
 | **Speed P50 / P90 / P99** | ${p50}ms / ${p90}ms / ${p99}ms |
+| **Rotation attempted** | ${rotationAttempted.length}/${successful.length} images (when healthWarning missing) |
+| **Rotation found healthWarning** | ${rotationSuccess.length}/${rotationAttempted.length} (avg ${avgRotMs}ms overhead) |
 | **Brand name detected** | ${fieldCounts.brandName}/${successful.length} (${(fieldCounts.brandName / successful.length * 100).toFixed(0)}%) |
 | **Brand name accurate** | ${brandExact}/${brandResults.length} exact, ${brandPartial} partial, ${brandMiss} miss |
 
@@ -704,8 +742,10 @@ These images produced OCR text but the parser could not extract any structured f
   console.log(`  TESSERACT OCR BENCHMARK SUMMARY`);
   console.log(`${"═".repeat(70)}`);
   console.log(`  Images: ${totalImages} (${errors.length} errors)`);
-  console.log(`  Avg time: ${avgOcrMs}ms | P50: ${p50}ms | P90: ${p90}ms`);
+  console.log(`  Avg OCR time (pass 1): ${avgOcrMs}ms | Total (w/ rotation): ${avgTotalMs}ms`);
+  console.log(`  Speed: P50=${p50}ms | P90=${p90}ms | P99=${p99}ms`);
   console.log(`  Avg confidence: ${avgConfidence}%`);
+  console.log(`  Rotation: ${rotationAttempted.length} attempted, ${rotationSuccess.length} found healthWarning (avg ${avgRotMs}ms overhead)`);
   console.log(`  Brand detected: ${fieldCounts.brandName}/${successful.length} (${(fieldCounts.brandName / successful.length * 100).toFixed(0)}%)`);
   console.log(`  Brand accurate: ${brandExact}/${brandResults.length} exact`);
   console.log(`  Health warning: ${fieldCounts.healthWarning}/${successful.length} (${(fieldCounts.healthWarning / successful.length * 100).toFixed(0)}%)`);

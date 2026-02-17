@@ -279,11 +279,29 @@ export default function TTBReviewPage() {
 
       // Pass 2: Rotation — if healthWarning is still missing, try 90° and 270°
       // rotations on each label. Many labels print the gov warning vertically.
+      // Safeguard: skip rotation for very large canvases (>4M pixels) to avoid
+      // freezing the browser tab. Downscale large canvases before rotating.
+      const MAX_ROTATION_PIXELS = 4_000_000; // 2000×2000
       if (!merged.healthWarning) {
         console.log("[TextDetect] healthWarning missing — trying rotated OCR (90°, 270°)…");
         for (const { name, canvas } of perLabel) {
+          // Downscale if too large for rotation
+          let rotSource = canvas;
+          const pixels = canvas.width * canvas.height;
+          if (pixels > MAX_ROTATION_PIXELS) {
+            const scale = Math.sqrt(MAX_ROTATION_PIXELS / pixels);
+            const dw = Math.round(canvas.width * scale);
+            const dh = Math.round(canvas.height * scale);
+            const small = document.createElement("canvas");
+            small.width = dw;
+            small.height = dh;
+            const sCtx = small.getContext("2d")!;
+            sCtx.drawImage(canvas, 0, 0, dw, dh);
+            rotSource = small;
+            console.log(`[TextDetect] Downscaled ${canvas.width}×${canvas.height} → ${dw}×${dh} for rotation`);
+          }
           for (const deg of [90, 270] as const) {
-            const rotated = rotateCanvas(canvas, deg);
+            const rotated = rotateCanvas(rotSource, deg);
             const { text: rotText, fields: rotFields } = await ocrCanvas(rotated);
             // Merge any new fields from the rotated pass
             for (const [k, v] of Object.entries(rotFields)) {
