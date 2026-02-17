@@ -13,12 +13,12 @@
 | Metric | Value |
 |--------|-------|
 | **Images processed** | 162 (0 errors) |
-| **Avg OCR time (pass 1 only)** | 1813ms per image |
-| **Avg total time (with rotation)** | 2565ms per image |
+| **Avg OCR time (pass 1 only)** | 1750ms per image |
+| **Avg total time (with rotation)** | 2489ms per image |
 | **Avg Tesseract confidence** | 64.5% |
-| **Speed P50 / P90 / P99** | 1107ms / 2495ms / 8405ms |
+| **Speed P50 / P90 / P99** | 1077ms / 2420ms / 7342ms |
 | **Rotation attempted** | 90/162 images (when healthWarning missing) |
-| **Rotation found healthWarning** | 20/90 (avg 1354ms overhead) |
+| **Rotation found healthWarning** | 20/90 (avg 1330ms overhead) |
 | **Brand name detected** | 157/162 (97%) |
 | **Brand name accurate** | 3/157 exact, 17 partial, 137 miss |
 
@@ -31,16 +31,16 @@ How often the parser successfully extracts each field from OCR text (across all 
 | Field | Extracted | Rate | Front Labels (47) | Back Labels (74) |
 |-------|-----------|------|-------------|------------|
 | Brand Name | 157/162 | **97%** | 47 (100%) | 72 (97%) |
-| Class/Type | 83/162 | **51%** | 29 (62%) | 43 (58%) |
-| Alcohol Content | 69/162 | **43%** | 26 (55%) | 34 (46%) |
+| Class/Type | 85/162 | **52%** | 30 (64%) | 44 (59%) |
+| Alcohol Content | 70/162 | **43%** | 27 (57%) | 34 (46%) |
 | Net Contents | 84/162 | **52%** | 28 (60%) | 42 (57%) |
 | Health Warning | 92/162 | **57%** | 27 (57%) | 44 (59%) |
 | Sulfite Declaration | 30/162 | **19%** | 6 (13%) | 14 (19%) |
-| Name & Address | 84/162 | **52%** | 22 (47%) | 41 (55%) |
+| Name & Address | 87/162 | **54%** | 23 (49%) | 42 (57%) |
 | Vintage Date | 32/162 | **20%** | 7 (15%) | 18 (24%) |
 | Varietal | 21/162 | **13%** | 3 (6%) | 13 (18%) |
 | Appellation | 17/162 | **10%** | 4 (9%) | 7 (9%) |
-| Country of Origin | 33/162 | **20%** | 9 (19%) | 15 (20%) |
+| Country of Origin | 37/162 | **23%** | 10 (21%) | 18 (24%) |
 | Age Statement | 3/162 | **2%** | 2 (4%) | 1 (1%) |
 
 ---
@@ -49,9 +49,9 @@ How often the parser successfully extracts each field from OCR text (across all 
 
 | Category | Images | Avg Fields/Image | Avg Confidence | Avg OCR Time |
 |----------|--------|-------------------|----------------|-------------|
-| **Beer** | 41 | 4.3 | 59.1% | 1748ms |
-| **Wine** | 68 | 5.0 | 68.3% | 2183ms |
-| **Spirits** | 25 | 3.6 | 60.1% | 1472ms |
+| **Beer** | 41 | 4.3 | 59.1% | 1632ms |
+| **Wine** | 68 | 5.0 | 68.3% | 2123ms |
+| **Spirits** | 25 | 3.9 | 60.1% | 1451ms |
 
 ---
 
@@ -88,12 +88,12 @@ Of 157 images where both ground-truth brand name and OCR brand name were availab
 ## OCR Speed Distribution
 
 ```
-    < 0.5s │ ███████████████████████ 26
-    < 1.0s │ ████████████████████████████████████████ 45
-    < 1.5s │ ████████████████████████████████████ 40
+    < 0.5s │ ██████████████████████████ 29
+    < 1.0s │ █████████████████████████████████████ 42
+    < 1.5s │ ████████████████████████████████████████ 45
     < 2.0s │ ██████████████████ 20
-    < 3.0s │ ██████████████████ 20
-    < 5.0s │ █████ 6
+    < 3.0s │ ███████████████ 17
+    < 5.0s │ ████ 4
    < 10.0s │ ████ 4
    < 20.0s │  0
      ≥ 20s │ █ 1

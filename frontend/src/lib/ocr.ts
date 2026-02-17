@@ -371,12 +371,21 @@ export function parseOcrText(rawText: string): ExtractedFields {
     /(\d+\.?\d*)\s*%\s*alc\.?\s*by\s*vol\.?/i,
     // "5% ALC./VOL." / "5% ALC/VOL" / "5% ALC./VOL"
     /(\d+\.?\d*)\s*%\s*alc\.?\s*\/\s*vol\.?/i,
+    // OCR misread: "/" → "I" or "1": "5% ALCIVOL" / "5% ALC1VOL"
+    /(\d+\.?\d*)\s*%\s*alc\.?\s*[i1l]\s*vol\.?/i,
+    // OCR misread: "V" → "N": "5% ALC. NOL." / "5% ALC.NOL"
+    /(\d+\.?\d*)\s*%\s*alc\.?\s*[./]?\s*n[o0]l\.?/i,
     // "ALC. 5% BY VOL." / "ALC 5% BY VOL" — also handle comma OCR misread: "ALC, 5%"
     /alc[.,]?\s*(\d+\.?\d*)\s*%\s*by\s*vol\.?/i,
     // "ALC./VOL. 5%" / "ALC/VOL 5%"
     /alc\.?\s*\/\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
+    // OCR misread reversed: "ALC. NOL. 5%" / "ALCIVOL 5%"
+    /alc\.?\s*[./]?\s*n[o0]l\.?\s*(\d+\.?\d*)\s*%/i,
+    /alc\.?\s*[i1l]\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
     // "5% Alcohol by volume"
     /(\d+\.?\d*)\s*%\s*alcohol\s*(?:\(alc\))?\s*(?:by\s+vol(?:ume)?|\/\s*vol(?:ume)?)/i,
+    // Proof-based: "(80 PROOF)" / "80 Proof" → extract as-is
+    /\(?(\d+)\s*proof\)?/i,
     // Loose fallback: any "X% alc" or "alc X%" — handle comma misread
     /(\d+\.?\d*)\s*%\s*alc/i,
     /alc[.,]?\s*(\d+\.?\d*)\s*%/i,
@@ -395,9 +404,10 @@ export function parseOcrText(rawText: string): ExtractedFields {
   if (compoundNet) {
     fields.netContents = compoundNet[0].trim();
   } else {
-    // Single unit: "750 mL", "12 FL OZ", "1.75 L", "1 PINT"
+    // Single unit: "750 mL", "12 FL OZ", "1.75 L", "1 PINT", "200ml", "16OZ"
+    // \s* allows both spaced ("750 ml") and unspaced ("750ml") variants
     const netMatch = text.match(
-      /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?)/i,
+      /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?|oz\.?)/i,
     );
     if (netMatch) {
       fields.netContents = netMatch[0].trim();
@@ -409,6 +419,18 @@ export function parseOcrText(rawText: string): ExtractedFields {
     const gwStart = text.search(/government\s+warning/i);
     // Capture up to 500 chars to get both statements
     fields.healthWarning = text.slice(gwStart, gwStart + 500).trim();
+  }
+  // Fallback: "SURGEON GENERAL" without the "GOVERNMENT WARNING" prefix
+  // (sometimes Tesseract misreads the header but captures the body)
+  if (!fields.healthWarning && /surgeon\s+general/i.test(text)) {
+    const sgStart = text.search(/surgeon\s+general/i);
+    const start = Math.max(0, sgStart - 40); // grab a bit before for context
+    fields.healthWarning = text.slice(start, sgStart + 500).trim();
+  }
+  // Fallback 2: "ACCORDING TO THE" + "BIRTH DEFECTS" — fragmented OCR
+  if (!fields.healthWarning && /according\s+to\s+the/i.test(text) && /birth\s+defects/i.test(text)) {
+    const atStart = text.search(/according\s+to\s+the/i);
+    fields.healthWarning = text.slice(Math.max(0, atStart - 30), atStart + 500).trim();
   }
 
   // --- Contains Sulfites ---
@@ -468,13 +490,15 @@ export function parseOcrText(rawText: string): ExtractedFields {
     /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water)\b/i,
     /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
     /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
-    // Beer
-    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+beer|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|blonde\s+ale|cream\s+ale|kolsch|bock|doppelbock)\b/i,
+    // Beer (expanded: DIPA, session, hazy, black IPA, sour, fruited, etc.)
+    /\b(double\s+india\s+pale\s+ale|hazy\s+(?:double\s+)?(?:india\s+)?pale\s+ale|black\s+(?:india\s+)?pale\s+ale|session\s+(?:india\s+)?pale\s+ale|new\s+england\s+(?:style\s+)?(?:india\s+)?pale\s+ale|(?:double|imperial)\s+IPA|DIPA)\b/i,
+    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+(?:beer|ale)|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|(?:fruited\s+)?sour|blonde\s+ale|cream\s+ale|kolsch|kölsch|bock|doppelbock|dunkel|marzen|märzen|witbier|berliner\s+weisse|gose|barleywine|scotch\s+ale|strong\s+ale|farmhouse\s+ale|wild\s+ale|belgian\s+(?:strong|pale|dark|dubbel|tripel|quad))\b/i,
     // Wine
     /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth)\b/i,
     /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
-    // Spirits (generic — last so compound types win)
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|rye\s+whiskey)\b/i,
+    // Spirits (expanded: straight bourbon, artesanal mezcal, single malt, etc.)
+    /\b(straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey))/i,
+    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|ready\s+to\s+drink|cocktail)\b/i,
   ];
   for (const pat of classPatterns) {
     const m = text.match(pat);
@@ -509,7 +533,7 @@ export function parseOcrText(rawText: string): ExtractedFields {
 
   // --- Name & address ---
   // Strategy 1: Match on joined text — handles common producer prefixes
-  const NA_PREFIX = /(?:imported|bottled|produced\s*&?\s*bottled|produced|distributed|blended\s*&?\s*bottled|distilled\s*&?\s*bottled|distilled|brewed|made|packed|canned|vinted|cellared)\s+(?:by|for|in)(?:\s|$)/i;
+  const NA_PREFIX = /(?:imported|bottled|produced\s*&?\s*bottled|produced|distributed|blended\s*&?\s*bottled|distilled\s*&?\s*bottled|distilled|brewed|made|packed|canned|vinted|cellared|crafted|brewed\s*&?\s*canned|brewed\s*&?\s*packaged|brewed\s*&?\s*bottled|crafted\s*&?\s*canned|crafted\s*&?\s*distilled|fermented|estate\s+bottled)\s+(?:by|for|in|at|and\s+(?:canned|bottled|packaged))(?:\s|$)/i;
   const naPatterns = [
     new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2}\\s*\\d{5})`, "i"),
     new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2})\\b`, "i"),
@@ -603,10 +627,23 @@ export function parseOcrText(rawText: string): ExtractedFields {
   }
 
   // --- Country of origin ---
-  const countryPatterns = /\b(product\s+of\s+[\w\s]+|imported\s+(?:from|by)\s+[\w\s]+|made\s+in\s+[\w\s]+)/i;
-  const countryMatch = text.match(countryPatterns);
-  if (countryMatch) {
-    fields.countryOfOrigin = countryMatch[0].trim();
+  const countryPatterns = [
+    /\b(product\s+of\s+[\w\s]+)/i,
+    /\b(imported\s+(?:from|by)\s+[\w\s]+)/i,
+    /\b(made\s+in\s+[\w\s]+)/i,
+    // Spanish: "hecho en mexico" / "producto de mexico"
+    /\b(hecho\s+en\s+[\w\s]+)/i,
+    /\b(producto\s+de\s+[\w\s]+)/i,
+    // "Product of the USA" / "Produced in USA"
+    /\b(product\s+of\s+the\s+usa)/i,
+    /\b(produced\s+in\s+[\w\s]+)/i,
+  ];
+  for (const pat of countryPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      fields.countryOfOrigin = m[0].trim();
+      break;
+    }
   }
 
   // --- Age statement (spirits) ---
