@@ -151,9 +151,62 @@ if >55% of pixels are below 128 → invert the image
 - Helps Tesseract's page segmentation algorithm detect text block boundaries.
 
 ### What We Intentionally DON'T Do
-- **No binarization (Otsu threshold)** — Tesseract 4+ LSTM performs better on grayscale than forced black/white. Binarization destroys anti-aliasing information.
+- **No binarization in the default pass** — Tesseract 4+ LSTM performs better on grayscale than forced black/white. However, if confidence is low (<45%), a binarized retry is attempted (see [Confidence-Gated Binarization Retry](#confidence-gated-binarization-retry) below).
 - **No rotation** at this stage — rotation is handled as a separate multi-pass step (see below).
 - **No deskewing** — label images from TTB are already properly oriented (not scanned at an angle).
+
+---
+
+## Confidence-Gated Binarization Retry
+
+**Location:** `frontend/src/app/(main)/queue/[id]/page.tsx` (browser), `scripts/benchmark-ocr.mjs` (server)
+**Constant:** `RETRY_CONFIDENCE_THRESHOLD = 45` in `frontend/src/lib/ocr.ts`
+
+### The Problem
+
+~40% of label images produce Tesseract confidence below 45%. These are typically labels with textured backgrounds, gradients, or low contrast that the grayscale pipeline doesn't clean up well enough.
+
+### The Solution: Otsu Binarization Fallback
+
+After the initial grayscale OCR pass, if confidence < 45%:
+
+1. **Re-preprocess** the same canvas with `{ binarize: true }` — this adds Otsu thresholding after contrast stretching, converting the image to pure black & white
+2. **Re-run Tesseract** on the binarized image
+3. **Compare results** — keep whichever pass extracted more fields; tie-break on confidence
+4. **Speed safeguard** — skip retry if initial OCR took >3s (those images would produce even slower retries)
+
+```
+Pass 1: grayscale → sharpen → contrast → Tesseract (conf=32%, 1 field)
+  ↓ conf < 45% AND ocrMs < 3000
+Pass 1b: grayscale → sharpen → contrast → Otsu binarize → Tesseract (conf=71%, 4 fields)
+  ↓ 4 > 1 fields → keep binarized result ✓
+```
+
+### Otsu Threshold Algorithm
+
+Computed from the contrast-stretched histogram — finds the threshold that minimizes intra-class variance between foreground (text) and background:
+
+```javascript
+// For each possible threshold t (0–255):
+//   Split pixels into background (≤t) and foreground (>t)
+//   Compute between-class variance = wBg × wFg × (meanBg − meanFg)²
+//   Pick t that maximizes this variance
+```
+
+This is the same algorithm Sharp uses internally (`sharp.threshold()`), but implemented in canvas for the browser.
+
+### Performance (162 images benchmark)
+
+| Metric | Value |
+|--------|-------|
+| Images triggering retry | 26/162 (16%) |
+| Retries that improved result | 11/26 (42% win rate) |
+| Avg retry overhead | ~1,850ms |
+| P50 impact | +6% (1077ms → 1141ms) |
+| P90 impact | +4% (2420ms → 2523ms) |
+| Field gains | +11 detections across dataset |
+
+The 3s speed safeguard ensures that large images (which take 5–90s for initial OCR) never trigger a retry that would double their processing time.
 
 ---
 
