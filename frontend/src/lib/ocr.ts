@@ -162,6 +162,31 @@ export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
 }
 
 // ---------------------------------------------------------------------------
+// Canvas rotation for multi-pass OCR
+// ---------------------------------------------------------------------------
+
+/**
+ * Rotate a canvas by the given degrees (90, 180, or 270).
+ * Returns a new canvas with the image drawn at the specified rotation.
+ *
+ * Used for multi-pass OCR: some labels print the government warning or
+ * other required text rotated 90° (vertical). Tesseract cannot read
+ * rotated text, so we rotate the image and OCR it separately, then merge
+ * results from all orientations.
+ */
+export function rotateCanvas(source: HTMLCanvasElement, degrees: 90 | 180 | 270): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  const swap = degrees === 90 || degrees === 270;
+  out.width = swap ? source.height : source.width;
+  out.height = swap ? source.width : source.height;
+  const ctx = out.getContext("2d")!;
+  ctx.translate(out.width / 2, out.height / 2);
+  ctx.rotate((degrees * Math.PI) / 180);
+  ctx.drawImage(source, -source.width / 2, -source.height / 2);
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Browser-side OCR via Tesseract.js
 // ---------------------------------------------------------------------------
 

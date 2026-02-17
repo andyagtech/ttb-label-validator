@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
-import { parseOcrText, preprocessForOcr, type ExtractedFields } from "@/lib/ocr";
+import { parseOcrText, preprocessForOcr, rotateCanvas, type ExtractedFields } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
 import FormVsLabelTable from "@/components/FormVsLabelTable";
 import QuickRejectButton from "@/components/QuickRejectButton";
@@ -213,6 +213,9 @@ export default function TTBReviewPage() {
   }, [submission]);
 
   // Run Text Detect (Tesseract.js) on label images — parse per-label to track sources
+  // Includes multi-pass rotation: after the 0° pass, if key fields (healthWarning,
+  // nameAddress) are still missing, we re-run OCR on 90° and 270° rotated versions
+  // of each label to catch vertically-printed text (common for government warnings).
   const runTextDetect = useCallback(async () => {
     if (!submission) return;
     setDetecting(true);
@@ -225,30 +228,43 @@ export default function TTBReviewPage() {
         tessedit_pageseg_mode: "6",       // Single uniform block — better for labels
         preserve_interword_spaces: "1",   // Keep word spacing for field parsing
       });
-      const perLabel: { name: string; text: string; fields: ExtractedFields }[] = [];
-      for (const label of submission.labels) {
-        const imgUrl = label.correctedImageUrl || label.originalImageUrl;
-        if (!imgUrl) continue;
+
+      // Helper: load image URL into a canvas
+      const loadCanvas = async (url: string): Promise<HTMLCanvasElement> => {
         const img = new window.Image();
         img.crossOrigin = "anonymous";
         await new Promise<void>((resolve, reject) => {
           img.onload = () => resolve();
-          img.onerror = () => reject(new Error(`Failed to load ${label.slotName}`));
-          img.src = imgUrl;
+          img.onerror = () => reject(new Error(`Failed to load image`));
+          img.src = url;
         });
         const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0);
+        return canvas;
+      };
+
+      // Helper: preprocess + OCR + parse a canvas
+      const ocrCanvas = async (canvas: HTMLCanvasElement): Promise<{ text: string; fields: ExtractedFields }> => {
         const processed = preprocessForOcr(canvas);
         const dataUrl = processed.toDataURL("image/png");
         const { data: { text } } = await worker.recognize(dataUrl);
-        const parsed = parseOcrText(text);
-        perLabel.push({ name: label.slotName, text, fields: parsed });
+        return { text, fields: parseOcrText(text) };
+      };
+
+      // Pass 1: OCR all labels at 0° (normal orientation)
+      const perLabel: { name: string; text: string; fields: ExtractedFields; canvas: HTMLCanvasElement }[] = [];
+      for (const label of submission.labels) {
+        const imgUrl = label.correctedImageUrl || label.originalImageUrl;
+        if (!imgUrl) continue;
+        const canvas = await loadCanvas(imgUrl);
+        const { text, fields } = await ocrCanvas(canvas);
+        perLabel.push({ name: label.slotName, text, fields, canvas });
       }
-      await worker.terminate();
-      // Merge fields from all labels, tracking which label each field came from
+
+      // Merge pass-1 results
       const merged: ExtractedFields = { rawText: perLabel.map((l) => l.text).join("\n\n") };
       const sources: Record<string, string> = {};
       for (const { name, fields: f } of perLabel) {
@@ -260,6 +276,34 @@ export default function TTBReviewPage() {
           }
         }
       }
+
+      // Pass 2: Rotation — if healthWarning is still missing, try 90° and 270°
+      // rotations on each label. Many labels print the gov warning vertically.
+      if (!merged.healthWarning) {
+        console.log("[TextDetect] healthWarning missing — trying rotated OCR (90°, 270°)…");
+        for (const { name, canvas } of perLabel) {
+          for (const deg of [90, 270] as const) {
+            const rotated = rotateCanvas(canvas, deg);
+            const { text: rotText, fields: rotFields } = await ocrCanvas(rotated);
+            // Merge any new fields from the rotated pass
+            for (const [k, v] of Object.entries(rotFields)) {
+              if (k === "rawText" || !v) continue;
+              if (!merged[k as keyof ExtractedFields]) {
+                (merged as Record<string, string>)[k] = v;
+                sources[k] = `${name} (${deg}°)`;
+                console.log(`[TextDetect] Found ${k} in ${name} at ${deg}° rotation`);
+              }
+            }
+            // Append rotated raw text
+            merged.rawText += `\n\n--- ${name} @ ${deg}° ---\n${rotText}`;
+            // If we found healthWarning, stop rotating
+            if (merged.healthWarning) break;
+          }
+          if (merged.healthWarning) break;
+        }
+      }
+
+      await worker.terminate();
       setDetectedFields(merged);
       setFieldSources(sources);
     } catch (err) {
