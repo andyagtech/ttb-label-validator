@@ -22,7 +22,11 @@ const OUT_DIR = path.join(__dirname, "..", "frontend", "public", "ttb-labels");
 const GEMINI_MODEL = "gemini-2.0-flash-exp-image-generation";
 const GEMINI_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "***REDACTED***";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error("❌ GEMINI_API_KEY env var is required. Set it in .env or pass inline:\n   GEMINI_API_KEY=... node scripts/generate-queue-labels.mjs");
+  process.exit(1);
+}
 
 // ---------------------------------------------------------------------------
 // Exact correct government warning
