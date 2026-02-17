@@ -157,24 +157,51 @@ if >55% of pixels are below 128 → invert the image
 
 ---
 
-## Canvas Rotation
+## Smart Edge-Text Detection
 
-**Function:** `rotateCanvas(source: HTMLCanvasElement, degrees: 90 | 180 | 270): HTMLCanvasElement`
-**Location:** `frontend/src/lib/ocr.ts` lines 177–187
+**Functions:** `detectEdgeContent()`, `cropEdgeStrip()`, `rotateCanvas()`
+**Location:** `frontend/src/lib/ocr.ts` lines 164–260
 
-Creates a rotated copy of a canvas. Used for multi-pass OCR to read vertically-printed text.
+### The Problem
 
-```javascript
-// For 90° or 270°, width and height swap
-out.width = swap ? source.height : source.width;
-out.height = swap ? source.width : source.height;
-// Translate to center, rotate, draw
-ctx.translate(out.width / 2, out.height / 2);
-ctx.rotate((degrees * Math.PI) / 180);
-ctx.drawImage(source, -source.width / 2, -source.height / 2);
+Many beer/spirits labels print the government warning rotated 90° along the left or right edge to save horizontal space. Tesseract cannot read rotated text. Naively rotating the entire image and re-running OCR is expensive (~2–5 seconds per rotation).
+
+### The Solution: Edge-Strip Analysis
+
+Instead of blindly rotating full images, we:
+
+1. **Detect edge content** — analyze pixel variance (grayscale stdev) in the leftmost and rightmost 15% of the image
+2. **Skip rotation** if both edges have low variance (solid color / no text) — costs only ~5ms
+3. **Crop the edge strip** if content is detected — extract just that 15% slice
+4. **Rotate and OCR the strip** — processes ~15% of pixels instead of 100%
+
+```
+detectEdgeContent(canvas)
+├── left stdev = 8.2  → NO content → skip
+└── right stdev = 42.7 → HAS content → crop right 15%
+    └── rotateCanvas(strip, 90°) → preprocessForOcr → Tesseract → parse
+        └── Found "GOVERNMENT WARNING..." ✓
 ```
 
-**Why this exists:** Some labels print the government warning rotated 90° along the edge (e.g., Hops N Drops Lager has the health warning printed vertically on the right side). Tesseract cannot read rotated text — it must be axis-aligned.
+### Variance Threshold
+
+Empirically tuned at **stdev > 25**:
+- Solid backgrounds (green, white, black): stdev < 15
+- Text on background: stdev > 30
+- Decorative patterns without text: 15–30 (borderline; may trigger rotation but no harm)
+
+### Performance Impact (benchmark on 162 images)
+
+| Approach | Avg Rotation Overhead |
+|----------|----------------------|
+| Full-image rotation (old) | 2,747ms |
+| **Edge-strip rotation (new)** | **1,354ms** (−51%) |
+| No rotation (skipped) | ~5ms (stdev check only) |
+
+Of 90 images that triggered rotation check:
+- ~30 had no edge content → skipped entirely (~5ms)
+- ~40 had edge content but no healthWarning found → 1 strip × 2 rotations
+- **20 found healthWarning** via edge-strip rotation
 
 ---
 

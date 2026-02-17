@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
-import { parseOcrText, preprocessForOcr, rotateCanvas, type ExtractedFields } from "@/lib/ocr";
+import { parseOcrText, preprocessForOcr, rotateCanvas, detectEdgeContent, cropEdgeStrip, type ExtractedFields } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
 import FormVsLabelTable from "@/components/FormVsLabelTable";
 import QuickRejectButton from "@/components/QuickRejectButton";
@@ -277,44 +277,37 @@ export default function TTBReviewPage() {
         }
       }
 
-      // Pass 2: Rotation — if healthWarning is still missing, try 90° and 270°
-      // rotations on each label. Many labels print the gov warning vertically.
-      // Safeguard: skip rotation for very large canvases (>4M pixels) to avoid
-      // freezing the browser tab. Downscale large canvases before rotating.
-      const MAX_ROTATION_PIXELS = 4_000_000; // 2000×2000
+      // Pass 2: Smart edge-strip rotation — if healthWarning is still missing,
+      // check each label's left/right edges for text-like content (pixel variance).
+      // Only if an edge has content do we crop that narrow strip (~15% of pixels),
+      // rotate it, and OCR it. This is ~6× faster than rotating the full image.
       if (!merged.healthWarning) {
-        console.log("[TextDetect] healthWarning missing — trying rotated OCR (90°, 270°)…");
+        console.log("[TextDetect] healthWarning missing — checking edges for rotated text…");
         for (const { name, canvas } of perLabel) {
-          // Downscale if too large for rotation
-          let rotSource = canvas;
-          const pixels = canvas.width * canvas.height;
-          if (pixels > MAX_ROTATION_PIXELS) {
-            const scale = Math.sqrt(MAX_ROTATION_PIXELS / pixels);
-            const dw = Math.round(canvas.width * scale);
-            const dh = Math.round(canvas.height * scale);
-            const small = document.createElement("canvas");
-            small.width = dw;
-            small.height = dh;
-            const sCtx = small.getContext("2d")!;
-            sCtx.drawImage(canvas, 0, 0, dw, dh);
-            rotSource = small;
-            console.log(`[TextDetect] Downscaled ${canvas.width}×${canvas.height} → ${dw}×${dh} for rotation`);
+          const edges = detectEdgeContent(canvas);
+          if (!edges.left && !edges.right) {
+            console.log(`[TextDetect] ${name}: no edge content — skipping rotation`);
+            continue;
           }
-          for (const deg of [90, 270] as const) {
-            const rotated = rotateCanvas(rotSource, deg);
-            const { text: rotText, fields: rotFields } = await ocrCanvas(rotated);
-            // Merge any new fields from the rotated pass
-            for (const [k, v] of Object.entries(rotFields)) {
-              if (k === "rawText" || !v) continue;
-              if (!merged[k as keyof ExtractedFields]) {
-                (merged as Record<string, string>)[k] = v;
-                sources[k] = `${name} (${deg}°)`;
-                console.log(`[TextDetect] Found ${k} in ${name} at ${deg}° rotation`);
+          const sides: ("left" | "right")[] = [];
+          if (edges.left) sides.push("left");
+          if (edges.right) sides.push("right");
+          for (const side of sides) {
+            const strip = cropEdgeStrip(canvas, side);
+            for (const deg of [90, 270] as const) {
+              const rotated = rotateCanvas(strip, deg);
+              const { text: rotText, fields: rotFields } = await ocrCanvas(rotated);
+              for (const [k, v] of Object.entries(rotFields)) {
+                if (k === "rawText" || !v) continue;
+                if (!merged[k as keyof ExtractedFields]) {
+                  (merged as Record<string, string>)[k] = v;
+                  sources[k] = `${name} (${side} edge ${deg}°)`;
+                  console.log(`[TextDetect] Found ${k} in ${name} ${side} edge at ${deg}°`);
+                }
               }
+              merged.rawText += `\n\n--- ${name} ${side} @ ${deg}° ---\n${rotText}`;
+              if (merged.healthWarning) break;
             }
-            // Append rotated raw text
-            merged.rawText += `\n\n--- ${name} @ ${deg}° ---\n${rotText}`;
-            // If we found healthWarning, stop rotating
             if (merged.healthWarning) break;
           }
           if (merged.healthWarning) break;

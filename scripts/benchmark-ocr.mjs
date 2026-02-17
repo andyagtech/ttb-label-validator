@@ -408,29 +408,59 @@ async function main() {
         let rotationUsed = null;
         let rotationMs = 0;
 
-        // Pass 2: Rotation — if healthWarning missing, try 90° and 270°
-        // Safeguard: skip rotation if initial OCR was slow (>5s = huge image)
-        const MAX_OCR_FOR_ROTATION = 5000;
-        if (!parsed.healthWarning && ocrMs < MAX_OCR_FOR_ROTATION) {
+        // Pass 2: Smart edge-strip rotation
+        // 1. Analyze left/right 15% strips for text content (pixel stdev)
+        // 2. Only crop + rotate strips with content
+        // 3. OCR just the narrow strip (~15% of pixels) instead of full image
+        const EDGE_RATIO = 0.15;
+        const STDEV_THRESHOLD = 25;
+        if (!parsed.healthWarning) {
           const rotStart = Date.now();
-          for (const deg of [90, 270]) {
-            // Downscale to max 2000px before rotation to keep processing fast
-            const rotBuf = await sharp(img.path)
-              .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
-              .rotate(deg)
+          const meta = await sharp(img.path).metadata();
+          const stripW = Math.max(10, Math.round(meta.width * EDGE_RATIO));
+
+          // Compute stdev for left and right edge strips
+          async function edgeStdev(left) {
+            const extractLeft = left ? 0 : meta.width - stripW;
+            const raw = await sharp(img.path)
+              .extract({ left: extractLeft, top: 0, width: stripW, height: meta.height })
+              .grayscale()
+              .raw()
               .toBuffer();
-            const rotPP = await preprocessImage({ buffer: rotBuf });
-            const { data: rotData } = await worker.recognize(rotPP);
-            const rotParsed = parseOcrText(rotData.text);
-            // Merge any new fields from rotation
-            for (const [k, v] of Object.entries(rotParsed)) {
-              if (v && !parsed[k]) {
-                parsed[k] = v;
+            let sum = 0;
+            for (let i = 0; i < raw.length; i++) sum += raw[i];
+            const mean = sum / raw.length;
+            let sqDiff = 0;
+            for (let i = 0; i < raw.length; i++) sqDiff += (raw[i] - mean) ** 2;
+            return Math.sqrt(sqDiff / raw.length);
+          }
+
+          const leftStdev = await edgeStdev(true);
+          const rightStdev = await edgeStdev(false);
+
+          const sides = [];
+          if (leftStdev > STDEV_THRESHOLD) sides.push({ side: "left", extractLeft: 0 });
+          if (rightStdev > STDEV_THRESHOLD) sides.push({ side: "right", extractLeft: meta.width - stripW });
+
+          if (sides.length > 0) {
+            for (const { side, extractLeft } of sides) {
+              for (const deg of [90, 270]) {
+                const stripBuf = await sharp(img.path)
+                  .extract({ left: extractLeft, top: 0, width: stripW, height: meta.height })
+                  .rotate(deg)
+                  .toBuffer();
+                const stripPP = await preprocessImage({ buffer: stripBuf });
+                const { data: rotData } = await worker.recognize(stripPP);
+                const rotParsed = parseOcrText(rotData.text);
+                for (const [k, v] of Object.entries(rotParsed)) {
+                  if (v && !parsed[k]) parsed[k] = v;
+                }
+                if (parsed.healthWarning) {
+                  rotationUsed = `${side}-${deg}`;
+                  break;
+                }
               }
-            }
-            if (parsed.healthWarning) {
-              rotationUsed = deg;
-              break;
+              if (parsed.healthWarning) break;
             }
           }
           rotationMs = Date.now() - rotStart;

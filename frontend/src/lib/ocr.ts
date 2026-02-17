@@ -162,8 +162,85 @@ export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
 }
 
 // ---------------------------------------------------------------------------
-// Canvas rotation for multi-pass OCR
+// Smart edge-text detection + canvas rotation for multi-pass OCR
 // ---------------------------------------------------------------------------
+
+/** Width of edge strips to analyze, as fraction of total image width. */
+const EDGE_STRIP_RATIO = 0.15;
+
+/**
+ * Minimum grayscale standard deviation in an edge strip to consider it as
+ * containing text content worth rotating. Empirically tuned:
+ *   - Solid backgrounds (green, white, black): stdev < 15
+ *   - Text on background: stdev > 30
+ *   - Decorative patterns without text: 15–30 (borderline, but no harm)
+ */
+const EDGE_TEXT_STDEV_THRESHOLD = 25;
+
+/**
+ * Analyze the left and right edges of a canvas for text-like content.
+ *
+ * Beer/spirits labels commonly print the government warning or name/address
+ * rotated 90° along one edge to save horizontal space. Before committing
+ * to an expensive rotation + OCR pass, this function cheaply checks whether
+ * the edge strips even have content worth reading.
+ *
+ * Returns which edges (left/right) have pixel variance above the threshold.
+ * If both are false, rotation can be skipped entirely — saving ~2–5 seconds.
+ */
+export function detectEdgeContent(canvas: HTMLCanvasElement): { left: boolean; right: boolean } {
+  const ctx = canvas.getContext("2d")!;
+  const w = canvas.width;
+  const h = canvas.height;
+  const stripW = Math.max(10, Math.round(w * EDGE_STRIP_RATIO));
+
+  function computeStdev(x: number, sw: number): number {
+    const data = ctx.getImageData(x, 0, sw, h).data;
+    const n = sw * h;
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      const off = i * 4;
+      sum += 0.299 * data[off] + 0.587 * data[off + 1] + 0.114 * data[off + 2];
+    }
+    const mean = sum / n;
+    let sqDiff = 0;
+    for (let i = 0; i < n; i++) {
+      const off = i * 4;
+      const g = 0.299 * data[off] + 0.587 * data[off + 1] + 0.114 * data[off + 2];
+      sqDiff += (g - mean) * (g - mean);
+    }
+    return Math.sqrt(sqDiff / n);
+  }
+
+  const leftStdev = computeStdev(0, stripW);
+  const rightStdev = computeStdev(w - stripW, stripW);
+
+  console.log(`[OCR] Edge detection: left stdev=${leftStdev.toFixed(1)}, right stdev=${rightStdev.toFixed(1)} (threshold=${EDGE_TEXT_STDEV_THRESHOLD})`);
+
+  return {
+    left: leftStdev > EDGE_TEXT_STDEV_THRESHOLD,
+    right: rightStdev > EDGE_TEXT_STDEV_THRESHOLD,
+  };
+}
+
+/**
+ * Crop a vertical strip from the left or right edge of a canvas.
+ * Used to extract just the rotated-text region for OCR instead of
+ * processing the entire image.
+ */
+export function cropEdgeStrip(canvas: HTMLCanvasElement, side: "left" | "right"): HTMLCanvasElement {
+  const w = canvas.width;
+  const h = canvas.height;
+  const stripW = Math.max(10, Math.round(w * EDGE_STRIP_RATIO));
+  const x = side === "left" ? 0 : w - stripW;
+
+  const strip = document.createElement("canvas");
+  strip.width = stripW;
+  strip.height = h;
+  const ctx = strip.getContext("2d")!;
+  ctx.drawImage(canvas, x, 0, stripW, h, 0, 0, stripW, h);
+  return strip;
+}
 
 /**
  * Rotate a canvas by the given degrees (90, 180, or 270).

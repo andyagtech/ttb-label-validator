@@ -13,12 +13,12 @@
 | Metric | Value |
 |--------|-------|
 | **Images processed** | 162 (0 errors) |
-| **Avg OCR time (pass 1 only)** | 1775ms per image |
-| **Avg total time (with rotation)** | 3216ms per image |
+| **Avg OCR time (pass 1 only)** | 1813ms per image |
+| **Avg total time (with rotation)** | 2565ms per image |
 | **Avg Tesseract confidence** | 64.5% |
-| **Speed P50 / P90 / P99** | 1100ms / 2445ms / 7400ms |
-| **Rotation attempted** | 85/162 images (when healthWarning missing) |
-| **Rotation found healthWarning** | 20/85 (avg 2747ms overhead) |
+| **Speed P50 / P90 / P99** | 1107ms / 2495ms / 8405ms |
+| **Rotation attempted** | 90/162 images (when healthWarning missing) |
+| **Rotation found healthWarning** | 20/90 (avg 1354ms overhead) |
 | **Brand name detected** | 157/162 (97%) |
 | **Brand name accurate** | 3/157 exact, 17 partial, 137 miss |
 
@@ -31,16 +31,16 @@ How often the parser successfully extracts each field from OCR text (across all 
 | Field | Extracted | Rate | Front Labels (47) | Back Labels (74) |
 |-------|-----------|------|-------------|------------|
 | Brand Name | 157/162 | **97%** | 47 (100%) | 72 (97%) |
-| Class/Type | 84/162 | **52%** | 30 (64%) | 43 (58%) |
-| Alcohol Content | 70/162 | **43%** | 26 (55%) | 36 (49%) |
-| Net Contents | 88/162 | **54%** | 30 (64%) | 42 (57%) |
+| Class/Type | 83/162 | **51%** | 29 (62%) | 43 (58%) |
+| Alcohol Content | 69/162 | **43%** | 26 (55%) | 34 (46%) |
+| Net Contents | 84/162 | **52%** | 28 (60%) | 42 (57%) |
 | Health Warning | 92/162 | **57%** | 27 (57%) | 44 (59%) |
 | Sulfite Declaration | 30/162 | **19%** | 6 (13%) | 14 (19%) |
-| Name & Address | 96/162 | **59%** | 25 (53%) | 49 (66%) |
-| Vintage Date | 31/162 | **19%** | 7 (15%) | 17 (23%) |
+| Name & Address | 84/162 | **52%** | 22 (47%) | 41 (55%) |
+| Vintage Date | 32/162 | **20%** | 7 (15%) | 18 (24%) |
 | Varietal | 21/162 | **13%** | 3 (6%) | 13 (18%) |
 | Appellation | 17/162 | **10%** | 4 (9%) | 7 (9%) |
-| Country of Origin | 34/162 | **21%** | 9 (19%) | 16 (22%) |
+| Country of Origin | 33/162 | **20%** | 9 (19%) | 15 (20%) |
 | Age Statement | 3/162 | **2%** | 2 (4%) | 1 (1%) |
 
 ---
@@ -49,9 +49,9 @@ How often the parser successfully extracts each field from OCR text (across all 
 
 | Category | Images | Avg Fields/Image | Avg Confidence | Avg OCR Time |
 |----------|--------|-------------------|----------------|-------------|
-| **Beer** | 41 | 4.4 | 59.1% | 1657ms |
-| **Wine** | 68 | 5.1 | 68.3% | 2135ms |
-| **Spirits** | 25 | 3.6 | 60.1% | 1496ms |
+| **Beer** | 41 | 4.3 | 59.1% | 1748ms |
+| **Wine** | 68 | 5.0 | 68.3% | 2183ms |
+| **Spirits** | 25 | 3.6 | 60.1% | 1472ms |
 
 ---
 
@@ -89,12 +89,12 @@ Of 157 images where both ground-truth brand name and OCR brand name were availab
 
 ```
     < 0.5s │ ███████████████████████ 26
-    < 1.0s │ ████████████████████████████████████████ 46
-    < 1.5s │ █████████████████████████████████████ 43
-    < 2.0s │ █████████████████ 19
-    < 3.0s │ █████████████████ 19
-    < 5.0s │ ███ 4
-   < 10.0s │ ███ 4
+    < 1.0s │ ████████████████████████████████████████ 45
+    < 1.5s │ ████████████████████████████████████ 40
+    < 2.0s │ ██████████████████ 20
+    < 3.0s │ ██████████████████ 20
+    < 5.0s │ █████ 6
+   < 10.0s │ ████ 4
    < 20.0s │  0
      ≥ 20s │ █ 1
 
@@ -111,9 +111,9 @@ Images where Tesseract reported the lowest confidence (potential trouble spots):
 | 24003001000421-2 | 0% | wine | 0 | — |
 | 24003001000666-3 | 0% | wine | 0 | — |
 | 25335001000995-1 | 19% | spirits | 1 | Cre fe |
-| 24003001000225-2 | 22% | wine | 4 | ES AN ERS ne HERO So RE Feiss |
+| 24003001000225-2 | 22% | wine | 3 | ES AN ERS ne HERO So RE Feiss |
 | 24003001000190-2 | 24% | wine | 3 | » al 8 : A Fic Ee od |
-| 25335001000995-2 | 24% | spirits | 2 | ro TIGR Ee AY ag alte a le fa : |
+| 25335001000995-2 | 24% | spirits | 1 | ro TIGR Ee AY ag alte a le fa : |
 | 25335001000932-2 | 25% | wine | 3 | Rot Se Seg lS SRCIEg SR TR Len : i kh |
 | 24003001000325-3 | 26% | wine | 3 | Rr ; |
 | 24034001000123-2 | 28% | wine | 1 | AER INREERTN EI A |
