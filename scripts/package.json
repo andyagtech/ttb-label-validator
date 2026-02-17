@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "playwright": "^1.58.2",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "tesseract.js": "^7.0.0"
   }
 }

@@ -6,13 +6,15 @@ This document explains how we retrieve real COLA (Certificate of Label Approval)
 
 ## Overview
 
-The pipeline has **4 stages**, each handled by a dedicated script in `scripts/`:
+The pipeline has **6 stages**, each handled by a dedicated script in `scripts/`:
 
 ```
 Stage 1: Crawl records       →  ttb_cola_records.json
 Stage 2: Download images     →  sample_labels/ttb_labels_direct/{ttbId}-N.png
 Stage 3: Cleanup & copy      →  frontend/public/ttb-labels/{ttbId}-N.png
 Stage 4: Generate code       →  frontend/src/lib/sampleData.ts + store.ts blocks
+Stage 5: Upload to Blob CDN  →  Vercel Blob (production image serving)
+Stage 6: OCR benchmark        →  docs/OCR_PERFORMANCE.md
 ```
 
 ---
@@ -182,9 +184,110 @@ node generate-sample-data.mjs
 
 ---
 
+## Stage 5 — Upload to Vercel Blob CDN
+
+**Script:** `scripts/upload-labels-to-blob.mjs`
+
+**What it does:** Uploads all label images from `frontend/public/ttb-labels/` to the Vercel Blob CDN so they're accessible in production. Local images are gitignored — the deployed app serves images from Blob.
+
+**Prerequisites:**
+- `BLOB_READ_WRITE_TOKEN` must be set in `frontend/.env.local`. To get it:
+  ```bash
+  cd frontend && npx vercel env pull .env.local
+  ```
+
+**Usage:**
+```bash
+cd /path/to/ttb_cola_project
+node scripts/upload-labels-to-blob.mjs              # upload all
+node scripts/upload-labels-to-blob.mjs --dry-run    # list files without uploading
+```
+
+**Output:**
+- Uploads all `.png` files to `ttb-labels/{filename}` in Blob storage
+- Writes `sample_labels/ttb-labels-blob-urls.json` — URL mapping for reference
+- Images are served at: `https://rcptligvu3vbkguv.public.blob.vercel-storage.com/ttb-labels/{ttbId}-{N}.png`
+
+**Important:** This must be run every time new label images are added to `frontend/public/ttb-labels/`. The script uses `allowOverwrite: true` so re-running is safe.
+
+---
+
+## Stage 6 — OCR Performance Testing
+
+**Script:** `scripts/benchmark-ocr.mjs`
+
+**What it does:** Runs Tesseract.js OCR on every label image in `frontend/public/ttb-labels/`, parses the output with the same `parseOcrText` heuristics used in the browser, and generates a Markdown performance report.
+
+**Usage:**
+```bash
+node scripts/benchmark-ocr.mjs                # full benchmark (all images)
+node scripts/benchmark-ocr.mjs --limit 20     # test 20 images only
+node scripts/benchmark-ocr.mjs --verbose       # extra detail
+```
+
+**Output:** `docs/OCR_PERFORMANCE.md` with:
+- Field extraction rates per field (brand name, ABV, health warning, etc.)
+- Category breakdown (beer vs wine vs spirits)
+- Brand name accuracy vs TTB ground truth
+- OCR speed distribution (P50, P90, P99)
+- Lowest-confidence images (trouble spots)
+- Images with zero fields extracted
+
+**Pipeline:** The script applies the same preprocessing as the browser: upscale to ≥1500px → grayscale → sharpen → contrast normalise → 10px white pad. It uses Sharp for preprocessing and Tesseract.js v7 for OCR.
+
+**When to run:** After modifying `frontend/src/lib/ocr.ts` (parsing improvements) or after adding new label images. Compare the updated `OCR_PERFORMANCE.md` against the previous version to measure improvement.
+
+---
+
+## Verification Checklist
+
+**CRITICAL RULE: Every submission in the Review Queue MUST have working label images. Never deploy with broken images.**
+
+After adding new labels, run this verification before deploying:
+
+```bash
+# 1. Check that every TTB ID in SUBMISSIONS has a TTB_LABEL_IMAGES entry (and vice versa)
+node -e "
+const fs = require('fs');
+const store = fs.readFileSync('frontend/src/lib/store.ts', 'utf-8');
+const imgBlock = store.match(/const TTB_LABEL_IMAGES[^{]*{([^}]+)}/s)[1];
+const imgIds = new Set([...imgBlock.matchAll(/\"(\d+)\"/g)].map(m => m[1]));
+const subBlock = store.match(/const SUBMISSIONS[^[]*\[([\s\S]*?)\n\];/)[1];
+const subIds = new Set([...subBlock.matchAll(/ttbId:\s*\"(\d+)\"/g)].map(m => m[1]));
+console.log('Images:', imgIds.size, '| Submissions:', subIds.size);
+const orphan = [...imgIds].filter(id => !subIds.has(id));
+const missing = [...subIds].filter(id => !imgIds.has(id));
+if (orphan.length) console.log('⚠️  Images but no submission:', orphan);
+if (missing.length) console.log('❌ Submission but no images:', missing);
+if (!orphan.length && !missing.length) console.log('✅ Perfect 1:1 match');
+"
+
+# 2. Verify every image URL loads from Blob CDN (run after upload-labels-to-blob.mjs)
+node -e "
+const fs = require('fs');
+const store = fs.readFileSync('frontend/src/lib/store.ts', 'utf-8');
+const BLOB = 'https://rcptligvu3vbkguv.public.blob.vercel-storage.com/ttb-labels';
+const imgBlock = store.match(/const TTB_LABEL_IMAGES[^{]*{([^}]+)}/s)[1];
+const checks = [];
+for (const m of imgBlock.matchAll(/\"(\d+)\":\s*\[([^\]]+)\]/g)) {
+  for (const n of m[2].split(',').map(s=>s.trim())) checks.push(BLOB+'/'+m[1]+'-'+n+'.png');
+}
+(async () => {
+  let ok=0, fail=0;
+  for (const url of checks) {
+    const r = await fetch(url, {method:'HEAD'});
+    r.ok ? ok++ : (console.log('❌', r.status, url), fail++);
+  }
+  console.log('✅', ok, 'OK |', '❌', fail, 'FAILED');
+})();
+"
+```
+
+---
+
 ## End-to-End Example
 
-To scrape 20 new records with images:
+To add 20 new labels to the Review Queue:
 
 ```bash
 # 1. Crawl more records (if needed — skip if ttb_cola_records.json already has enough)
@@ -192,7 +295,7 @@ cd /path/to/ttb_cola_project/scripts
 node crawl-ttb-records.mjs --target 100
 
 # 2. Download images for all records (watch for CAPTCHAs in the browser!)
-node download-ttb-images.mjs --all
+node download-ttb-images.mjs --all --limit 25
 
 # 3. Manually inspect sample_labels/ttb_labels_direct/
 #    Delete signatures, blanks, form scans.
@@ -201,8 +304,21 @@ node download-ttb-images.mjs --all
 # 4. Regenerate TypeScript
 node generate-sample-data.mjs
 
-# 5. Update store.ts with new TTB_LABEL_IMAGES block from:
-#    sample_labels/ttb_label_images_block.txt
+# 5. Update store.ts:
+#    - Paste TTB_LABEL_IMAGES block from sample_labels/ttb_label_images_block.txt
+#    - Add new entries to SUBMISSIONS catalog (with statuses & review scenarios)
+#    - VERIFY: every TTB ID in SUBMISSIONS has a TTB_LABEL_IMAGES entry
+
+# 6. Upload images to Blob CDN
+node scripts/upload-labels-to-blob.mjs
+
+# 7. Run verification checklist (see above)
+
+# 8. Deploy
+cd frontend && vercel --prod --yes
+
+# 9. (Optional) Run OCR benchmark to measure parser performance
+node scripts/benchmark-ocr.mjs
 ```
 
 ---
@@ -216,7 +332,11 @@ node generate-sample-data.mjs
 | `scripts/crop-labels-ai.mjs` | Stage 3 (alt): AI-based crop from form screenshots |
 | `scripts/crop-labels-sam.py` | Stage 3 (alt): SAM-HQ segmentation-based crop |
 | `scripts/generate-sample-data.mjs` | Stage 4: Generate sampleData.ts |
+| `scripts/upload-labels-to-blob.mjs` | Stage 5: Upload images to Vercel Blob CDN |
+| `scripts/benchmark-ocr.mjs` | Stage 6: OCR performance benchmark |
 | `sample_labels/ttb_cola_records.json` | All discovered COLA records (221 currently) |
+| `sample_labels/ttb-labels-blob-urls.json` | Blob CDN URL mapping (generated by Stage 5) |
+| `docs/OCR_PERFORMANCE.md` | Latest OCR benchmark results (generated by Stage 6) |
 | `sample_labels/ttb_labels_direct/` | Raw downloaded label images |
 | `sample_labels/ttb_images/` | Full form screenshots (legacy pipeline) |
 | `frontend/public/ttb-labels/` | Production label images (verified clean) |

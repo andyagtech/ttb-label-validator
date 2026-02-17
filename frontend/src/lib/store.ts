@@ -549,6 +549,19 @@ const SUBMISSIONS: SubmissionDef[] = [
   { ttbId: "25335001000981", status: "approved", submitter: "New Belgium Brewing Co.", daysAgo: 11,
     review: { decision: "approve", reviewer: "Dave Morrison",
       notes: "Clean label, all fields verified. Approved.", findings: [] } },
+  // New beer (batch 2b)
+  { ttbId: "25335001000169", status: "submitted", submitter: "Free Will Brewing Co.", daysAgo: 0 },
+  { ttbId: "25335001000295", status: "in_review", submitter: "Point Beverage Co.", daysAgo: 2 },
+  { ttbId: "25335001000316", status: "submitted", submitter: "Rapid Liberties Brewing", daysAgo: 1 },
+  { ttbId: "25335001000421", status: "approved", submitter: "Nice Sized Mountains Brewing", daysAgo: 8,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All mandatory fields present and compliant. Approved.", findings: [] } },
+  { ttbId: "25335001000428", status: "submitted", submitter: "Out of Order Brewing LLC", daysAgo: 0 },
+  { ttbId: "25335001000694", status: "needs_revision", submitter: "Sole Purpose Brewing Co.", daysAgo: 5,
+    review: { decision: "needs_revision", reviewer: "Dave Morrison",
+      notes: "Net contents format non-compliant. Must include US customary measure.",
+      findings: [{ checklistItemId: "net_contents", severity: "error", message: "Net contents must include US customary measure (27 CFR 7.71)." }] } },
+  { ttbId: "25335001000820", status: "submitted", submitter: "Mac & Jack's Brewing Co.", daysAgo: 0 },
 
   // ── Wine ────────────────────────────────────────────────────────────────
   { ttbId: "24012001000123", status: "approved", submitter: "Las Perdices Winery", daysAgo: 12,
@@ -604,6 +617,31 @@ const SUBMISSIONS: SubmissionDef[] = [
       findings: [{ checklistItemId: "sulfite_declaration", severity: "error", message: "Sulfite declaration required for wines containing ≥10 ppm SO₂ (27 CFR 4.32(e)). Not detected on label." }] } },
   { ttbId: "24003001000715", status: "submitted", submitter: "Grape Beginnings Winery", daysAgo: 0 },
   { ttbId: "24003001000225", status: "in_review", submitter: "The Edge Wines", daysAgo: 3 },
+  // New wine (batch 2b)
+  { ttbId: "25335001000393", status: "submitted", submitter: "Cupcake Vineyards", daysAgo: 0 },
+  { ttbId: "25335001000491", status: "approved", submitter: "Lavanti Wines", daysAgo: 9,
+    review: { decision: "approve", reviewer: "Jenny Park",
+      notes: "All mandatory fields present. Sulfite declaration and appellation verified. Approved.", findings: [] } },
+  { ttbId: "25335001000533", status: "in_review", submitter: "Caiarossa Winery", daysAgo: 2 },
+  { ttbId: "25335001000561", status: "submitted", submitter: "Senorio de Odon Wines", daysAgo: 1 },
+  { ttbId: "25335001000624", status: "needs_revision", submitter: "La Souffrandiere", daysAgo: 4,
+    review: { decision: "needs_revision", reviewer: "Dave Morrison",
+      notes: "Importer name and address not clearly legible. Resubmit with corrected back label.",
+      findings: [{ checklistItemId: "name_address", severity: "warning", message: "Importer name and address must be clearly legible on imported wine labels (27 CFR 4.39)." }] } },
+  { ttbId: "25335001000652", status: "approved", submitter: "Cascadia Manor Wines", daysAgo: 10,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "Varietal, vintage, and all mandatory fields verified. Approved.", findings: [] } },
+  { ttbId: "25335001000666", status: "rejected", submitter: "Chambers Wine Merchants", daysAgo: 6,
+    review: { decision: "reject", reviewer: "Jenny Park",
+      notes: "Net contents not stated in required format. Must include both metric and US customary (27 CFR 4.37).",
+      findings: [{ checklistItemId: "net_contents", severity: "error", message: "Net contents must include US customary measure (27 CFR 4.37)." }] } },
+  { ttbId: "25335001000708", status: "submitted", submitter: "San Felice Winery", daysAgo: 0 },
+  { ttbId: "25335001000736", status: "in_review", submitter: "L'Ouverture Wines", daysAgo: 3 },
+  { ttbId: "25335001000932", status: "needs_revision", submitter: "Domaine de L'Ecu", daysAgo: 5,
+    review: { decision: "needs_revision", reviewer: "Jenny Park",
+      notes: "Country of origin statement reads 'Produit de France' — must be in English on US market labels.",
+      findings: [{ checklistItemId: "country_origin", severity: "error", message: "Country of origin must be stated in English (27 CFR 4.39(a))." }] } },
+  { ttbId: "25335001000960", status: "submitted", submitter: "Daisy Creek Winery", daysAgo: 1 },
 
   // ── Spirits ─────────────────────────────────────────────────────────────
   { ttbId: "23312001000445", status: "approved", submitter: "Crafted Cask Distillery", daysAgo: 11,
@@ -659,6 +697,11 @@ const SUBMISSIONS: SubmissionDef[] = [
       findings: [{ checklistItemId: "country_origin", severity: "error", message: "Country of origin must appear on imported spirits labels (27 CFR 5.63(b))." }] } },
   { ttbId: "25338001000250", status: "submitted", submitter: "Irish Distillers International", daysAgo: 1 },
   { ttbId: "25338001000428", status: "in_review", submitter: "Casa Las Jaras Tequila S.A.", daysAgo: 2 },
+  // New spirits (batch 2b)
+  { ttbId: "25335001000650", status: "in_review", submitter: "Amateco Agave Spirits LLC", daysAgo: 2 },
+  { ttbId: "25335001000995", status: "approved", submitter: "The Reveries Distilling Co.", daysAgo: 7,
+    review: { decision: "approve", reviewer: "Dave Morrison",
+      notes: "Straight bourbon whisky. ABV, health warning, and all mandatory fields verified. Approved.", findings: [] } },
 ];
 
 function generateMockSubmissions(): Submission[] {
