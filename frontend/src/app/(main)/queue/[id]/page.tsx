@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
-import { parseOcrText, preprocessForOcr, rotateCanvas, detectEdgeContent, cropEdgeStrip, type ExtractedFields } from "@/lib/ocr";
+import { parseOcrText, preprocessForOcr, rotateCanvas, detectEdgeContent, cropEdgeStrip, RETRY_CONFIDENCE_THRESHOLD, type ExtractedFields, type PreprocessOptions } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
 import FormVsLabelTable from "@/components/FormVsLabelTable";
 import QuickRejectButton from "@/components/QuickRejectButton";
@@ -247,20 +247,48 @@ export default function TTBReviewPage() {
       };
 
       // Helper: preprocess + OCR + parse a canvas
-      const ocrCanvas = async (canvas: HTMLCanvasElement): Promise<{ text: string; fields: ExtractedFields }> => {
-        const processed = preprocessForOcr(canvas);
+      const ocrCanvas = async (
+        canvas: HTMLCanvasElement,
+        ppOpts?: PreprocessOptions,
+      ): Promise<{ text: string; fields: ExtractedFields; confidence: number }> => {
+        const processed = preprocessForOcr(canvas, ppOpts);
         const dataUrl = processed.toDataURL("image/png");
-        const { data: { text } } = await worker.recognize(dataUrl);
-        return { text, fields: parseOcrText(text) };
+        const { data: { text, confidence } } = await worker.recognize(dataUrl);
+        return { text, fields: parseOcrText(text), confidence };
       };
 
+      /** Count non-empty extracted fields (excluding rawText). */
+      const fieldCount = (f: ExtractedFields) =>
+        Object.entries(f).filter(([k, v]) => k !== "rawText" && v).length;
+
       // Pass 1: OCR all labels at 0° (normal orientation)
+      // If confidence is low, retry once with Otsu binarization and keep the better result.
       const perLabel: { name: string; text: string; fields: ExtractedFields; canvas: HTMLCanvasElement }[] = [];
       for (const label of submission.labels) {
         const imgUrl = label.correctedImageUrl || label.originalImageUrl;
         if (!imgUrl) continue;
         const canvas = await loadCanvas(imgUrl);
-        const { text, fields } = await ocrCanvas(canvas);
+        const t0 = Date.now();
+        let { text, fields, confidence } = await ocrCanvas(canvas);
+        const ocrMs = Date.now() - t0;
+
+        // Confidence-gated retry: binarize fallback for low-confidence images
+        // Skip if initial OCR was slow (>3s) — those images produce even slower retries
+        if (confidence < RETRY_CONFIDENCE_THRESHOLD && ocrMs < 3000) {
+          console.log(`[TextDetect] ${label.slotName}: conf=${confidence.toFixed(1)}% < ${RETRY_CONFIDENCE_THRESHOLD}% — retrying with binarization`);
+          const retry = await ocrCanvas(canvas, { binarize: true });
+          // Keep whichever result extracted more fields; tie-break on confidence
+          if (fieldCount(retry.fields) > fieldCount(fields) ||
+              (fieldCount(retry.fields) === fieldCount(fields) && retry.confidence > confidence)) {
+            console.log(`[TextDetect] ${label.slotName}: binarized better (${fieldCount(retry.fields)} fields, ${retry.confidence.toFixed(1)}% conf vs ${fieldCount(fields)} fields, ${confidence.toFixed(1)}%)`);
+            text = retry.text;
+            fields = retry.fields;
+            confidence = retry.confidence;
+          } else {
+            console.log(`[TextDetect] ${label.slotName}: keeping grayscale (${fieldCount(fields)} fields, ${confidence.toFixed(1)}% conf)`);
+          }
+        }
+
         perLabel.push({ name: label.slotName, text, fields, canvas });
       }
 

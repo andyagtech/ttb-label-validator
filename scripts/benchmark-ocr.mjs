@@ -276,7 +276,9 @@ function parseOcrText(rawText) {
 // ---------------------------------------------------------------------------
 // Sharp-based preprocessing (mirrors browser-side preprocessForOcr)
 // ---------------------------------------------------------------------------
-async function preprocessImage(input) {
+const RETRY_CONFIDENCE_THRESHOLD = 45;
+
+async function preprocessImage(input, { binarize = false } = {}) {
   // Accept either a file path (string) or { buffer: Buffer }
   const src = typeof input === "string" ? sharp(input) : sharp(input.buffer);
   const meta = await src.metadata();
@@ -287,11 +289,18 @@ async function preprocessImage(input) {
   const h = meta.height * scale;
 
   const srcAgain = typeof input === "string" ? sharp(input) : sharp(input.buffer);
-  const buf = await srcAgain
+  let pipeline = srcAgain
     .resize(w, h, { kernel: "lanczos3" })
     .grayscale()
     .sharpen({ sigma: 1, m1: 0.3, m2: 0.3 })
-    .normalise()   // percentile-based contrast stretching
+    .normalise();   // percentile-based contrast stretching
+
+  // Optional Otsu binarization (fallback for low-confidence images)
+  if (binarize) {
+    pipeline = pipeline.threshold();  // Sharp's threshold() uses Otsu by default
+  }
+
+  const buf = await pipeline
     .extend({ top: PAD, bottom: PAD, left: PAD, right: PAD, background: "#FFFFFF" })
     .png()
     .toBuffer();
@@ -431,14 +440,38 @@ async function main() {
 
         // OCR — Pass 1 (0° normal)
         const startMs = Date.now();
-        const { data } = await worker.recognize(ppBuf);
+        let { data } = await worker.recognize(ppBuf);
         const ocrMs = Date.now() - startMs;
 
         // Parse
-        const parsed = parseOcrText(data.text);
-        const charCount = data.text.length;
-        const wordCount = data.text.split(/\s+/).filter(Boolean).length;
-        const confidence = data.confidence;
+        let parsed = parseOcrText(data.text);
+        let charCount = data.text.length;
+        let wordCount = data.text.split(/\s+/).filter(Boolean).length;
+        let confidence = data.confidence;
+        let retryUsed = false;
+        let retryMs = 0;
+
+        // Confidence-gated retry: binarize fallback for low-confidence images
+        // Skip if initial OCR was slow (>3s) — those images produce even slower retries
+        const fieldCount = (f) => Object.entries(f).filter(([k, v]) => k !== "rawText" && v).length;
+        if (confidence < RETRY_CONFIDENCE_THRESHOLD && ocrMs < 3000) {
+          const retryStart = Date.now();
+          const binBuf = await preprocessImage(img.path, { binarize: true });
+          const { data: binData } = await worker.recognize(binBuf);
+          retryMs = Date.now() - retryStart;
+          const binParsed = parseOcrText(binData.text);
+          const binFields = fieldCount(binParsed);
+          const origFields = fieldCount(parsed);
+          if (binFields > origFields || (binFields === origFields && binData.confidence > confidence)) {
+            data = binData;
+            parsed = binParsed;
+            charCount = binData.text.length;
+            wordCount = binData.text.split(/\s+/).filter(Boolean).length;
+            confidence = binData.confidence;
+            retryUsed = true;
+          }
+        }
+
         let rotationUsed = null;
         let rotationMs = 0;
 
@@ -518,7 +551,8 @@ async function main() {
 
         results.push({
           ttbId, imageNum: img.num, label, category,
-          ocrMs, rotationMs, rotationUsed, totalMs: ocrMs + rotationMs,
+          ocrMs, retryMs, retryUsed, rotationMs, rotationUsed,
+          totalMs: ocrMs + retryMs + rotationMs,
           charCount, wordCount, confidence,
           rawTextPreview: data.text.slice(0, 200).replace(/\n/g, "↵"),
           parsed, fieldScores, brandScore,
@@ -526,9 +560,10 @@ async function main() {
           brandName: record?.brandName || record?.brand || "",
         });
 
-        const rotTag = rotationUsed ? ` +rot${rotationUsed}°(${rotationMs}ms)` : (rotationMs > 0 ? ` +rot(${rotationMs}ms,miss)` : "");
+        const retryTag = retryUsed ? ` +bin(${retryMs}ms)` : (retryMs > 0 ? ` +bin(${retryMs}ms,kept-orig)` : "");
+        const rotTag = rotationUsed ? ` +rot${rotationUsed}(${rotationMs}ms)` : (rotationMs > 0 ? ` +rot(${rotationMs}ms,miss)` : "");
         const fieldList = Object.keys(fieldScores).join(", ") || "(none)";
-        console.log(` ${ocrMs}ms${rotTag}, conf=${confidence?.toFixed(0)}%, ${Object.keys(fieldScores).length} fields [${fieldList}]`);
+        console.log(` ${ocrMs}ms${retryTag}${rotTag}, conf=${confidence?.toFixed(0)}%, ${Object.keys(fieldScores).length} fields [${fieldList}]`);
       } catch (err) {
         console.log(` ERROR: ${err.message}`);
         results.push({
@@ -562,6 +597,13 @@ function generateReport(results) {
     : 0;
   const avgConfidence = successful.length
     ? (successful.reduce((s, r) => s + (r.confidence || 0), 0) / successful.length).toFixed(1)
+    : 0;
+
+  // Binarization retry stats
+  const retryAttempted = successful.filter(r => r.retryMs > 0);
+  const retryWon = successful.filter(r => r.retryUsed);
+  const avgRetryMs = retryAttempted.length
+    ? (retryAttempted.reduce((s, r) => s + r.retryMs, 0) / retryAttempted.length).toFixed(0)
     : 0;
 
   // Rotation stats
@@ -655,6 +697,8 @@ function generateReport(results) {
 | **Avg total time (with rotation)** | ${avgTotalMs}ms per image |
 | **Avg Tesseract confidence** | ${avgConfidence}% |
 | **Speed P50 / P90 / P99** | ${p50}ms / ${p90}ms / ${p99}ms |
+| **Binarize retry attempted** | ${retryAttempted.length}/${successful.length} images (when conf < ${RETRY_CONFIDENCE_THRESHOLD}%) |
+| **Binarize retry improved** | ${retryWon.length}/${retryAttempted.length} (avg ${avgRetryMs}ms overhead) |
 | **Rotation attempted** | ${rotationAttempted.length}/${successful.length} images (when healthWarning missing) |
 | **Rotation found healthWarning** | ${rotationSuccess.length}/${rotationAttempted.length} (avg ${avgRotMs}ms overhead) |
 | **Brand name detected** | ${fieldCounts.brandName}/${successful.length} (${(fieldCounts.brandName / successful.length * 100).toFixed(0)}%) |
@@ -809,6 +853,7 @@ These images produced OCR text but the parser could not extract any structured f
   console.log(`  Avg OCR time (pass 1): ${avgOcrMs}ms | Total (w/ rotation): ${avgTotalMs}ms`);
   console.log(`  Speed: P50=${p50}ms | P90=${p90}ms | P99=${p99}ms`);
   console.log(`  Avg confidence: ${avgConfidence}%`);
+  console.log(`  Binarize retry: ${retryAttempted.length} attempted (conf<${RETRY_CONFIDENCE_THRESHOLD}%), ${retryWon.length} improved (avg ${avgRetryMs}ms)`);
   console.log(`  Rotation: ${rotationAttempted.length} attempted, ${rotationSuccess.length} found healthWarning (avg ${avgRotMs}ms overhead)`);
   console.log(`  Brand detected: ${fieldCounts.brandName}/${successful.length} (${(fieldCounts.brandName / successful.length * 100).toFixed(0)}%)`);
   console.log(`  Brand accurate: ${brandExact}/${brandResults.length} exact`);

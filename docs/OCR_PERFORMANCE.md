@@ -13,14 +13,16 @@
 | Metric | Value |
 |--------|-------|
 | **Images processed** | 162 (0 errors) |
-| **Avg OCR time (pass 1 only)** | 1750ms per image |
-| **Avg total time (with rotation)** | 2489ms per image |
-| **Avg Tesseract confidence** | 64.5% |
-| **Speed P50 / P90 / P99** | 1077ms / 2420ms / 7342ms |
+| **Avg OCR time (pass 1 only)** | 2339ms per image |
+| **Avg total time (with rotation)** | 3378ms per image |
+| **Avg Tesseract confidence** | 65.3% |
+| **Speed P50 / P90 / P99** | 1141ms / 2523ms / 69261ms |
+| **Binarize retry attempted** | 26/162 images (when conf < 45%) |
+| **Binarize retry improved** | 11/26 (avg 1852ms overhead) |
 | **Rotation attempted** | 90/162 images (when healthWarning missing) |
-| **Rotation found healthWarning** | 20/90 (avg 1330ms overhead) |
-| **Brand name detected** | 157/162 (97%) |
-| **Brand name accurate** | 3/157 exact, 17 partial, 137 miss |
+| **Rotation found healthWarning** | 20/90 (avg 1335ms overhead) |
+| **Brand name detected** | 158/162 (98%) |
+| **Brand name accurate** | 3/158 exact, 17 partial, 138 miss |
 
 ---
 
@@ -30,14 +32,14 @@ How often the parser successfully extracts each field from OCR text (across all 
 
 | Field | Extracted | Rate | Front Labels (47) | Back Labels (74) |
 |-------|-----------|------|-------------|------------|
-| Brand Name | 157/162 | **97%** | 47 (100%) | 72 (97%) |
-| Class/Type | 85/162 | **52%** | 30 (64%) | 44 (59%) |
+| Brand Name | 158/162 | **98%** | 47 (100%) | 73 (99%) |
+| Class/Type | 88/162 | **54%** | 32 (68%) | 45 (61%) |
 | Alcohol Content | 70/162 | **43%** | 27 (57%) | 34 (46%) |
-| Net Contents | 84/162 | **52%** | 28 (60%) | 42 (57%) |
+| Net Contents | 87/162 | **54%** | 28 (60%) | 44 (59%) |
 | Health Warning | 92/162 | **57%** | 27 (57%) | 44 (59%) |
 | Sulfite Declaration | 30/162 | **19%** | 6 (13%) | 14 (19%) |
-| Name & Address | 87/162 | **54%** | 23 (49%) | 42 (57%) |
-| Vintage Date | 32/162 | **20%** | 7 (15%) | 18 (24%) |
+| Name & Address | 90/162 | **56%** | 23 (49%) | 43 (58%) |
+| Vintage Date | 33/162 | **20%** | 8 (17%) | 18 (24%) |
 | Varietal | 21/162 | **13%** | 3 (6%) | 13 (18%) |
 | Appellation | 17/162 | **10%** | 4 (9%) | 7 (9%) |
 | Country of Origin | 37/162 | **23%** | 10 (21%) | 18 (24%) |
@@ -49,21 +51,21 @@ How often the parser successfully extracts each field from OCR text (across all 
 
 | Category | Images | Avg Fields/Image | Avg Confidence | Avg OCR Time |
 |----------|--------|-------------------|----------------|-------------|
-| **Beer** | 41 | 4.3 | 59.1% | 1632ms |
-| **Wine** | 68 | 5.0 | 68.3% | 2123ms |
-| **Spirits** | 25 | 3.9 | 60.1% | 1451ms |
+| **Beer** | 41 | 4.4 | 59.4% | 1682ms |
+| **Wine** | 68 | 5.1 | 69.0% | 2111ms |
+| **Spirits** | 25 | 4.0 | 61.1% | 1499ms |
 
 ---
 
 ## Brand Name Accuracy
 
-Of 157 images where both ground-truth brand name and OCR brand name were available:
+Of 158 images where both ground-truth brand name and OCR brand name were available:
 
 | Result | Count | Rate |
 |--------|-------|------|
 | **Exact match** | 3 | 2% |
 | **Partial/fuzzy** | 17 | 11% |
-| **Mismatch/miss** | 137 | 87% |
+| **Mismatch/miss** | 138 | 87% |
 
 ### Sample Brand Name Matches
 
@@ -73,9 +75,9 @@ Of 157 images where both ground-truth brand name and OCR brand name were availab
 | 24045001000234-4 | TURKS HEAD | TURKS HEAD | ✅ exact |
 | 25338001000250-1 | PADDY | PADDY | ✅ exact |
 | 24003001000281-2 | ONDA | TEQUILA | EQ | | LA ONDA | ⚠️ partial |
-| 24003001000414-1 | LOGYARD BREWING | 3 LOGYARD BREWING | ⚠️ partial |
 | 24003001000421-3 | LONGHORN CELLARS | Sangiovese LONGHORN CELLARS | ⚠️ partial |
 | 24003001000715-3 | GRAPE BEGINNINGS WINERY | GBI Harvest Moon Bottled in 2023 PRODUCED AND BOTTLED BY GRAPE BEGINNINGS WINERY | ⚠️ partial |
+| 24003001000736-2 | CAT WHISKERS | WHISKERS | ⚠️ partial |
 | 24023001000345-2 | SHAMROCK HILLS VINEYARD AND WINERY | Shamrock Hills Story April 2023 Shamrock Hills was born and the vineyard | ⚠️ partial |
 | 23312001000445-1 | CRAFTED CASK | SI NGLE BARREL | ❌ mismatch |
 | 23312001000445-2 | CRAFTED CASK | CRAFT YOUR OWN CUSTOM SPIRITS AT | ❌ mismatch |
@@ -88,15 +90,15 @@ Of 157 images where both ground-truth brand name and OCR brand name were availab
 ## OCR Speed Distribution
 
 ```
-    < 0.5s │ ██████████████████████████ 29
-    < 1.0s │ █████████████████████████████████████ 42
-    < 1.5s │ ████████████████████████████████████████ 45
-    < 2.0s │ ██████████████████ 20
-    < 3.0s │ ███████████████ 17
-    < 5.0s │ ████ 4
+    < 0.5s │ ████████████████████████ 26
+    < 1.0s │ ████████████████████████████████████████ 44
+    < 1.5s │ ███████████████████████████████████████ 43
+    < 2.0s │ ████████████████████ 22
+    < 3.0s │ █████████████ 14
+    < 5.0s │ ██████ 7
    < 10.0s │ ████ 4
    < 20.0s │  0
-     ≥ 20s │ █ 1
+     ≥ 20s │ ██ 2
 
 ```
 
@@ -108,26 +110,25 @@ Images where Tesseract reported the lowest confidence (potential trouble spots):
 
 | Image | Confidence | Category | Fields | Brand |
 |-------|------------|----------|--------|-------|
-| 24003001000421-2 | 0% | wine | 0 | — |
 | 24003001000666-3 | 0% | wine | 0 | — |
 | 25335001000995-1 | 19% | spirits | 1 | Cre fe |
 | 24003001000225-2 | 22% | wine | 3 | ES AN ERS ne HERO So RE Feiss |
+| 24003001000325-3 | 23% | wine | 3 | col : 0G... BT COT |
+| 24003001000421-2 | 23% | wine | 3 | Cha PAE |
 | 24003001000190-2 | 24% | wine | 3 | » al 8 : A Fic Ee od |
-| 25335001000995-2 | 24% | spirits | 1 | ro TIGR Ee AY ag alte a le fa : |
 | 25335001000932-2 | 25% | wine | 3 | Rot Se Seg lS SRCIEg SR TR Len : i kh |
-| 24003001000325-3 | 26% | wine | 3 | Rr ; |
 | 24034001000123-2 | 28% | wine | 1 | AER INREERTN EI A |
-| 24045001000891-4 | 28% | beer | 1 | SRG |
+| 25335001000995-2 | 28% | spirits | 3 | PE TRE : J . « © by 5 x 5 3 Rey h a ’ . |
+| 24003001000477-1 | 29% | beer | 7 | OECBREWING |
 
 ---
 
-## Images With Zero Fields Extracted (3)
+## Images With Zero Fields Extracted (2)
 
 These images produced OCR text but the parser could not extract any structured fields:
 
 | Image | Category | Confidence | Word Count | Text Preview |
 |-------|----------|------------|------------|--------------|
-| 24003001000421-2 | wine | 0% | 0 | `…` |
 | 24003001000666-3 | wine | 0% | 0 | `…` |
 | 24045001000234-3 | wine | 53% | 1 | `S↵…` |
 

@@ -46,6 +46,15 @@ export interface ExtractedFields {
 const MIN_OCR_WIDTH = 1500;
 /** White padding added around image to help Tesseract page segmentation. */
 const PAD = 10;
+/** Confidence threshold below which we retry with binarized preprocessing. */
+export const RETRY_CONFIDENCE_THRESHOLD = 45;
+
+export interface PreprocessOptions {
+  /** Unsharp-mask amount (default 0.3). */
+  sharpenAmount?: number;
+  /** Apply Otsu binarization after contrast stretching (default false). */
+  binarize?: boolean;
+}
 
 /**
  * Preprocess a canvas for OCR:
@@ -54,14 +63,13 @@ const PAD = 10;
  *   3. Mild sharpening (unsharp mask — improves text edges)
  *   4. Percentile-based contrast stretching (robust to outliers)
  *   5. Inversion detection (fix light-on-dark labels — Tesseract needs dark-on-light)
+ *   5b. (Optional) Otsu binarization — used as fallback when initial OCR confidence is low
  *   6. 10px white padding (helps Tesseract layout analysis)
- *
- * Note: We intentionally do NOT binarize (Otsu etc.) — Tesseract 4+ LSTM
- * engine performs better with grayscale input than forced B&W.
  *
  * Returns a new canvas ready for OCR.
  */
-export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
+export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOptions = {}): HTMLCanvasElement {
+  const { sharpenAmount: amt = 0.3, binarize = false } = opts;
   const srcW = source.width;
   const srcH = source.height;
 
@@ -96,9 +104,8 @@ export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
     gray[i] = Math.round(0.299 * d[off] + 0.587 * d[off + 1] + 0.114 * d[off + 2]);
   }
 
-  // 3. Mild sharpening — unsharp mask (amount=0.3) with 3×3 box blur
+  // 3. Mild sharpening — unsharp mask with 3×3 box blur
   const sharp = new Uint8Array(totalPx);
-  const amt = 0.3;
   for (let y = 0; y < totalH; y++) {
     for (let x = 0; x < totalW; x++) {
       const idx = y * totalW + x;
@@ -144,17 +151,49 @@ export function preprocessForOcr(source: HTMLCanvasElement): HTMLCanvasElement {
   const isInverted = darkCount > totalPx * 0.55;
 
   // Apply contrast stretching (+ inversion if needed)
+  const stretched = new Uint8Array(totalPx);
   for (let i = 0; i < totalPx; i++) {
-    const off = i * 4;
     let v = ((sharp[i] - pLo) / range) * 255;
     v = v < 0 ? 0 : v > 255 ? 255 : v;
     if (isInverted) v = 255 - v;
-    d[off] = d[off + 1] = d[off + 2] = v;
+    stretched[i] = Math.round(v);
+  }
+
+  // 5b. Optional Otsu binarization (fallback for low-confidence images)
+  if (binarize) {
+    // Compute Otsu threshold on the contrast-stretched image
+    const bHist = new Uint32Array(256);
+    for (let i = 0; i < totalPx; i++) bHist[stretched[i]]++;
+    let total = totalPx;
+    let sumAll = 0;
+    for (let i = 0; i < 256; i++) sumAll += i * bHist[i];
+    let sumBg = 0, wBg = 0, maxVar = 0, threshold = 128;
+    for (let t = 0; t < 256; t++) {
+      wBg += bHist[t];
+      if (wBg === 0) continue;
+      const wFg = total - wBg;
+      if (wFg === 0) break;
+      sumBg += t * bHist[t];
+      const meanBg = sumBg / wBg;
+      const meanFg = (sumAll - sumBg) / wFg;
+      const variance = wBg * wFg * (meanBg - meanFg) * (meanBg - meanFg);
+      if (variance > maxVar) { maxVar = variance; threshold = t; }
+    }
+    for (let i = 0; i < totalPx; i++) {
+      stretched[i] = stretched[i] > threshold ? 255 : 0;
+    }
+  }
+
+  // Write to canvas
+  for (let i = 0; i < totalPx; i++) {
+    const off = i * 4;
+    d[off] = d[off + 1] = d[off + 2] = stretched[i];
   }
   ctx.putImageData(imgData, 0, 0);
 
-  const parts = [`grayscale`, `sharpen`, `contrast(p1=${pLo},p99=${pHi})`];
+  const parts = [`grayscale`, `sharpen(${amt})`, `contrast(p1=${pLo},p99=${pHi})`];
   if (isInverted) parts.push("inverted");
+  if (binarize) parts.push("otsu-binarize");
   if (scale > 1) parts.unshift(`${scale}× upscale`);
   parts.push(`${PAD}px pad`);
   console.log(`[OCR] Preprocessed: ${srcW}×${srcH} → ${totalW}×${totalH} (${parts.join(" + ")})`);
