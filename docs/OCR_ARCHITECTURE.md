@@ -253,9 +253,9 @@ The order matters — some fields use previously extracted fields as context:
 
 | Order | Field | Strategy | Key Patterns |
 |-------|-------|----------|-------------|
-| 1 | **alcoholContent** | 9 regex patterns, most-specific-first | `X% Alc. By Vol.`, `Alcohol X% by volume`, `ALC./VOL. X%` |
-| 2 | **netContents** | Compound then simple | `1 PINT, 8.9 FL. OZ.`, `750 mL`, `12 FL OZ` |
-| 3 | **healthWarning** | Keyword + 500-char grab | `GOVERNMENT WARNING` → slice 500 chars |
+| 1 | **alcoholContent** | 12 regex patterns, most-specific-first | `X% Alc. By Vol.`, `ALC./VOL.`, OCR misreads (`NOL`→`VOL`, `ALCIVOL`), `(80 PROOF)` |
+| 2 | **netContents** | Compound then simple | `1 PINT, 8.9 FL. OZ.`, `750 mL`, `12 FL OZ`, `16OZ` (no-space) |
+| 3 | **healthWarning** | 3-strategy fallback | `GOVERNMENT WARNING`, `SURGEON GENERAL`, fragmented `ACCORDING TO THE` + `BIRTH DEFECTS` |
 | 4 | **sulfiteDeclaration** | Simple keyword | `Contains Sulfites` |
 | 5 | **brandName** | 4 fallback strategies | See below |
 | 6 | **classType** | Ordered pattern list | Beer → Wine → Spirits patterns |
@@ -264,7 +264,7 @@ The order matters — some fields use previously extracted fields as context:
 | 9 | **nameAddress** | 3 strategies + post-correction | Producer prefix + City, ST ZIP |
 | 10 | **varietal** | Dictionary match | Cabernet Sauvignon, Chardonnay, etc. |
 | 11 | **vintageDate** | 4-digit year | `1950–currentYear` range filter |
-| 12 | **countryOfOrigin** | Prefix patterns | `Product of`, `Imported from`, `Made in` |
+| 12 | **countryOfOrigin** | Prefix patterns | `Product of`, `Imported from`, `Made in`, `Hecho en`, `Producto de` |
 | 13 | **ageStatement** | Spirits-specific | `Aged X years`, `X years old` |
 | 14 | **appellation** | Region dictionary | Napa Valley, Bordeaux, Marlborough, etc. |
 
@@ -307,22 +307,74 @@ The most complex parser due to multi-line addresses:
 ```
 Uses a US state code dictionary to detect where to insert the comma.
 
-### Alcohol Content — 9 Ordered Patterns
+### Alcohol Content — 12 Ordered Patterns
 
 Tried from most specific to most general to avoid false positives:
 ```
-1. "Alcohol 5% by volume"         (formal)
-2. "Alcohol by volume: 4.5%"      (Serving Facts)
-3. "5% Alc. By Vol."              (most common)
-4. "5% ALC./VOL."                 (TTB standard)
-5. "ALC. 5% BY VOL."              (reversed)
-6. "ALC./VOL. 5%"                 (reversed)
-7. "5% Alcohol by volume"         (alternative)
-8. "5% alc" / "alc 5%"           (loose fallback)
-9. "alc, 5%" / "alc. 5%"         (OCR comma misread)
+ 1. "Alcohol 5% by volume"         (formal)
+ 2. "Alcohol by volume: 4.5%"      (Serving Facts)
+ 3. "5% Alc. By Vol."              (most common)
+ 4. "5% ALC./VOL."                 (TTB standard)
+ 5. "5% ALCIVOL" / "5% ALC1VOL"   (OCR misread: / → I or 1)
+ 6. "5% ALC. NOL." / "5% ALC.NOL" (OCR misread: V → N)
+ 7. "ALC. 5% BY VOL." / "ALC, 5%" (reversed; comma OCR misread)
+ 8. "ALC./VOL. 5%"                 (reversed)
+ 9. "ALC. NOL. 5%" / "ALCIVOL 5%" (reversed misread variants)
+10. "5% Alcohol by volume"         (alternative)
+11. "(80 PROOF)" / "92PROOF"       (proof-based; extract as-is)
+12. "5% alc" / "alc 5%"           (loose fallback)
 ```
 
-Pattern 9 handles a common Tesseract misread where periods become commas.
+Patterns 5–6 and 9 handle common Tesseract misreads where `/` becomes `I` or `1`, and `V` becomes `N`. Pattern 7 also handles periods misread as commas. Pattern 11 catches proof-only labels (mostly spirits).
+
+### Health Warning — 3 Fallback Strategies
+
+The government warning is critical but often OCR'd poorly:
+
+```
+1. "GOVERNMENT WARNING" → slice 500 chars from that position
+2. "SURGEON GENERAL"    → grab 40 chars before + 500 chars after
+   (Tesseract sometimes misreads the header but captures the body)
+3. "ACCORDING TO THE" + "BIRTH DEFECTS" → fragmented OCR
+   (both phrases must appear; captures from 30 chars before match)
+```
+
+Strategy 2 catches cases where the "GOVERNMENT WARNING" header is garbled but the body text about the Surgeon General is readable. Strategy 3 handles extreme fragmentation where only signature phrases survive OCR.
+
+### Class/Type — Expanded Patterns
+
+Patterns are organized by category, from most specific to most general:
+
+- **Beer (specific first):** Double India Pale Ale, Hazy (Double) IPA, Black IPA, Session IPA, New England IPA, DIPA, Imperial IPA
+- **Beer (general):** Pale Ale, IPA, Lager, Stout, Porter, Pilsner, Wheat Ale, Amber Ale, Brown Ale, Hefeweizen, Saison, Sour Ale, Fruited Sour, Blonde Ale, Cream Ale, Kölsch, Bock, Doppelbock, Dunkel, Märzen, Witbier, Berliner Weisse, Gose, Barleywine, Scotch Ale, Strong Ale, Farmhouse Ale, Wild Ale, Belgian (Strong/Pale/Dark/Dubbel/Tripel/Quad)
+- **Wine:** Red Wine, White Wine, Rosé, Sparkling Wine, Champagne, Table Wine, Dessert Wine, Port, Sherry, Vermouth + varietal names (Cabernet Sauvignon, Chardonnay, etc.)
+- **Spirits (specific):** Straight Bourbon/Rye Whiskey, Single Barrel/Malt Whiskey, Small Batch Bourbon
+- **Spirits (general):** Bourbon, Scotch, Vodka, Rum, Gin, Tequila, Mezcal, Brandy, Cognac, Agave Spirits, Sotol, Raicilla, Pisco, Grappa, Aquavit, Cachaça, Soju, Baijiu, Amaro, Aperitif, Digestif, Liqueur, Cordial, Ready to Drink, Cocktail
+
+### Name & Address — Producer Prefixes
+
+The `NA_PREFIX` regex recognizes these producer verbs before `by/for/in/at`:
+
+```
+imported, bottled, produced & bottled, distributed, blended & bottled,
+distilled & bottled, distilled, brewed, made, packed, canned, vinted,
+cellared, crafted, brewed & canned, brewed & packaged, brewed & bottled,
+crafted & canned, crafted & distilled, fermented, estate bottled
+```
+
+Also handles compound connectors: `and canned`, `and bottled`, `and packaged`.
+
+### Country of Origin — Multilingual Patterns
+
+```
+1. "Product of [country]"       (English)
+2. "Imported from/by [source]"  (English)
+3. "Made in [country]"          (English)
+4. "Hecho en [country]"         (Spanish)
+5. "Producto de [country]"      (Spanish)
+6. "Product of the USA"         (specific US match)
+7. "Produced in [country]"      (English)
+```
 
 ---
 
@@ -437,10 +489,14 @@ node scripts/benchmark-ocr.mjs --verbose       # detailed output
 
 Output: `docs/OCR_PERFORMANCE.md` with field extraction rates, category breakdowns, speed distribution, and trouble spots.
 
-**Current stats** (182 images, 89 products):
-- Average OCR time: ~1.8s/image
-- Brand name detection: 95%
-- Health warning detection: 43% (expected to improve with rotation)
-- Average Tesseract confidence: 64%
+**Current stats** (162 images, 89 products):
+- Average OCR time: ~1.7s/image (pass 1), ~2.5s total with rotation
+- Brand name detection: 97%
+- Health warning detection: 57% (20 found via edge-strip rotation)
+- ABV detection: 43%
+- Class/Type detection: 52%
+- Name & Address detection: 54%
+- Country of Origin detection: 23%
+- Average Tesseract confidence: 64.5%
 
 See `docs/OCR_PERFORMANCE.md` for the full report.
