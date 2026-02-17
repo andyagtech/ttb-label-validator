@@ -727,15 +727,6 @@ function generateMockSubmissions(): Submission[] {
       labels.push(buildLabel(`slot-${idx}-${li}`, `Other Label ${li - 1}`, product, "back", false));
     }
 
-    // Build OCR results map from expected fields
-    const ocrResults: Record<string, string> = {};
-    for (const [k, v] of Object.entries(product.expectedFrontFields)) {
-      if (v) ocrResults[k] = v;
-    }
-    for (const [k, v] of Object.entries(product.expectedBackFields)) {
-      if (v) ocrResults[k] = v;
-    }
-
     const sub: Submission = {
       id: `SUB-${(1000 + idx).toString(36).toUpperCase()}`,
       submitterId: def.submitter,
@@ -746,7 +737,7 @@ function generateMockSubmissions(): Submission[] {
       productName: product.productName,
       labels,
       reviews: [],
-      serverValidation: { completedAt: created, findings: [], ocrResults },
+      serverValidation: { completedAt: created, findings: [], ocrResults: {} },
       formFields: buildFormFields(product),
     };
 
