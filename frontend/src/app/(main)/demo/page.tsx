@@ -107,10 +107,10 @@ export default function TTBDemoPage() {
                 margin: 0,
               }}
             >
-              Component &amp; Feature Demo
+              Component Demo
             </h1>
             <p style={{ fontSize: 14, color: C.medGray, marginTop: 4 }}>
-              All the building blocks and features of the TTB Label Validator prototype
+              All the building blocks and features of the TTB Label Editor prototype
             </p>
           </div>
           <Link

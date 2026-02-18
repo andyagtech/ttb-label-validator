@@ -1,5 +1,5 @@
 /**
- * EditorControlPanel — right sidebar for the TTB-styled full label editor.
+ * EditorControlPanel — right sidebar for the TTB-styled label editor.
  *
  * Contains: label info card, image type chooser, multi-label question,
  * warp/surface controls, view mode toggle, zoom, export controls,

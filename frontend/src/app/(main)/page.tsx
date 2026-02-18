@@ -1,5 +1,5 @@
 /**
- * Home / Label Validator — the primary landing page for the TTB Label Validator.
+ * Home — the primary landing page for the TTB Label Validator.
  *
  * Provides a label upload area with drag-and-drop support, a file picker,
  * and a sidebar with quick navigation links to the queue, generator, API
@@ -686,7 +686,7 @@ export default function TTBStylePrototype() {
                   }}
                 >
                   <ShieldCheck size={16} style={{ color: C.navy }} />
-                  Label Validator
+                  Label Editor
                 </Link>
                 <Link
                   href="/queue"
@@ -705,7 +705,7 @@ export default function TTBStylePrototype() {
                   }}
                 >
                   <ClipboardCheck size={16} style={{ color: C.navy }} />
-                  Agent Review Queue
+                  Review Queue
                 </Link>
                 <Link
                   href="/generate"

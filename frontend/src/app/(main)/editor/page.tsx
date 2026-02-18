@@ -1,5 +1,5 @@
 /**
- * Full Label Editor — TTB-styled version of the submission simulator.
+ * Label Editor — TTB-styled version of the submission simulator.
  *
  * ## Architecture
  *
@@ -114,7 +114,7 @@ export default function EditorPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Full Label Editor" }]} />
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Label Editor" }]} />
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
         {/* Page header row: title + nav links */}
@@ -129,7 +129,7 @@ export default function EditorPage() {
                 margin: 0,
               }}
             >
-              Full Label Editor
+              Label Editor
             </h1>
             <p style={{ fontSize: 14, color: C.medGray, marginTop: 4 }}>
               Upload label images, correct perspective, and validate TTB compliance

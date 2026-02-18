@@ -278,7 +278,7 @@ export default function OverviewPage() {
             <PageCard
               href="/"
               icon={<Shield size={20} />}
-              title="Home / Label Validator"
+              title="Home"
               description="Upload a beverage label image via drag-and-drop or file picker. The system validates compliance against TTB requirements and displays pass/fail results with regulatory citations."
               tags={["upload", "validation", "drag & drop"]}
               accent={C.navy}
@@ -286,7 +286,7 @@ export default function OverviewPage() {
             <PageCard
               href="/editor"
               icon={<Camera size={20} />}
-              title="Full Label Editor"
+              title="Label Editor"
               description="Advanced label processing workspace with perspective correction (4-point & mesh warp), cylindrical unwrap, surface curvature controls, OCR text extraction (Tesseract + AI), auto-flatten, sharpen, multi-label split, and export."
               tags={["perspective", "OCR", "mesh warp", "multi-label"]}
               accent="#7c3aed"
@@ -302,7 +302,7 @@ export default function OverviewPage() {
             <PageCard
               href="/generate"
               icon={<Sparkles size={20} />}
-              title="AI Label Generator"
+              title="Test Label Generator"
               description="Generate realistic test label images using Gemini AI. Choose from 10 presets (bourbon, IPA, cabernet, vodka, etc.) or write a custom prompt. Supports front/back labels, generation history, download, and send-to-simulator."
               tags={["AI generation", "presets", "Gemini"]}
               accent="#e5a000"
@@ -331,7 +331,7 @@ export default function OverviewPage() {
             <PageCard
               href="/queue"
               icon={<Microscope size={20} />}
-              title="Submission Review Workspace"
+              title="Submission Review"
               description="Click any submission in the queue to open a detailed review page. Agents can examine all submitted labels, view OCR results, check the compliance checklist, compare fields against the COLA form, and render approve/reject/needs-revision decisions."
               tags={["review", "OCR results", "decisions"]}
               accent="#dc2626"
@@ -360,7 +360,7 @@ export default function OverviewPage() {
             <PageCard
               href="/demo"
               icon={<Palette size={20} />}
-              title="Component & Feature Demo"
+              title="Component Demo"
               description="Visual showcase of all design tokens (colors, typography), button variants, status badges, card patterns, form elements, alert types, and a complete API endpoint reference table."
               tags={["design system", "tokens", "showcase"]}
               accent="#ec4899"
@@ -382,7 +382,7 @@ export default function OverviewPage() {
             <div>
               <span style={{ fontSize: 14, fontWeight: 700, color: C.darkNavy }}>Guided Walkthrough</span>
               <span style={{ fontSize: 13, color: C.darkGray, marginLeft: 8 }}>
-                Click the <strong>?</strong> button (bottom-left on the Full Label Editor) for an 8-step interactive
+                Click the <strong>?</strong> button (bottom-left on the Label Editor) for an 8-step interactive
                 tutorial that highlights each feature with a sliding side panel.
               </span>
             </div>
