@@ -650,8 +650,27 @@ export default function TTBStylePrototype() {
                   <BookOpen size={16} />
                   Demo Overview
                 </Link>
-                <a
-                  href="#upload-title"
+                <Link
+                  href="/agent-walkthrough"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 12px",
+                    borderRadius: 4,
+                    background: C.lightGray,
+                    color: C.darkGray,
+                    textDecoration: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <Users size={16} style={{ color: C.navy }} />
+                  Agent Needs Walkthrough
+                </Link>
+                <Link
+                  href="/editor"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -668,7 +687,7 @@ export default function TTBStylePrototype() {
                 >
                   <ShieldCheck size={16} style={{ color: C.navy }} />
                   Label Validator
-                </a>
+                </Link>
                 <Link
                   href="/queue"
                   style={{
