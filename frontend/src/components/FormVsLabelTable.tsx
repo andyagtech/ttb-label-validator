@@ -49,6 +49,42 @@ function getRequiredFields(category?: BeverageCategory): Set<string> {
   return new Set(fields);
 }
 
+/** Fields shared across all beverage categories */
+const UNIVERSAL_FIELDS = [
+  "brandName", "classType", "netContents", "healthWarning",
+  "nameAddress", "countryOfOrigin", "colorIngredients",
+];
+
+/**
+ * Which fields are relevant per beverage category.
+ * Prevents showing wine-only fields (sulfite, varietal, appellation) on
+ * spirits/beer labels and vice-versa.  When no category is known we show
+ * everything so the agent still gets the full picture.
+ */
+function getRelevantFields(category?: BeverageCategory): Set<string> {
+  if (!category) return new Set(Object.keys(FIELD_LABELS)); // show all when unknown
+  switch (category) {
+    case "wine":
+      return new Set([
+        ...UNIVERSAL_FIELDS,
+        "alcoholContent", "sulfiteDeclaration", "appellation",
+        "vintageDate", "varietal",
+      ]);
+    case "spirits":
+      return new Set([
+        ...UNIVERSAL_FIELDS,
+        "alcoholContent", "ageStatement", "commodityStatement",
+      ]);
+    case "beer":
+      return new Set([
+        ...UNIVERSAL_FIELDS,
+        "alcoholContent", "aspartameDeclaration",
+      ]);
+    default:
+      return new Set(Object.keys(FIELD_LABELS));
+  }
+}
+
 function verdictIcon(verdict: MatchResult["verdict"], size = 14) {
   switch (verdict) {
     case "exact":
@@ -118,6 +154,7 @@ export default function FormVsLabelTable({
 }: FormVsLabelTableProps) {
   const hasOcr = detectedFields || Object.keys(mergedOcr).length > 0;
   const REQUIRED_FIELDS = getRequiredFields(beverageCategory);
+  const RELEVANT_FIELDS = getRelevantFields(beverageCategory);
 
   // Category inference from detected fields
   const categoryResult = detectedFields ? inferCategory({
@@ -242,6 +279,9 @@ export default function FormVsLabelTable({
           const isChecked = checkStates[key] || false;
           const source = fieldSources?.[key];
           const fieldLabel = FIELD_LABELS[key as keyof typeof FIELD_LABELS] || key;
+
+          // Skip fields irrelevant to this beverage category
+          if (!RELEVANT_FIELDS.has(key)) return null;
 
           // Skip fields that have neither submitted nor detected values
           if (!formVal && !detectedVal && !isRequired) return null;
