@@ -12,6 +12,7 @@ This document provides a detailed reference for the `parseOcrText()` function in
 4. [Design Principles](#design-principles)
 5. [OCR Error Handling](#ocr-error-handling)
 6. [Performance Characteristics](#performance-characteristics)
+7. [Category Inference Pipeline](#category-inference-pipeline)
 
 ---
 
@@ -763,14 +764,147 @@ Where:
 
 ---
 
+## Category Inference Pipeline
+
+**Function:** `inferCategory(fields)` → `CategoryInference`  
+**Location:** `frontend/src/lib/categoryMatch.ts` lines 291–359  
+**Called by:** `inferCategoryFromFields()` in `ocr-extractors.ts`, `FormVsLabelTable.tsx`
+
+Category inference runs **after** all field extractors, using their outputs to determine the beverage category and official TTB class/type code.
+
+### CategoryInference Interface
+
+```typescript
+interface CategoryInference {
+  category: "beer" | "wine" | "spirits" | null;
+  subcategory: string | null;        // Specific TTB code (e.g., "STRAIGHT BOURBON WHISKY")
+  subcategoryFamily: string | null;  // Broad family (e.g., "WHISKY")
+  confidence: number;                // 0–1
+  confidenceTier: "high" | "medium" | "low" | null;
+  matchedTerm: string | null;        // OCR text that triggered the match
+}
+```
+
+### Priority Chain
+
+Inputs are checked in order; the first match wins:
+
+| Priority | Input Field | Confidence | Tier | Rationale |
+|----------|-------------|------------|------|-----------|
+| 1 | `classType` | 0.95 | high | Already parsed from label — most reliable |
+| 2 | `varietal` | 0.90 | high | Strong wine indicator (grape = wine) |
+| 3 | `appellation` | 0.85 | medium | Implies wine, but no type info; defaults to TABLE WHITE WINE |
+| 4 | `ageStatement` | 0.80 | medium | Strong spirits indicator; defaults to WHISKY SPECIALTIES |
+| 5 | `rawText` | 0.60 | low | Full text scan — higher false positive risk |
+
+```
+classType="IPA"  →  beer / ALE / ALE (family) / 0.95 / high
+varietal="Pinot Noir"  →  wine / TABLE RED WINE / TABLE WINE / 0.90 / high
+appellation="Napa Valley"  →  wine / TABLE WHITE WINE / TABLE WINE / 0.85 / medium
+ageStatement="Aged 12 Years"  →  spirits / WHISKY SPECIALTIES / WHISKY / 0.80 / medium
+rawText (contains "ale")  →  beer / ALE / ALE / 0.60 / low
+```
+
+### Two-Tier Output
+
+Agents get **two levels** of subcategory for different decision needs:
+
+| Field | Description | Accuracy | Use Case |
+|-------|-------------|----------|----------|
+| `subcategory` | Specific official TTB class/type code | **60%** exact match | Pre-fill form fields, detailed review |
+| `subcategoryFamily` | Broad family grouping | **73%** family match | Quick triage, routing, validation |
+
+**Family Mapping (`toFamily()`):**
+
+| Category | subcategory Example | subcategoryFamily |
+|----------|-------------------|------------------|
+| beer | `ALE`, `STOUT` | `ALE` |
+| beer | `MALT BEVERAGES SPECIALITIES - FLAVORED` | `MALT BEVERAGES` |
+| beer | `LAGER`, `PILSNER` | `BEER` |
+| wine | `TABLE RED WINE`, `TABLE WHITE WINE` | `TABLE WINE` |
+| wine | `ROSE WINE` | `TABLE WINE` |
+| wine | `DESSERT /PORT/SHERRY/(COOKING) WINE` | `DESSERT WINE` |
+| wine | `SPARKLING WINE/CHAMPAGNE` | `SPARKLING WINE` |
+| spirits | `STRAIGHT BOURBON WHISKY`, `WHISKY SPECIALTIES` | `WHISKY` |
+| spirits | `RUM` | `RUM` |
+| spirits | `TEQUILA`, `MEZCAL`, `AGAVE SPIRITS` | `AGAVE` |
+| spirits | `VODKA` | `VODKA` |
+| spirits | `GIN` | `GIN` |
+| spirits | `BRANDY`, `GRAPPA`, `PISCO` | `BRANDY` |
+| spirits | `LIQUEUR` | `LIQUEUR` |
+| spirits | `SAKE` | `SAKE` |
+| spirits | `OTHER COCKTAILS` | `COCKTAILS` |
+
+### Confidence Tiers for Agents
+
+| Tier | Confidence Range | Trigger | Agent Guidance |
+|------|-----------------|---------|----------------|
+| **high** | ≥ 0.90 | `classType` or `varietal` matched directly | Trust the result — auto-fill is safe |
+| **medium** | 0.70 – 0.89 | `appellation` or `ageStatement` used | Review before accepting — type is inferred, not read |
+| **low** | ≤ 0.69 | `rawText` fallback | Manual verification required — high false-positive risk |
+| **null** | 0 | No match at all | No inference possible — agent must classify manually |
+
+### ABV-Based Wine Classification
+
+**Rule:** Per 27 CFR 4.21(b)(3), wine with >14% ABV is dessert wine.
+
+```
+If category = "wine" AND subcategory starts with "TABLE " AND ABV > 14%:
+  → Upgrade subcategory to "DESSERT /PORT/SHERRY/(COOKING) WINE"
+  → subcategoryFamily remains unchanged (preserves original family context)
+```
+
+**`parseAbv()` helper** handles:
+- Percentage: `"12.5%"`, `"12.5% ABV"`, `"12.5% ALC/VOL"`
+- Proof: `"80 proof"` → 40% ABV
+
+**Important:** ABV upgrade only affects TABLE wines. Sparkling, rosé, and wines already classified as dessert/port/sherry are not modified.
+
+**Impact:** +5 correct classifications in wine subcategory (67% → 78% exact match).
+
+### SUBCATEGORY_MAP
+
+**Location:** `frontend/src/lib/categoryMatch.ts` lines 16–255  
+**Size:** 100+ entries mapping signal words → official TTB COLA class/type codes
+
+The map is ordered from most specific to most general per category. The `matchText()` function iterates the map and returns on first match — so order matters.
+
+**Structure:**
+```typescript
+{ term: "straight bourbon", pattern: /\bstraight\s+bourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" }
+```
+
+**Coverage by category:**
+- **Beer:** Hard seltzer, cider, wine cooler, IPA variants, stout, porter, pilsner, wheat, sour, Belgian styles, lager, schwarzbier, ESB, shandy, etc.
+- **Wine:** Red/white/rosé/sparkling/champagne/port/sherry/vermouth/mead/cava/prosecco/ice wine, 30+ varietals (with Unicode: ñ, è, ü, ö)
+- **Spirits:** Bourbon/rye/scotch/blended whisky, vodka, gin, rum, tequila/mezcal/agave, brandy/cognac/armagnac/calvados/grappa/pisco, liqueur/cordial/amaro, sake, cocktails/RTD, moonshine, baijiu, schnapps
+
+### Accuracy Metrics (114 products, 204 images)
+
+| Metric | Overall | Beer | Wine | Spirits |
+|--------|---------|------|------|---------|
+| **Category correct** | 89% (102/114) | 97% (31/32) | 90% (44/49) | 82% (27/33) |
+| **Subcategory exact** | 60% (68/114) | 75% (24/32) | 78% (38/49) | 18% (6/33) |
+| **Subcategory family** | 73% (83/114) | 75% (24/32) | 90% (44/49) | 45% (15/33) |
+| **No extraction** | 7% (8/114) | — | — | — |
+
+**Key gaps:**
+- Spirits exact match is low (18%) because many TTB codes are highly specific (e.g., "STRAIGHT BOURBON WHISKY BLENDS") while OCR extracts generic terms ("bourbon")
+- Spirits family match (45%) is the main area for improvement — expanding patterns for proof statements, aged/barrel terms, and RTD indicators would help
+
+Full evaluation report: `docs/CLASSTYPE_EVAL.md`
+
+---
+
 ## Related Documentation
 
 - **Pipeline Overview:** `docs/OCR_ARCHITECTURE.md`
 - **Performance Metrics:** `docs/OCR_PERFORMANCE.md`
+- **Class/Type Evaluation:** `docs/CLASSTYPE_EVAL.md`
 - **Fuzzy Matching:** `frontend/src/lib/fuzzyMatch.ts`
 - **Validation Rules:** `frontend/src/lib/validation.ts`
 
 ---
 
 **Last Updated:** February 18, 2026  
-**Parser Version:** v2.1 (with OCR error tolerance improvements)
+**Parser Version:** v3.0 (two-tier output, ABV classification, confidence tiers)
