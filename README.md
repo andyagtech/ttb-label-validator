@@ -11,7 +11,7 @@ AI-powered alcohol label verification tool for TTB (Alcohol and Tobacco Tax and 
 | README with setup & run instructions | ✅ | This file |
 | Documentation of approach & assumptions | ✅ | [Approach & Core Concept](#approach--core-concept) below, plus `docs/INFRASTRUCTURE_JUSTIFICATION.md` |
 | Deployed Application URL | ✅ | **[https://ttb-demo-pipeline.vercel.app](https://ttb-demo-pipeline.vercel.app)** |
-| Working prototype | ✅ | Live at the URL above — 49 pre-loaded submissions ready to review |
+| Working prototype | ✅ | Live at the URL above — 115 pre-loaded submissions ready to review |
 
 ## Core Functionality: The Review Queue
 
@@ -128,7 +128,7 @@ This turns a 5–10 minute manual review into a quick scan of pre-populated resu
 
 ## Review Queue Data: Real vs. Generated
 
-The review queue contains **89 submissions** across beer, wine, and spirits. This section explains exactly which data is real and which is fabricated for the proof of concept.
+The review queue contains **115 submissions** across beer, wine, and spirits. This section explains exactly which data is real and which is fabricated for the proof of concept.
 
 ### What's Real: Data from the TTB Public COLA Registry
 
@@ -157,7 +157,7 @@ The following fields do **not** come from the TTB registry and are generated def
 | **Health warning** | Standard prescribed text (identical for all products) | Not available on Public COLA page; the actual text is mandated by 27 CFR Part 16 |
 | **Name & address** | Generated from brand name + origin (e.g., `Dogfish Head Craft Brewery, Delaware`) | Not available on Public COLA page |
 | **Sulfite declaration** | `Contains Sulfites` auto-added for all wine products | Not available on Public COLA page |
-| **Submission status** | Manually assigned to create realistic distribution (19 submitted, 8 in review, 10 approved, 6 rejected, 6 needs revision) | Real statuses are all "Approved" since we only scraped approved COLAs |
+| **Submission status** | Manually assigned to create realistic distribution across 115 submissions | Real statuses are all "Approved" since we only scraped approved COLAs |
 | **Review decisions & findings** | Hand-written with specific CFR citations (e.g., "Country of origin reads 'Italia' instead of 'Italy' — 27 CFR 4.39(a)") | Fabricated to demonstrate realistic review scenarios |
 | **Submitter names** | Plausible company names matching the brand | Not available on Public COLA page |
 | **Reviewer names** | Fictional agents: Jenny Park, Dave Morrison | N/A — agents don't exist in the Public COLA system |
@@ -184,7 +184,7 @@ TTB Public COLA Online
                                          │
                                          ▼
                               frontend/src/lib/store.ts
-                              SUBMISSIONS catalog (49 entries)
+                              SUBMISSIONS catalog (115 entries)
                               + hand-written review scenarios
                               + status assignments
                               + TTB_LABEL_IMAGES manifest
@@ -221,7 +221,7 @@ The fastest way to see the core functionality:
 
 ### 1. Open the Review Queue
 
-Go to **[/queue](https://ttb-demo-pipeline.vercel.app/queue)** — you'll see 49 pre-loaded submissions with status badges, typeahead search, and pagination.
+Go to **[/queue](https://ttb-demo-pipeline.vercel.app/queue)** — you'll see 115 pre-loaded submissions with status badges, typeahead search, and pagination.
 
 ### 2. Pick a Submission
 

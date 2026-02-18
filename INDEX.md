@@ -113,12 +113,12 @@ The app uses **Next.js route groups** for a blue/green deployment pattern:
 | `fuzzyMatch.ts` | Levenshtein distance with Unicode normalization, case folding, punctuation stripping. Used by FormComparison for "STONE'S THROW" ↔ "Stone's Throw" matching |
 | `types.ts` | TypeScript types — `LabelSlot`, `ChecklistItem`, `BeverageCategory`, `Submission`, `ReviewRecord`, `ReviewFinding`, `ReviewDecision`, `ExtractedFields` |
 | `styles.ts` | Centralized design tokens, color maps (category, status, verdict), shared Tailwind class strings, utility formatters (`timeAgo`, `formatDate`, `formatSeconds`) |
-| `store.ts` | In-memory submission store — 51 mock submissions with `SUBMISSIONS` catalog keyed by ttbId, `TTB_LABEL_IMAGES` mapping (array order = front/back/other assignment), CRUD operations, review workflow state machine. Loads label images from Vercel Blob CDN. Server-side singleton that resets on serverless cold-start / redeploy |
+| `store.ts` | In-memory submission store — 115 mock submissions with `SUBMISSIONS` catalog keyed by ttbId, `TTB_LABEL_IMAGES` mapping (array order = front/back/other assignment), CRUD operations, review workflow state machine. Loads label images from Vercel Blob CDN. Server-side singleton that resets on serverless cold-start / redeploy |
 | `agentStore.ts` | In-memory agent store — 5 seed agents (Jenny Park, Dave Morrison, etc.), agent CRUD, global + per-agent statistics computed from submission reviews |
 | `blobStorage.ts` | Vercel Blob Storage utilities — upload label images, scan-based manifest reconstruction, list/delete helpers |
 | `generateLabel.ts` | Reusable server-side label generation via Gemini — `buildPrompt()`, `generateLabelImage()`, `generateBothLabels()` |
 | `imageTransfer.ts` | In-memory image transfer between pages (replaces sessionStorage for large images) |
-| `sampleData.ts` | 51 sample product definitions (17 beer, 23 wine, 11 spirits) with COLA record fields, expected front/back OCR fields. `getSampleProducts()` groups front/back pairs |
+| `sampleData.ts` | 115 sample product definitions (33 beer, 49 wine, 33 spirits) with COLA record fields, expected front/back OCR fields. `getSampleProducts()` groups front/back pairs |
 
 ### `frontend/src/lib/__tests__/` — Unit Tests (115 total)
 
@@ -207,7 +207,7 @@ Scripts for scraping TTB COLA records, downloading label images, cropping labels
 
 | File | Purpose |
 |------|---------|
-| `crawl-ttb-records.mjs` | Probe TTB COLA detail pages → `ttb_cola_records.json` (201 records) |
+| `crawl-ttb-records.mjs` | Probe TTB COLA detail pages → `ttb_cola_records.json` (229 records) |
 | `download-ttb-images.mjs` | Download label `<img>` elements from TTB form pages (4s delay, CAPTCHA handling) |
 | `crop-labels-ai.mjs` | Gemini 2.0 Flash vision API → bounding box detection → cropped label PNGs |
 | `crop-labels-sam.py` | Gemini + SAM-HQ pixel-precise segmentation pipeline (fallback: Grounding DINO) |
@@ -224,7 +224,7 @@ Intermediate data from the scraping pipeline. See [`SCRAPER.md`](SCRAPER.md) for
 
 | Path | Description |
 |------|-------------|
-| `ttb_cola_records.json` | 201 COLA records scraped from TTB.gov (product details, permit info, form fields) |
+| `ttb_cola_records.json` | 229 COLA records scraped from TTB.gov (product details, permit info, form fields) |
 | `ttb_images/` | Raw TTB form page screenshots (full-page PNG captures) |
 | `ttb_labels_direct/` | Direct label image downloads from TTB form pages (pre-crop) |
 | `ttb_labels_sam/` | SAM-HQ segmented + cropped labels (pixel-precise boundaries) |

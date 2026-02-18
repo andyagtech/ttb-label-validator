@@ -33,7 +33,7 @@ node crawl-ttb-records.mjs --target 100   # find 100 records
 node crawl-ttb-records.mjs --headless     # run without browser window (no CAPTCHA solving)
 ```
 
-**Output:** `sample_labels/ttb_cola_records.json` — organized by category (`beer`, `wine`, `spirits`).
+**Output:** `sample_labels/ttb_cola_records.json` — 229 records organized by category (`beer`, `wine`, `spirits`).
 
 **How it works:**
 1. Launches Playwright Chromium browser
