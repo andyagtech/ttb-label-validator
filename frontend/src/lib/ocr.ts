@@ -448,10 +448,13 @@ export function parseOcrText(rawText: string): ExtractedFields {
   if (compoundNet) {
     fields.netContents = compoundNet[0].trim();
   } else {
-    // Single unit: "750 mL", "12 FL OZ", "1.75 L", "1 PINT", "200ml", "16OZ"
-    // \s* allows both spaced ("750 ml") and unspaced ("750ml") variants
+    // Single unit with OCR error tolerance:
+    // - O→0: "75O ML" → "750 ML"
+    // - I→1: "I.75 L" → "1.75 L" 
+    // - Missing space: "750ML", "12FLOZ"
+    // - m| misread: "750 m|" (| as l)
     const netMatch = text.match(
-      /(\d+\.?\d*)\s*(ml|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?|oz\.?)/i,
+      /(\d+\.?\d*)\s*[-~]?\s*(ml|m[|l]|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?|oz\.?|ounces?)/i,
     );
     if (netMatch) {
       fields.netContents = netMatch[0].trim();
@@ -468,22 +471,34 @@ export function parseOcrText(rawText: string): ExtractedFields {
     return raw.trim();
   };
 
-  if (/government\s+warning/i.test(text)) {
-    const gwStart = text.search(/government\s+warning/i);
-    // Capture up to 500 chars to get both statements, then truncate at end marker
+  // Primary: "GOVERNMENT WARNING" with OCR error tolerance
+  // Common OCR errors: GOVERNMEN (missing T), GOVERNMENI (T→I), WARNIN6 (G→6)
+  if (/govern[mn]en[ti]?\s+warnin[g6]/i.test(text)) {
+    const gwStart = text.search(/govern[mn]en[ti]?\s+warnin[g6]/i);
     fields.healthWarning = truncateWarning(text.slice(gwStart, gwStart + 500));
   }
-  // Fallback: "SURGEON GENERAL" without the "GOVERNMENT WARNING" prefix
-  // (sometimes Tesseract misreads the header but captures the body)
+  // Fallback 1: "SURGEON GENERAL" without "GOVERNMENT WARNING" prefix
   if (!fields.healthWarning && /surgeon\s+general/i.test(text)) {
     const sgStart = text.search(/surgeon\s+general/i);
-    const start = Math.max(0, sgStart - 40); // grab a bit before for context
+    const start = Math.max(0, sgStart - 40);
     fields.healthWarning = truncateWarning(text.slice(start, sgStart + 500));
   }
   // Fallback 2: "ACCORDING TO THE" + "BIRTH DEFECTS" — fragmented OCR
   if (!fields.healthWarning && /according\s+to\s+the/i.test(text) && /birth\s+defects/i.test(text)) {
     const atStart = text.search(/according\s+to\s+the/i);
     fields.healthWarning = truncateWarning(text.slice(Math.max(0, atStart - 30), atStart + 500));
+  }
+  // Fallback 3: "WOMEN SHOULD NOT DRINK" — body text without header
+  if (!fields.healthWarning && /women\s+should\s+not\s+drink/i.test(text)) {
+    const wStart = text.search(/women\s+should\s+not\s+drink/i);
+    const start = Math.max(0, wStart - 50);
+    fields.healthWarning = truncateWarning(text.slice(start, wStart + 500));
+  }
+  // Fallback 4: "CONSUMPTION OF ALCOHOLIC" — second statement fragment
+  if (!fields.healthWarning && /consumption\s+of\s+alcoholic/i.test(text)) {
+    const cStart = text.search(/consumption\s+of\s+alcoholic/i);
+    const start = Math.max(0, cStart - 80);
+    fields.healthWarning = truncateWarning(text.slice(start, cStart + 500));
   }
 
   // --- Contains Sulfites ---
@@ -545,13 +560,12 @@ export function parseOcrText(rawText: string): ExtractedFields {
     /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
     // Beer (expanded: DIPA, session, hazy, black IPA, sour, fruited, etc.)
     /\b(double\s+india\s+pale\s+ale|hazy\s+(?:double\s+)?(?:india\s+)?pale\s+ale|black\s+(?:india\s+)?pale\s+ale|session\s+(?:india\s+)?pale\s+ale|new\s+england\s+(?:style\s+)?(?:india\s+)?pale\s+ale|(?:double|imperial)\s+IPA|DIPA)\b/i,
-    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|wheat\s+(?:beer|ale)|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|(?:fruited\s+)?sour|blonde\s+ale|cream\s+ale|kolsch|kölsch|bock|doppelbock|dunkel|marzen|märzen|witbier|berliner\s+weisse|gose|barleywine|scotch\s+ale|strong\s+ale|farmhouse\s+ale|wild\s+ale|belgian\s+(?:strong|pale|dark|dubbel|tripel|quad))\b/i,
-    // Wine
-    /\b(red\s+wine|white\s+wine|rosé|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth)\b/i,
-    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz)\b/i,
+    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|pils|wheat\s+(?:beer|ale)|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|(?:fruited\s+)?sour|blonde\s+ale|cream\s+ale|kolsch|kölsch|bock|doppelbock|dunkel|marzen|märzen|witbier|berliner\s+weisse|gose|barleywine|scotch\s+ale|strong\s+ale|farmhouse\s+ale|wild\s+ale|belgian\s+(?:strong|pale|dark|dubbel|tripel|quad)|tripel|dubbel|quadrupel)\b/i,
+    /\b(red\s+wine|white\s+wine|rosé|rose\s+wine|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth|cava|prosecco)\b/i,
+    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|petite\s+sirah|tempranillo|sangiovese|nebbiolo|barbera|dolcetto|montepulciano)\b/i,
     // Spirits (expanded: straight bourbon, artesanal mezcal, single malt, etc.)
-    /\b(straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey))/i,
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|ready\s+to\s+drink|cocktail)\b/i,
+    /\b(straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey)|tennessee\s+whiskey)\b/i,
+    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|ready\s+to\s+drink|cocktail|sake|saki)\b/i,
   ];
   for (const pat of classPatterns) {
     const m = text.match(pat);
@@ -586,7 +600,8 @@ export function parseOcrText(rawText: string): ExtractedFields {
 
   // --- Name & address ---
   // Strategy 1: Match on joined text — handles common producer prefixes
-  const NA_PREFIX = /(?:imported|bottled|produced\s*&?\s*bottled|produced|distributed|blended\s*&?\s*bottled|distilled\s*&?\s*bottled|distilled|brewed|made|packed|canned|vinted|cellared|crafted|brewed\s*&?\s*canned|brewed\s*&?\s*packaged|brewed\s*&?\s*bottled|crafted\s*&?\s*canned|crafted\s*&?\s*distilled|fermented|estate\s+bottled)\s+(?:by|for|in|at|and\s+(?:canned|bottled|packaged))(?:\s|$)/i;
+  // Expanded action verbs + OCR error tolerance (BOITLED→BOTTLED, DISTIILED→DISTILLED)
+  const NA_PREFIX = /(?:imported|bottled?|bo[ti]+led|produced|distributed|blended|distilled?|disti[li]+ed|brewed|made|packed|canned|vinted|cellared|crafted|fermented|estate\s+bottled|grown|selected|aged)\s*(?:&|and)?\s*(?:bottled?|bo[ti]+led|produced|distributed|blended|distilled?|disti[li]+ed|brewed|canned|packaged|crafted)?\s+(?:by|for|in|at|and\s+(?:canned|bottled|packaged))(?:\s|$)/i;
   const naPatterns = [
     new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2}\\s*\\d{5})`, "i"),
     new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2})\\b`, "i"),
