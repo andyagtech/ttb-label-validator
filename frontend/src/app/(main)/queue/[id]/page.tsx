@@ -515,16 +515,6 @@ export default function TTBReviewPage() {
               </div>
               <p className="text-[10px] text-gray-400 font-mono mt-0.5">
                 {submission.id} · {submission.submitterId} · {formatDate(submission.createdAt)}
-                {submission.ttbId && (
-                  <> · <a
-                    href={`https://www.ttbonline.gov/colasonline/viewColaDetails.do?action=publicDisplaySearchBasic&ttbid=${submission.ttbId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-0.5 text-blue-500 hover:text-blue-700 transition"
-                  >
-                    TTB #{submission.ttbId} <ExternalLink size={9} />
-                  </a></>
-                )}
               </p>
             </div>
           </div>
@@ -585,6 +575,18 @@ export default function TTBReviewPage() {
               )}
             </button>
           ))}
+          {/* TTB COLA Online link */}
+          {submission.ttbId && (
+            <a
+              href={`https://www.ttbonline.gov/colasonline/viewColaDetails.do?action=publicDisplaySearchBasic&ttbid=${submission.ttbId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-500 hover:text-blue-600 transition"
+            >
+              <ExternalLink size={13} />
+              TTB Original
+            </a>
+          )}
           {/* Next button — right-justified */}
           {nextId && (
             <button
