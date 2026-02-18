@@ -302,7 +302,9 @@ export default function FormVsLabelTable({
                   {/* Two-column values: Submitted vs Detected */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Submitted</p>
+                      <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">
+                        {key === "healthWarning" ? "Required" : "Submitted"}
+                      </p>
                       <p className="text-[11px] text-gray-700 break-words leading-snug">
                         {formVal || <span className="text-gray-400 italic text-[10px]">{isRequired ? "⚠ Missing" : "—"}</span>}
                       </p>
