@@ -8,7 +8,21 @@
  */
 
 import { ChecklistItem } from "./types";
-import { inferCategory } from "./categoryMatch";
+import {
+  extractAlcoholContent,
+  extractNetContents,
+  extractHealthWarning,
+  extractSulfiteDeclaration,
+  extractBrandName,
+  extractClassType,
+  extractNameAddress,
+  extractVarietal,
+  extractVintageDate,
+  extractCountryOfOrigin,
+  extractAgeStatement,
+  extractAppellation,
+  inferCategoryFromFields,
+} from "./ocr-extractors";
 
 // ---------------------------------------------------------------------------
 // Feature flags
@@ -478,367 +492,45 @@ export async function runServerOcr(imageBase64: string, mimeType: string = "imag
 
 /**
  * Attempt to extract structured label fields from raw OCR text.
+ * 
  * This is a heuristic fallback when the vision model isn't available.
+ * Uses modular field-specific extractors for better maintainability.
+ * 
+ * @param rawText - Raw OCR text output from Tesseract or other OCR engine
+ * @returns ExtractedFields object with all detected fields
  */
 export function parseOcrText(rawText: string): ExtractedFields {
-  const fields: ExtractedFields = { rawText };
-  const text = rawText.replace(/\n/g, " ").replace(/\s+/g, " ");
-  const lines = rawText
-    .split(/\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  // --- Alcohol content ---
-  // Patterns to try in order (most specific to most general):
-  const abvPatterns = [
-    // "Alcohol 5% by volume" / "Alcohol 5% by vol"
-    /alcohol\s*(?:\(alc\))?\s+(\d+\.?\d*)\s*%\s*by\s+vol(?:ume)?/i,
-    // "Alcohol by volume: 4.5%" (Serving Facts format)
-    /alcohol\s+by\s+volume:\s*(\d+\.?\d*)\s*%/i,
-    // "5% Alc. By Vol." / "5% ALC BY VOL"
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*by\s*vol\.?/i,
-    // "5% ALC./VOL." / "5% ALC/VOL" / "5% ALC./VOL"
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*\/\s*vol\.?/i,
-    // OCR misread: "/" → "I" or "1": "5% ALCIVOL" / "5% ALC1VOL"
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*[i1l]\s*vol\.?/i,
-    // OCR misread: "V" → "N": "5% ALC. NOL." / "5% ALC.NOL"
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*[./]?\s*n[o0]l\.?/i,
-    // "ALC. 5% BY VOL." / "ALC 5% BY VOL" — also handle comma OCR misread: "ALC, 5%"
-    /alc[.,]?\s*(\d+\.?\d*)\s*%\s*by\s*vol\.?/i,
-    // "ALC./VOL. 5%" / "ALC/VOL 5%"
-    /alc\.?\s*\/\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
-    // OCR misread reversed: "ALC. NOL. 5%" / "ALCIVOL 5%"
-    /alc\.?\s*[./]?\s*n[o0]l\.?\s*(\d+\.?\d*)\s*%/i,
-    /alc\.?\s*[i1l]\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
-    // "5% Alcohol by volume"
-    /(\d+\.?\d*)\s*%\s*alcohol\s*(?:\(alc\))?\s*(?:by\s+vol(?:ume)?|\/\s*vol(?:ume)?)/i,
-    // Proof-based: "(80 PROOF)" / "80 Proof" → extract as-is
-    /\(?(\d+)\s*proof\)?/i,
-    // Loose fallback: any "X% alc" or "alc X%" — handle comma misread
-    /(\d+\.?\d*)\s*%\s*alc/i,
-    /alc[.,]?\s*(\d+\.?\d*)\s*%/i,
-  ];
-  for (const pat of abvPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      fields.alcoholContent = m[0].trim();
-      break;
-    }
-  }
-
-  // --- Net contents ---
-  // Try compound format first: "1 PINT, 8.9 FL. OZ." / "1 PINT 8.9 FL OZ"
-  const compoundNet = text.match(/(\d+\.?\d*)\s*(pints?|pt\.?|quarts?|qt\.?)\s*[,.]?\s*(\d+\.?\d*)\s*(fl\.?\s*oz\.?)/i);
-  if (compoundNet) {
-    fields.netContents = compoundNet[0].trim();
-  } else {
-    // Single unit with OCR error tolerance:
-    // - O→0: "75O ML" → "750 ML"
-    // - I→1: "I.75 L" → "1.75 L" 
-    // - Missing space: "750ML", "12FLOZ"
-    // - m| misread: "750 m|" (| as l)
-    const netMatch = text.match(
-      /(\d+\.?\d*)\s*[-~]?\s*(ml|m[|l]|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?|oz\.?|ounces?)/i,
-    );
-    if (netMatch) {
-      fields.netContents = netMatch[0].trim();
-    }
-  }
-
-  // --- Government warning ---
-  // Helper: given a raw slice, truncate at "HEALTH PROBLEMS" end-marker
-  const truncateWarning = (raw: string): string => {
-    const endMatch = raw.match(/health\s+problems[\s.!;,)]*(?:\b|$)/i);
-    if (endMatch && endMatch.index !== undefined) {
-      return raw.slice(0, endMatch.index + endMatch[0].length).trim();
-    }
-    return raw.trim();
+  // Build text context for extractors
+  const ctx = {
+    rawText,
+    text: rawText.replace(/\n/g, " ").replace(/\s+/g, " "),
+    lines: rawText.split(/\n/).map((l) => l.trim()).filter(Boolean),
   };
 
-  // Primary: "GOVERNMENT WARNING" with OCR error tolerance
-  // Common OCR errors: GOVERNMEN (missing T), GOVERNMENI (T→I), WARNIN6 (G→6)
-  if (/govern[mn]en[ti]?\s+warnin[g6]/i.test(text)) {
-    const gwStart = text.search(/govern[mn]en[ti]?\s+warnin[g6]/i);
-    fields.healthWarning = truncateWarning(text.slice(gwStart, gwStart + 500));
-  }
-  // Fallback 1: "SURGEON GENERAL" without "GOVERNMENT WARNING" prefix
-  if (!fields.healthWarning && /surgeon\s+general/i.test(text)) {
-    const sgStart = text.search(/surgeon\s+general/i);
-    const start = Math.max(0, sgStart - 40);
-    fields.healthWarning = truncateWarning(text.slice(start, sgStart + 500));
-  }
-  // Fallback 2: "ACCORDING TO THE" + "BIRTH DEFECTS" — fragmented OCR
-  if (!fields.healthWarning && /according\s+to\s+the/i.test(text) && /birth\s+defects/i.test(text)) {
-    const atStart = text.search(/according\s+to\s+the/i);
-    fields.healthWarning = truncateWarning(text.slice(Math.max(0, atStart - 30), atStart + 500));
-  }
-  // Fallback 3: "WOMEN SHOULD NOT DRINK" — body text without header
-  if (!fields.healthWarning && /women\s+should\s+not\s+drink/i.test(text)) {
-    const wStart = text.search(/women\s+should\s+not\s+drink/i);
-    const start = Math.max(0, wStart - 50);
-    fields.healthWarning = truncateWarning(text.slice(start, wStart + 500));
-  }
-  // Fallback 4: "CONSUMPTION OF ALCOHOLIC" — second statement fragment
-  if (!fields.healthWarning && /consumption\s+of\s+alcoholic/i.test(text)) {
-    const cStart = text.search(/consumption\s+of\s+alcoholic/i);
-    const start = Math.max(0, cStart - 80);
-    fields.healthWarning = truncateWarning(text.slice(start, cStart + 500));
-  }
-
-  // --- Contains Sulfites ---
-  if (/contains?\s+sulfites?/i.test(text)) {
-    fields.sulfiteDeclaration = "Contains Sulfites";
-  }
-
-  // --- Brand name ---
-  // Heuristic: look for prominent text lines near the top of the label.
-  // Strategy: try specific patterns first, then fall back to prominent lines.
-  const brandPatterns = [
-    /(\w[\w\s&']+(?:brew(?:ery|ing)|winer(?:y|ies)|distiller(?:y|ies)|cellars?|vineyards?|estate))/i,
-  ];
-  for (const pat of brandPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      fields.brandName = m[1].trim();
-      break;
-    }
-  }
-  // Fallback 1: first prominent all-caps line (1+ words, at least 3 chars)
-  if (!fields.brandName) {
-    for (const line of lines.slice(0, 8)) {
-      if (line.length >= 3 && line.length <= 60 && /^[A-Z][A-Z\s&'.]+$/.test(line)) {
-        fields.brandName = line;
-        break;
-      }
-    }
-  }
-  // Fallback 2: first short, prominent line (mixed case, single word OK)
-  // Handles cases like "Hennessy" or "Barefoot" appearing alone
-  if (!fields.brandName) {
-    for (const line of lines.slice(0, 8)) {
-      // Skip lines that are clearly not brand names
-      if (line.length < 3 || line.length > 40) continue;
-      if (/government\s+warning/i.test(line)) continue;
-      if (/contains?\s+sulfites?/i.test(line)) continue;
-      if (/^\d/.test(line)) continue; // starts with number
-      if (/alc|vol|proof|oz|ml|fl\b/i.test(line)) continue; // measurement-like
-      if (/\b(front|back)\s+label\b/i.test(line)) continue; // template annotations
-      if (/^\d+["″']\s*x\s*\d/i.test(line)) continue; // dimension annotations (3" x 3.5")
-      if (/serving/i.test(line)) continue; // nutrition/serving info
-      if (/bottled\s+by|distilled|produced|imported|distributed|canned\s+by/i.test(line)) continue;
-      if (/[=\[\]~|{}@#$^*<>]/.test(line)) continue; // OCR noise characters
-      if (/calories|carbohydrate|protein|fat:/i.test(line)) continue; // nutrition data
-      // Accept the first short prominent line as brand name
-      fields.brandName = line;
-      break;
-    }
-  }
-  // --- Class / type designation ---
-  // (detected before brand name so brand fallbacks can use classType)
-  const classPatterns = [
-    // "100% Sangiovese" / "100% Corn Neutral Spirits" — percentage + varietal/type
-    /\b(\d+%\s+(?:cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|chenin\s+blanc|semillon|muscat|moscato|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits))\b/i,
-    // Compound spirits types (must be before generic spirits so "tequila seltzer" beats "tequila")
-    /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water)\b/i,
-    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
-    /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
-    // Beer (expanded: DIPA, session, hazy, black IPA, sour, fruited, etc.)
-    /\b(double\s+india\s+pale\s+ale|hazy\s+(?:double\s+)?(?:india\s+)?pale\s+ale|black\s+(?:india\s+)?pale\s+ale|session\s+(?:india\s+)?pale\s+ale|new\s+england\s+(?:style\s+)?(?:india\s+)?pale\s+ale|(?:double|imperial)\s+IPA|DIPA)\b/i,
-    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|pils|wheat\s+(?:beer|ale)|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|(?:fruited\s+)?sour|blonde\s+ale|cream\s+ale|kolsch|kölsch|bock|doppelbock|dunkel|marzen|märzen|witbier|berliner\s+weisse|gose|barleywine|scotch\s+ale|strong\s+ale|farmhouse\s+ale|wild\s+ale|belgian\s+(?:strong|pale|dark|dubbel|tripel|quad)|tripel|dubbel|quadrupel)\b/i,
-    /\b(red\s+wine|white\s+wine|rosé|rose\s+wine|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth|cava|prosecco)\b/i,
-    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|petite\s+sirah|tempranillo|sangiovese|nebbiolo|barbera|dolcetto|montepulciano)\b/i,
-    // Spirits (expanded: straight bourbon, artesanal mezcal, single malt, etc.)
-    /\b(straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey)|tennessee\s+whiskey)\b/i,
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|ready\s+to\s+drink|cocktail|sake|saki)\b/i,
-  ];
-  for (const pat of classPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      fields.classType = m[0].trim();
-      break;
-    }
-  }
-
-  // Brand fallback 3: extract brand from product-name lines ("ONDA TEQUILA SELTZER" → "ONDA")
-  if (!fields.brandName && fields.classType) {
-    const classLower = fields.classType.toLowerCase();
-    for (const line of lines) {
-      const lineLower = line.toLowerCase();
-      const classIdx = lineLower.indexOf(classLower);
-      if (classIdx > 0) {
-        const before = line.slice(0, classIdx).trim();
-        if (before.length >= 2 && before.length <= 40 && !/\d/.test(before)) {
-          fields.brandName = before;
-          break;
-        }
-      }
-    }
-  }
-  // Brand fallback 4: extract brand from URL ("BARLEYANDBOAR.COM" → "BARLEYANDBOAR")
-  if (!fields.brandName) {
-    const urlMatch = text.match(/\b([A-Za-z][A-Za-z]+)\.com\b/i);
-    if (urlMatch) {
-      fields.brandName = urlMatch[1].toUpperCase();
-    }
-  }
-
-  // --- Name & address ---
-  // Strategy 1: Match on joined text — handles common producer prefixes
-  // Expanded action verbs + OCR error tolerance (BOITLED→BOTTLED, DISTIILED→DISTILLED)
-  const NA_PREFIX = /(?:imported|bottled?|bo[ti]+led|produced|distributed|blended|distilled?|disti[li]+ed|brewed|made|packed|canned|vinted|cellared|crafted|fermented|estate\s+bottled|grown|selected|aged)\s*(?:&|and)?\s*(?:bottled?|bo[ti]+led|produced|distributed|blended|distilled?|disti[li]+ed|brewed|canned|packaged|crafted)?\s+(?:by|for|in|at|and\s+(?:canned|bottled|packaged))(?:\s|$)/i;
-  const naPatterns = [
-    new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2}\\s*\\d{5})`, "i"),
-    new RegExp(`(${NA_PREFIX.source}[^.]+?,\\s*[A-Z]{2})\\b`, "i"),
-  ];
-  for (const pat of naPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      fields.nameAddress = m[1].trim();
-      break;
-    }
-  }
-  // Strategy 2: Multi-line scan — producer prefix may be on one line, address on the next
-  if (!fields.nameAddress) {
-    for (let i = 0; i < lines.length; i++) {
-      if (NA_PREFIX.test(lines[i])) {
-        // Grab this line plus up to 2 following lines for the address
-        let combined = lines[i];
-        for (let j = 1; j <= 2 && i + j < lines.length; j++) {
-          combined += " " + lines[i + j];
-        }
-        // Try to extract "prefix ... City, ST ZIP" or "prefix ... City, ST"
-        const m = combined.match(new RegExp(`(${NA_PREFIX.source}.+?,\\s*[A-Z]{2}(?:\\s*\\d{5})?)`, "i"));
-        if (m) { fields.nameAddress = m[1].trim(); break; }
-        // If no state pattern, just grab the prefix line + next line
-        fields.nameAddress = combined.slice(0, 120).trim();
-        break;
-      }
-    }
-  }
-  // Strategy 2b: Post-correct common OCR merge errors in nameAddress
-  // e.g. "NAPACA" → "NAPA, CA", "ATASCADEROCA" → "ATASCADERO, CA"
-  if (fields.nameAddress) {
-    const US_STATES = /\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)$/;
-    fields.nameAddress = fields.nameAddress.replace(
-      /([A-Za-z]{3,})([A-Z]{2})\s*(-\s*USA|[+]\s*USA)?\s*$/,
-      (_match, city, st, usa) => {
-        if (US_STATES.test(st)) {
-          return `${city}, ${st}${usa ? " USA" : ""}`;
-        }
-        return _match;
-      },
-    );
-  }
-  // Strategy 3: Fallback — find "City, STATE ZIPCODE" and grab context before it
-  if (!fields.nameAddress) {
-    const addressMatch = text.match(/[\w\s]+,\s*[A-Z]{2}\s*\d{5}/);
-    if (addressMatch) {
-      const idx = text.indexOf(addressMatch[0]);
-      const start = Math.max(0, idx - 80);
-      let grabbed = text.slice(start, idx + addressMatch[0].length).trim();
-      const importerStart = grabbed.search(NA_PREFIX);
-      if (importerStart > 0) {
-        grabbed = grabbed.slice(importerStart).trim();
-      } else {
-        const cleanStart = grabbed.search(/[A-Z][\w\s&',.-]+,\s*[A-Z]{2}/);
-        if (cleanStart > 0) grabbed = grabbed.slice(cleanStart).trim();
-      }
-      fields.nameAddress = grabbed;
-    } else {
-      const cityStateMatch = text.match(/([\w\s]+,\s*[A-Z]{2})\b/);
-      if (cityStateMatch) {
-        const idx = text.indexOf(cityStateMatch[0]);
-        const start = Math.max(0, idx - 80);
-        let grabbed = text.slice(start, idx + cityStateMatch[0].length).trim();
-        const importerStart = grabbed.search(NA_PREFIX);
-        if (importerStart > 0) grabbed = grabbed.slice(importerStart).trim();
-        fields.nameAddress = grabbed;
-      }
-    }
-  }
-
-  // --- Varietal ---
-  const varietalPatterns =
-    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|gewürztraminer|chenin\s+blanc|semillon|muscat|moscato)\b/i;
-  const varietalMatch = text.match(varietalPatterns);
-  if (varietalMatch) {
-    fields.varietal = varietalMatch[0].trim();
-    // Use varietal as classType fallback — e.g. "Pinot Noir" is both varietal and class
-    if (!fields.classType) {
-      fields.classType = fields.varietal;
-    }
-  }
-
-  // --- Vintage date ---
-  const vintageMatch = text.match(/\b(19|20)\d{2}\b/);
-  if (vintageMatch) {
-    const yr = parseInt(vintageMatch[0]);
-    if (yr >= 1950 && yr <= new Date().getFullYear()) {
-      fields.vintageDate = vintageMatch[0];
-    }
-  }
-
-  // --- Country of origin ---
-  const countryPatterns = [
-    /\b(product\s+of\s+[\w\s]+)/i,
-    /\b(imported\s+(?:from|by)\s+[\w\s]+)/i,
-    /\b(made\s+in\s+[\w\s]+)/i,
-    // Spanish: "hecho en mexico" / "producto de mexico"
-    /\b(hecho\s+en\s+[\w\s]+)/i,
-    /\b(producto\s+de\s+[\w\s]+)/i,
-    // "Product of the USA" / "Produced in USA"
-    /\b(product\s+of\s+the\s+usa)/i,
-    /\b(produced\s+in\s+[\w\s]+)/i,
-  ];
-  for (const pat of countryPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      fields.countryOfOrigin = m[0].trim();
-      break;
-    }
-  }
-
-  // --- Age statement (spirits) ---
-  const agePatterns = [
-    /\b(aged\s+(?:a\s+minimum\s+of\s+)?(\d+)\s+years?)\b/i,
-    /\b((\d+)\s+years?\s+old)\b/i,
-    /\b((\d+)\s*-?\s*yr\.?\s*old)\b/i,
-  ];
-  for (const pat of agePatterns) {
-    const m = text.match(pat);
-    if (m) {
-      fields.ageStatement = m[0].trim();
-      break;
-    }
-  }
-
-  // --- Appellation (wine) ---
-  const appellationPatterns = [
-    /\b(napa\s+valley|sonoma\s+(?:county|coast|valley)|paso\s+robles|russian\s+river\s+valley|willamette\s+valley|columbia\s+valley|walla\s+walla\s+valley|finger\s+lakes|long\s+island|central\s+coast|santa\s+barbara\s+county|monterey\s+county|mendocino\s+county|lodi|alexander\s+valley|dry\s+creek\s+valley|anderson\s+valley|carneros|los\s+carneros|stags\s+leap|oakville|rutherford|st\.?\s*helena|calistoga)\b/i,
-    /\b(bordeaux|burgundy|champagne|côtes?\s+du\s+rhône|loire\s+valley|alsace|languedoc|provence|rioja|ribera\s+del\s+duero|chianti|barolo|barbaresco|prosecco|valpolicella|mosel|rheingau|marlborough|barossa\s+valley|mclaren\s+vale|margaret\s+river|hunter\s+valley|stellenbosch|mendoza|maipo\s+valley|casablanca\s+valley)\b/i,
-  ];
-  for (const pat of appellationPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      fields.appellation = m[0].trim();
-      break;
-    }
-  }
-
-  // --- Category inference ---
-  const catResult = inferCategory({
-    classType: fields.classType,
-    varietal: fields.varietal,
-    appellation: fields.appellation,
-    ageStatement: fields.ageStatement,
-    rawText: fields.rawText,
-  });
-  if (catResult.category) {
-    fields.detectedCategory = catResult.category;
-    fields.detectedSubcategory = catResult.subcategory ?? undefined;
-  }
-
-  return fields;
+  // Extract class type first (needed for brand name fallback)
+  const classTypeResult = extractClassType(ctx);
+  
+  // Build fields object by merging all extractor results
+  const fields: ExtractedFields = {
+    rawText,
+    ...extractAlcoholContent(ctx),
+    ...extractNetContents(ctx),
+    ...extractHealthWarning(ctx),
+    ...extractSulfiteDeclaration(ctx),
+    ...classTypeResult,
+    ...extractBrandName(ctx, classTypeResult.classType),
+    ...extractNameAddress(ctx),
+    ...extractVarietal(ctx),
+    ...extractVintageDate(ctx),
+    ...extractCountryOfOrigin(ctx),
+    ...extractAgeStatement(ctx),
+    ...extractAppellation(ctx),
+  };
+  
+  // Infer category from extracted fields
+  const categoryResult = inferCategoryFromFields(fields);
+  
+  return { ...fields, ...categoryResult };
 }
 
 // ---------------------------------------------------------------------------
@@ -851,6 +543,20 @@ const FIELD_TO_CHECKLIST: Record<keyof ExtractedFields, string> = {
   alcoholContent: "alcohol_content",
   netContents: "net_contents",
   appellation: "appellation",
+  vintageDate: "vintage_date",
+  varietal: "varietal",
+  healthWarning: "health_warning",
+  nameAddress: "name_address",
+  countryOfOrigin: "country_origin",
+  sulfiteDeclaration: "sulfite_declaration",
+  ageStatement: "age_statement",
+  colorIngredients: "color_ingredients",
+  commodityStatement: "commodity_statement",
+  aspartameDeclaration: "aspartame_declaration",
+  detectedCategory: "", // not mapped to a checklist item
+  detectedSubcategory: "", // not mapped to a checklist item
+  rawText: "", // not mapped to a checklist item
+};
   vintageDate: "vintage_date",
   varietal: "varietal",
   healthWarning: "health_warning",
