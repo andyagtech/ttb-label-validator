@@ -308,10 +308,16 @@ export function extractClassType(ctx: TextContext): Partial<ExtractedFields> {
     /\b(red\s+wine|white\s+wine|rosé|rose\s+wine|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|ice\s*wine|natural\s+wine|late\s+harvest|blanc\s+de\s+blancs|blanc\s+de\s+noirs|port|sherry|vermouth|mead|cava|prosecco)\b/i,
     // Wine varietals
     /\b(cabernet\s+sauvignon|cabernet\s+franc|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|pinot\s+blanc|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|petite?\s+si?rah|petit\s+verdot|tempranillo|sangiovese|nebbiolo|barbera|dolcetto|montepulciano|grenache|mourv[eè]dre|viognier|gew[uü]rztraminer|chenin\s+blanc|semillon|muscat|moscato|gr[uü]ner\s+veltliner|alba(?:ri[nñ]o|rinho)|torront[eé]s|gamay|carm[eé]n[eè]re|marsanne|roussanne)\b/i,
-    // Spirits compound whiskey
-    /\b(straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey)|tennessee\s+whiskey)\b/i,
+    // Spirits compound whiskey (most specific first)
+    /\b(kentucky\s+straight\s+bourbon|straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey)|tennessee\s+whiskey|irish\s+whisk(?:e?y)|canadian\s+whisk(?:e?y)|kentucky\s+bourbon)\b/i,
+    // Barrel / cask terms (strong whisky indicators)
+    /\b(barrel\s+proof|barrel\s+aged|barrel\s+finished|cask\s+strength|charred\s+oak)\b/i,
+    // Rum variants (before generic rum)
+    /\b(gold\s+rum|dark\s+rum|spiced\s+rum|white\s+rum|aged\s+rum|rhum)\b/i,
+    // Sake terms (before generic spirits — prevents "brewery" from catching sake)
+    /\b(daiginj[oō]|ginj[oō]|junmai|nihonshu|sak[eéi])\b/i,
     // Core spirits
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|genever|tequila|brandy|cognac|armagnac|calvados|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|schnapps|moonshine|ready\s+to\s+drink|cocktail|sake|saki|margarita)\b/i,
+    /\b(blended\s+whiskey|bourbon|scotch|flavored\s+vodka|vodka|london\s+dry\s+gin|rum|gin|genever|tequila|brandy|cognac|armagnac|calvados|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|schnapps|moonshine|ready\s+to\s+drink|cocktail|sake|saki|margarita)\b/i,
   ];
   
   for (const pat of classPatterns) {

@@ -98,6 +98,12 @@ const SUBCATEGORY_MAP: SubcategoryEntry[] = [
   { term: "lager", pattern: /\blager\b/i, parent: "beer", subcategory: "BEER" },
   { term: "fruit beer", pattern: /\bfruit\s+(?:beer|ale)\b/i, parent: "beer", subcategory: "BEER" },
   { term: "wheat beer", pattern: /\bwheat\s+(?:beer|ale)\b/i, parent: "beer", subcategory: "BEER" },
+  // Sake (TTB classifies under spirits, 27 CFR 5.22(g)) — MUST be before generic "brew"/"beer"
+  { term: "daiginjo", pattern: /\bdaiginj[oō]\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "ginjo", pattern: /\bginj[oō]\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "junmai", pattern: /\bjunmai\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "nihonshu", pattern: /\bnihonshu\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "sake", pattern: /\bsak[eéi]\b/i, parent: "spirits", subcategory: "SAKE" },
   // Generic (last)
   { term: "ale", pattern: /\bale\b/i, parent: "beer", subcategory: "ALE" },
   { term: "beer", pattern: /\bbeer\b/i, parent: "beer", subcategory: "BEER" },
@@ -188,25 +194,44 @@ const SUBCATEGORY_MAP: SubcategoryEntry[] = [
   { term: "wine", pattern: /\bwine\b/i, parent: "wine", subcategory: "TABLE WHITE WINE" },
 
   // ── Spirits (27 CFR Part 5) ───────────────────────────────────────────
-  // Whisky (27 CFR 5.143–5.153)
+  // Whisky (27 CFR 5.143–5.153) — specific → generic
+  { term: "kentucky straight bourbon", pattern: /\bkentucky\s+straight\s+bourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "straight bourbon", pattern: /\bstraight\s+bourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "straight rye", pattern: /\bstraight\s+rye\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "STRAIGHT RYE WHISKY" },
+  { term: "straight rye", pattern: /\bstraight\s+rye\b/i, parent: "spirits", subcategory: "STRAIGHT RYE WHISKY" },
   { term: "tennessee whiskey", pattern: /\btennessee\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "irish whiskey", pattern: /\birish\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "IRISH WHISKY" },
+  { term: "canadian whisky", pattern: /\bcanadian\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "CANADIAN WHISKY" },
   { term: "single malt", pattern: /\bsingle\s+(?:malt|barrel)\s+(?:whisk(?:e?y)|scotch)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "small batch", pattern: /\bsmall\s+batch\s+(?:bourbon|whisk(?:e?y))\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "blended whiskey", pattern: /\bblended\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "BLENDED WHISKY" },
+  // Barrel / cask terms — strong whisky indicators
+  { term: "barrel proof", pattern: /\bbarrel\s+proof\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
+  { term: "cask strength", pattern: /\bcask\s+strength\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "barrel aged", pattern: /\bbarrel\s+aged\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "barrel finished", pattern: /\bbarrel\s+finished\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "charred oak", pattern: /\bcharred\s+oak\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "kentucky bourbon", pattern: /\bkentucky\s+bourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "rye whiskey", pattern: /\brye\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "STRAIGHT RYE WHISKY" },
   { term: "corn whiskey", pattern: /\bcorn\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "bourbon", pattern: /\bbourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "scotch", pattern: /\bscotch\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "whiskey", pattern: /\bwhisk(?:e?y)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   // Vodka (27 CFR 5.155)
+  { term: "flavored vodka", pattern: /\bflavored\s+vodka\b/i, parent: "spirits", subcategory: "VODKA" },
   { term: "vodka soda", pattern: /\bvodka\s+soda\b/i, parent: "spirits", subcategory: "VODKA" },
   { term: "vodka", pattern: /\bvodka\b/i, parent: "spirits", subcategory: "VODKA" },
   // Gin (27 CFR 5.157)
+  { term: "london dry gin", pattern: /\blondon\s+dry\s+gin\b/i, parent: "spirits", subcategory: "GIN" },
   { term: "gin", pattern: /\bgin\b/i, parent: "spirits", subcategory: "GIN" },
   { term: "genever", pattern: /\bgenever\b/i, parent: "spirits", subcategory: "GIN" },
-  // Rum (27 CFR 5.158)
+  // Rum (27 CFR 5.158) — specific → generic
+  { term: "gold rum", pattern: /\bgold\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "dark rum", pattern: /\bdark\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "spiced rum", pattern: /\bspiced\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "white rum", pattern: /\bwhite\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "aged rum", pattern: /\baged\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "rhum", pattern: /\brhum\b/i, parent: "spirits", subcategory: "RUM" },
   { term: "rum", pattern: /\brum\b/i, parent: "spirits", subcategory: "RUM" },
   { term: "cachaca", pattern: /\bcacha[cç]a\b/i, parent: "spirits", subcategory: "RUM" },
   // Brandy (27 CFR 5.140–5.142)
@@ -239,12 +264,12 @@ const SUBCATEGORY_MAP: SubcategoryEntry[] = [
   { term: "soju", pattern: /\bsoju\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
   { term: "baijiu", pattern: /\bbaijiu\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
   { term: "moonshine", pattern: /\bmoonshine\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
-  { term: "sake", pattern: /\bsak[eé]\b/i, parent: "spirits", subcategory: "SAKE" },
   // RTD / Cocktails
+  { term: "ready to drink", pattern: /\bready\s+to\s+drink\b/i, parent: "spirits", subcategory: "OTHER COCKTAILS" },
   { term: "cocktail", pattern: /\bcocktail\b/i, parent: "spirits", subcategory: "OTHER COCKTAILS" },
   { term: "RTD", pattern: /\bRTD\b/, parent: "spirits", subcategory: "OTHER COCKTAILS" },
   { term: "margarita", pattern: /\bmargarita\b/i, parent: "spirits", subcategory: "OTHER COCKTAILS" },
-  // Producer terms that imply spirits
+  // Producer terms that imply spirits (low specificity — rawText fallback only)
   { term: "distillery", pattern: /\bdistiller(?:y|ies|s)\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
   { term: "distilled", pattern: /\bdistilled\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
   { term: "proof", pattern: /\b\d+\s*proof\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
@@ -333,7 +358,20 @@ export function inferCategory(
     };
   }
 
-  // Priority 5: raw text scan — lower confidence
+  // Priority 5: high ABV / proof — strong spirits indicator
+  // ABV > 20% is almost certainly spirits (not wine/beer)
+  if (!result && fields.alcoholContent) {
+    const abvVal = parseAbv(fields.alcoholContent);
+    if (abvVal !== null && abvVal > 20) {
+      result = {
+        category: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES",
+        subcategoryFamily: "OTHER SPIRITS",
+        confidence: 0.75, confidenceTier: "medium", matchedTerm: fields.alcoholContent,
+      };
+    }
+  }
+
+  // Priority 6: raw text scan — lower confidence
   if (!result && fields.rawText) {
     const m = matchText(fields.rawText);
     if (m) result = { ...m, confidence: 0.6, confidenceTier: "low" };
@@ -457,7 +495,7 @@ function toFamily(category: BeverageCategory, subcategory: string): string {
       if (subcategory.includes("HONEY")) return "TABLE WINE";
       return "TABLE WINE";
     case "spirits":
-      if (subcategory.includes("WHISKY") || subcategory.includes("BOURBON")) return "WHISKY";
+      if (subcategory.includes("WHISKY") || subcategory.includes("BOURBON") || subcategory.includes("IRISH") || subcategory.includes("CANADIAN")) return "WHISKY";
       if (subcategory.includes("RUM")) return "RUM";
       if (subcategory.includes("BRANDY") || subcategory.includes("GRAPPA") || subcategory.includes("PISCO")) return "BRANDY";
       if (subcategory.includes("TEQUILA") || subcategory.includes("MEZCAL") || subcategory.includes("AGAVE")) return "AGAVE";

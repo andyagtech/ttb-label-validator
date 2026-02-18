@@ -93,6 +93,12 @@ const SUBCATEGORY_MAP = [
   { term: "lager", pattern: /\blager\b/i, parent: "beer", subcategory: "BEER" },
   { term: "fruit beer", pattern: /\bfruit\s+(?:beer|ale)\b/i, parent: "beer", subcategory: "BEER" },
   { term: "wheat beer", pattern: /\bwheat\s+(?:beer|ale)\b/i, parent: "beer", subcategory: "BEER" },
+  // Sake (before generic beer — prevents sake breweries from matching "brew")
+  { term: "daiginjo", pattern: /\bdaiginj[o\u014d]\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "ginjo", pattern: /\bginj[o\u014d]\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "junmai", pattern: /\bjunmai\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "nihonshu", pattern: /\bnihonshu\b/i, parent: "spirits", subcategory: "SAKE" },
+  { term: "sake", pattern: /\bsak[e\u00e9i]\b/i, parent: "spirits", subcategory: "SAKE" },
   // Generic beer
   { term: "ale", pattern: /\bale\b/i, parent: "beer", subcategory: "ALE" },
   { term: "beer", pattern: /\bbeer\b/i, parent: "beer", subcategory: "BEER" },
@@ -159,42 +165,76 @@ const SUBCATEGORY_MAP = [
   { term: "vinted", pattern: /\bvinted\b/i, parent: "wine", subcategory: "TABLE WHITE WINE" },
   { term: "appellation", pattern: /\bappellation\b/i, parent: "wine", subcategory: "TABLE WHITE WINE" },
   { term: "wine", pattern: /\bwine\b/i, parent: "wine", subcategory: "TABLE WHITE WINE" },
-  // Spirits - Whisky
+  // Spirits - Whisky (specific → generic)
+  { term: "kentucky straight bourbon", pattern: /\bkentucky\s+straight\s+bourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "straight bourbon", pattern: /\bstraight\s+bourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "straight rye", pattern: /\bstraight\s+rye\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "STRAIGHT RYE WHISKY" },
+  { term: "straight rye", pattern: /\bstraight\s+rye\b/i, parent: "spirits", subcategory: "STRAIGHT RYE WHISKY" },
   { term: "tennessee whiskey", pattern: /\btennessee\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "irish whiskey", pattern: /\birish\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "IRISH WHISKY" },
+  { term: "canadian whisky", pattern: /\bcanadian\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "CANADIAN WHISKY" },
   { term: "single malt", pattern: /\bsingle\s+(?:malt|barrel)\s+(?:whisk(?:e?y)|scotch)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "small batch", pattern: /\bsmall\s+batch\s+(?:bourbon|whisk(?:e?y))\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "blended whiskey", pattern: /\bblended\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "BLENDED WHISKY" },
+  // Barrel / cask terms
+  { term: "barrel proof", pattern: /\bbarrel\s+proof\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
+  { term: "cask strength", pattern: /\bcask\s+strength\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "barrel aged", pattern: /\bbarrel\s+aged\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "barrel finished", pattern: /\bbarrel\s+finished\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "charred oak", pattern: /\bcharred\s+oak\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
+  { term: "kentucky bourbon", pattern: /\bkentucky\s+bourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "rye whiskey", pattern: /\brye\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "STRAIGHT RYE WHISKY" },
   { term: "corn whiskey", pattern: /\bcorn\s+whisk(?:e?y)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "bourbon", pattern: /\bbourbon\b/i, parent: "spirits", subcategory: "STRAIGHT BOURBON WHISKY" },
   { term: "scotch", pattern: /\bscotch\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
   { term: "whiskey", pattern: /\bwhisk(?:e?y)\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
-  // Spirits - Vodka / Gin / Rum / Brandy / Tequila
+  // Spirits - Vodka
+  { term: "flavored vodka", pattern: /\bflavored\s+vodka\b/i, parent: "spirits", subcategory: "VODKA" },
+  { term: "vodka soda", pattern: /\bvodka\s+soda\b/i, parent: "spirits", subcategory: "VODKA" },
   { term: "vodka", pattern: /\bvodka\b/i, parent: "spirits", subcategory: "VODKA" },
+  // Spirits - Gin
+  { term: "london dry gin", pattern: /\blondon\s+dry\s+gin\b/i, parent: "spirits", subcategory: "GIN" },
   { term: "gin", pattern: /\bgin\b/i, parent: "spirits", subcategory: "GIN" },
   { term: "genever", pattern: /\bgenever\b/i, parent: "spirits", subcategory: "GIN" },
+  // Spirits - Rum (specific → generic)
+  { term: "gold rum", pattern: /\bgold\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "dark rum", pattern: /\bdark\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "spiced rum", pattern: /\bspiced\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "white rum", pattern: /\bwhite\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "aged rum", pattern: /\baged\s+rum\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "rhum", pattern: /\brhum\b/i, parent: "spirits", subcategory: "RUM" },
   { term: "rum", pattern: /\brum\b/i, parent: "spirits", subcategory: "RUM" },
-  { term: "cachaca", pattern: /\bcacha[cç]a\b/i, parent: "spirits", subcategory: "RUM" },
+  { term: "cachaca", pattern: /\bcacha[c\u00e7]a\b/i, parent: "spirits", subcategory: "RUM" },
+  // Spirits - Brandy
   { term: "cognac", pattern: /\bcognac\b/i, parent: "spirits", subcategory: "BRANDY" },
   { term: "armagnac", pattern: /\barmagnac\b/i, parent: "spirits", subcategory: "BRANDY" },
   { term: "grappa", pattern: /\bgrappa\b/i, parent: "spirits", subcategory: "BRANDY" },
+  { term: "pisco", pattern: /\bpisco\b/i, parent: "spirits", subcategory: "BRANDY" },
   { term: "brandy", pattern: /\bbrandy\b/i, parent: "spirits", subcategory: "BRANDY" },
+  // Spirits - Tequila & Agave
+  { term: "tequila seltzer", pattern: /\btequila\s+seltzer\b/i, parent: "spirits", subcategory: "TEQUILA" },
   { term: "tequila", pattern: /\btequila\b/i, parent: "spirits", subcategory: "TEQUILA" },
   { term: "mezcal", pattern: /\bmezcal\b/i, parent: "spirits", subcategory: "MEZCAL" },
   { term: "agave spirits", pattern: /\bagave\s+spirits?\b/i, parent: "spirits", subcategory: "AGAVE SPIRITS" },
+  { term: "sotol", pattern: /\bsotol\b/i, parent: "spirits", subcategory: "AGAVE SPIRITS" },
+  { term: "raicilla", pattern: /\braicilla\b/i, parent: "spirits", subcategory: "AGAVE SPIRITS" },
   // Spirits - Liqueurs
   { term: "irish cream", pattern: /\birish\s+cream\b/i, parent: "spirits", subcategory: "LIQUEUR" },
   { term: "amaro", pattern: /\bamaro\b/i, parent: "spirits", subcategory: "LIQUEUR" },
+  { term: "aperitif", pattern: /\baperitif\b/i, parent: "spirits", subcategory: "LIQUEUR" },
+  { term: "digestif", pattern: /\bdigestif\b/i, parent: "spirits", subcategory: "LIQUEUR" },
   { term: "liqueur", pattern: /\bliqueur\b/i, parent: "spirits", subcategory: "LIQUEUR" },
   { term: "cordial", pattern: /\bcordial\b/i, parent: "spirits", subcategory: "LIQUEUR" },
+  { term: "schnapps", pattern: /\bschnapps\b/i, parent: "spirits", subcategory: "LIQUEUR" },
   // Spirits - Other
+  { term: "neutral spirits", pattern: /\b(?:corn\s+|grain\s+)?neutral\s+spirits?\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
   { term: "moonshine", pattern: /\bmoonshine\b/i, parent: "spirits", subcategory: "WHISKY SPECIALTIES" },
-  { term: "sake", pattern: /\bsak[eé]\b/i, parent: "spirits", subcategory: "SAKE" },
+  // RTD / Cocktails
+  { term: "ready to drink", pattern: /\bready\s+to\s+drink\b/i, parent: "spirits", subcategory: "OTHER COCKTAILS" },
   { term: "cocktail", pattern: /\bcocktail\b/i, parent: "spirits", subcategory: "OTHER COCKTAILS" },
   { term: "RTD", pattern: /\bRTD\b/, parent: "spirits", subcategory: "OTHER COCKTAILS" },
   { term: "margarita", pattern: /\bmargarita\b/i, parent: "spirits", subcategory: "OTHER COCKTAILS" },
+  // Producer terms (low specificity — rawText fallback only)
   { term: "distillery", pattern: /\bdistiller(?:y|ies|s)\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
   { term: "distilled", pattern: /\bdistilled\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
   { term: "proof", pattern: /\b\d+\s*proof\b/i, parent: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES" },
@@ -217,7 +257,7 @@ function toFamily(category, subcategory) {
       if (subcategory.includes("HONEY")) return "TABLE WINE";
       return "TABLE WINE";
     case "spirits":
-      if (subcategory.includes("WHISKY") || subcategory.includes("BOURBON")) return "WHISKY";
+      if (subcategory.includes("WHISKY") || subcategory.includes("BOURBON") || subcategory.includes("IRISH") || subcategory.includes("CANADIAN")) return "WHISKY";
       if (subcategory.includes("RUM")) return "RUM";
       if (subcategory.includes("BRANDY") || subcategory.includes("GRAPPA") || subcategory.includes("PISCO")) return "BRANDY";
       if (subcategory.includes("TEQUILA") || subcategory.includes("MEZCAL") || subcategory.includes("AGAVE")) return "AGAVE";
@@ -273,6 +313,14 @@ function inferCategory({ classType, varietal, rawText, appellation, ageStatement
     result = { category: "spirits", subcategory: "WHISKY SPECIALTIES", subcategoryFamily: "WHISKY", confidence: 0.80, confidenceTier: "medium", matchedTerm: "age statement" };
   }
   
+  // High ABV / proof — strong spirits indicator
+  if (!result && alcoholContent) {
+    const abvVal = parseAbv(alcoholContent);
+    if (abvVal !== null && abvVal > 20) {
+      result = { category: "spirits", subcategory: "OTHER SPECIALTIES & PROPRIETARIES", subcategoryFamily: "OTHER SPIRITS", confidence: 0.75, confidenceTier: "medium", matchedTerm: alcoholContent };
+    }
+  }
+  
   if (!result && rawText) {
     const m = matchText(rawText);
     if (m) result = { ...m, confidence: 0.6, confidenceTier: "low" };
@@ -306,8 +354,16 @@ function extractClassType(text) {
     /\b(pale\s+ale|india\s+pale\s+ale|IPA|vienna\s+lager|lager|stout|porter|pilsner|pils|wheat\s+(?:beer|ale)|amber\s+ale|brown\s+ale|red\s+ale|golden\s+ale|old\s+ale|mild\s+ale|blonde\s+ale|cream\s+ale|hefeweizen|saison|sour\s+ale|(?:fruited\s+)?sour|fruit\s+(?:beer|ale)|kolsch|kölsch|bock|doppelbock|dunkel|marzen|märzen|witbier|berliner\s+weisse?|gose|barleywine|scotch\s+ale|strong\s+ale|farmhouse\s+ale|wild\s+ale|belgian\s+(?:strong|pale|dark|dubbel|tripel|quad)|tripel|dubbel|quadrupel|lambic|gu?euze|schwarzbier|altbier|rauchbier|ESB|shandy)\b/i,
     /\b(red\s+wine|white\s+wine|rosé|rose\s+wine|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|ice\s*wine|natural\s+wine|late\s+harvest|blanc\s+de\s+blancs|blanc\s+de\s+noirs|port|sherry|vermouth|mead|cava|prosecco)\b/i,
     /\b(cabernet\s+sauvignon|cabernet\s+franc|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|pinot\s+blanc|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|petite?\s+si?rah|petit\s+verdot|tempranillo|sangiovese|nebbiolo|barbera|dolcetto|montepulciano|grenache|mourv[eè]dre|viognier|gew[uü]rztraminer|chenin\s+blanc|semillon|muscat|moscato|gr[uü]ner\s+veltliner|alba(?:ri[nñ]o|rinho)|torront[eé]s|gamay|carm[eé]n[eè]re|marsanne|roussanne)\b/i,
-    /\b(straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey)|tennessee\s+whiskey)\b/i,
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|genever|tequila|brandy|cognac|armagnac|calvados|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|schnapps|moonshine|ready\s+to\s+drink|cocktail|sake|saki|margarita)\b/i,
+    // Spirits compound whiskey (most specific first)
+    /\b(kentucky\s+straight\s+bourbon|straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey)|tennessee\s+whiskey|irish\s+whisk(?:e?y)|canadian\s+whisk(?:e?y)|kentucky\s+bourbon)\b/i,
+    // Barrel / cask terms
+    /\b(barrel\s+proof|barrel\s+aged|barrel\s+finished|cask\s+strength|charred\s+oak)\b/i,
+    // Rum variants
+    /\b(gold\s+rum|dark\s+rum|spiced\s+rum|white\s+rum|aged\s+rum|rhum)\b/i,
+    // Sake terms
+    /\b(daiginj[oō]|ginj[oō]|junmai|nihonshu|sak[eéi])\b/i,
+    // Core spirits
+    /\b(blended\s+whiskey|bourbon|scotch|flavored\s+vodka|vodka|london\s+dry\s+gin|rum|gin|genever|tequila|brandy|cognac|armagnac|calvados|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|schnapps|moonshine|ready\s+to\s+drink|cocktail|sake|saki|margarita)\b/i,
   ];
   for (const pat of classPatterns) {
     const m = text.match(pat);

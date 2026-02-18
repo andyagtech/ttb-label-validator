@@ -11,9 +11,9 @@
 | Metric | Count | Rate |
 |--------|-------|------|
 | **Category correct** | 102/114 | **89%** |
-| **Subcategory exact match** | 68/114 | **60%** |
-| **Subcategory family match** | 83/114 | **73%** |
-| **No classType extracted** | 24/114 | 21% |
+| **Subcategory exact match** | 69/114 | **61%** |
+| **Subcategory family match** | 85/114 | **75%** |
+| **No classType extracted** | 22/114 | 19% |
 | **No category inferred** | 8/114 | 7% |
 
 > **Exact match**: inferred subcategory == ground truth TTB code (after normalizing suffixes like "FB", "USB")
@@ -27,13 +27,13 @@
 |----------|----------|-------------|-----------|------------|--------------|
 | **Beer** | 32 | 31 (97%) | 24 (75%) | 24 (75%) | 7 |
 | **Wine** | 49 | 44 (90%) | 38 (78%) | 44 (90%) | 9 |
-| **Spirits** | 33 | 27 (82%) | 6 (18%) | 15 (45%) | 8 |
+| **Spirits** | 33 | 27 (82%) | 7 (21%) | 17 (52%) | 6 |
 
 ---
 
 ## Detailed Results
 
-### ✅ Exact Subcategory Matches (68)
+### ✅ Exact Subcategory Matches (69)
 
 | TTB ID | Brand | GT Class/Type | OCR ClassType | Inferred | Match Term |
 |--------|-------|---------------|---------------|----------|------------|
@@ -92,6 +92,7 @@
 | 25335001000960 | DAISY CREEK | SPARKLING WINE/CHAMPAGNE | SPARKLING WINE | SPARKLING WINE/CHAMPAGNE | sparkling wine |
 | 25335001000981 | NEW BELGIUM | BEER | Lager | BEER | lager |
 | 25336001000162 | TENNESSEE SHINE CO | WHISKY SPECIALTIES | Whiskey | WHISKY SPECIALTIES | whiskey |
+| 25338001000250 | PADDY | IRISH WHISKY USB | IRISH WHISKEY | IRISH WHISKY | irish whiskey |
 | 25338001000428 | CASA LAS JARAS | TEQUILA FB | TEQUILA | TEQUILA | tequila |
 | 26003001000029 | 4 NORSEMEN'S MEADERY | HONEY BASED TABLE WINE | — | HONEY BASED TABLE WINE | mead |
 | 26003001000036 | BILLAUD-SIMON | TABLE WHITE WINE | TABLE WINE | TABLE WHITE WINE | table wine |
@@ -106,7 +107,7 @@
 | 26006001000148 | SERCA | TABLE RED WINE | RED WINE | TABLE RED WINE | red wine |
 | 26006001000155 | LOST DRAW | TABLE RED WINE | TEMPRANILLO | TABLE RED WINE | tempranillo |
 
-### ⚠️ Family Match Only (15)
+### ⚠️ Family Match Only (16)
 
 | TTB ID | Brand | GT Class/Type | OCR ClassType | Inferred | Why Different |
 |--------|-------|---------------|---------------|----------|---------------|
@@ -120,19 +121,20 @@
 | 25335001000652 | CASCADIA MANOR | TABLE WHITE WINE | RIESLING | DESSERT /PORT/SHERRY/(COOKING) WINE | riesling |
 | 25335001000736 | L'OUVERTURE | TABLE RED WINE | table wine | TABLE WHITE WINE | table wine |
 | 25335001000875 | FOUR HOUNDS DISTILLING | RUM SPECIALTIES | RUM | RUM | rum |
-| 25338001000250 | PADDY | IRISH WHISKY USB | Whiskey | WHISKY SPECIALTIES | whiskey |
+| 25335001000995 | THE REVERIES | STRAIGHT BOURBON WHISKY | CASK STRENGTH | WHISKY SPECIALTIES | cask strength |
+| 25336001000302 | MAHOGANY FOX | STRAIGHT RYE WHISKY | CASK STRENGTH | WHISKY SPECIALTIES | cask strength |
 | 26003001000001 | PILZER | OTHER GRAPE BRANDY (PISCO, GRAPPA) FB | GRAPPA | BRANDY | grappa |
-| 26003001000120 | BAR WATER | VODKA - OTHER FLAVORED | VODKA | VODKA | vodka |
+| 26003001000120 | BAR WATER | VODKA - OTHER FLAVORED | FLAVORED VODKA | VODKA | flavored vodka |
 | 26003001000125 | TEN TO ONE | OTHER FORIEGN RUM | RUM | RUM | rum |
 | 26006001000218 | ODFJELL | ROSE WINE | 90% Syrah | TABLE RED WINE | syrah |
 
-### ❌ Mismatches (23)
+### ❌ Mismatches (21)
 
 | TTB ID | Brand | GT Cat/Type | OCR ClassType | Inferred Cat/Sub | Match Term |
 |--------|-------|-------------|---------------|------------------|------------|
 | 24003001000001 | 813 | spirits/OTHER SPECIALTIES & PROPRIETARIES | Tequila | spirits/TEQUILA | tequila |
-| 24003001000169 | BARLEY & BOAR | spirits/OTHER GIN | CORN NEUTRAL SPIRITS | spirits/OTHER SPECIALTIES & PROPRIETARIES | distilled |
-| 24003001000281 | ONDA | spirits/OTHER SPECIALTIES & PROPRIETARIES | TEQUILA SELTZER | spirits/TEQUILA | tequila |
+| 24003001000169 | BARLEY & BOAR | spirits/OTHER GIN | CORN NEUTRAL SPIRITS | spirits/OTHER SPECIALTIES & PROPRIETARIES | neutral spirits |
+| 24003001000281 | ONDA | spirits/OTHER SPECIALTIES & PROPRIETARIES | TEQUILA SELTZER | spirits/TEQUILA | tequila seltzer |
 | 24003001000350 | CAMP FUEL | spirits/OTHER SPECIALTIES & PROPRIETARIES | COCKTAIL | spirits/OTHER COCKTAILS | cocktail |
 | 24003001000414 | LOGYARD BREWING | beer/MALT BEVERAGES SPECIALITIES - FLAVORED | — | beer/BEER | brew |
 | 24003001000525 | SAVE ME #1 | beer/ALE | IMPERIAL STOUT | beer/STOUT | imperial stout |
@@ -143,8 +145,6 @@
 | 25335001000295 | POINT | beer/MALT BEVERAGES SPECIALITIES - FLAVORED | — | beer/BEER | beer |
 | 25335001000666 | CHAMBERS | wine/DESSERT /PORT/SHERRY/(COOKING) WINE | — | beer/ALE | ale |
 | 25335001000820 | MAC & JACKS BREWING CO. | beer/BEER | Double IPA | beer/ALE | IPA |
-| 25335001000995 | THE REVERIES | spirits/STRAIGHT BOURBON WHISKY | — | spirits/OTHER SPECIALTIES & PROPRIETARIES | distilled |
-| 25336001000302 | MAHOGANY FOX | spirits/STRAIGHT RYE WHISKY | — | spirits/OTHER SPECIALTIES & PROPRIETARIES | distilled |
 | 25336001000456 | ELEVACION | spirits/OTHER SPECIALTIES & PROPRIETARIES | AGAVE SPIRITS | spirits/AGAVE SPIRITS | agave spirits |
 | 26003001000022 | DOMAINE PERROT-MINOT | wine/TABLE RED WINE | — | beer/ALE | ale |
 | 26003001000050 | HOOCHIE HOOCH DISTILLERY | spirits/OTHER SPECIALTIES & PROPRIETARIES | MOONSHINE | spirits/WHISKY SPECIALTIES | moonshine |

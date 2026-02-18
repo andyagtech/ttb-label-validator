@@ -459,6 +459,117 @@ describe("inferCategory", () => {
     expect(r.subcategory).toBe("STRAIGHT BOURBON WHISKY");
   });
 
+  // ── Spirits-specific patterns ─────────────────────────────────────────
+  it("detects irish whiskey", () => {
+    const r = inferCategory({ classType: "Irish Whiskey" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("IRISH WHISKY");
+    expect(r.subcategoryFamily).toBe("WHISKY");
+  });
+
+  it("detects canadian whisky", () => {
+    const r = inferCategory({ classType: "Canadian Whisky" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("CANADIAN WHISKY");
+    expect(r.subcategoryFamily).toBe("WHISKY");
+  });
+
+  it("detects barrel proof as bourbon", () => {
+    const r = inferCategory({ classType: "Barrel Proof" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("STRAIGHT BOURBON WHISKY");
+    expect(r.subcategoryFamily).toBe("WHISKY");
+  });
+
+  it("detects cask strength as whisky", () => {
+    const r = inferCategory({ classType: "Cask Strength" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("WHISKY SPECIALTIES");
+  });
+
+  it("detects barrel aged as whisky", () => {
+    const r = inferCategory({ rawText: "BARREL AGED SMALL BATCH SPIRITS" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategoryFamily).toBe("WHISKY");
+  });
+
+  it("detects kentucky bourbon", () => {
+    const r = inferCategory({ classType: "Kentucky Bourbon" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("STRAIGHT BOURBON WHISKY");
+  });
+
+  it("detects straight rye without whiskey suffix", () => {
+    const r = inferCategory({ classType: "Straight Rye" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("STRAIGHT RYE WHISKY");
+  });
+
+  it("detects gold rum", () => {
+    const r = inferCategory({ classType: "Gold Rum" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("RUM");
+  });
+
+  it("detects spiced rum", () => {
+    const r = inferCategory({ classType: "Spiced Rum" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("RUM");
+  });
+
+  it("detects rhum", () => {
+    const r = inferCategory({ classType: "Rhum Agricole" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("RUM");
+  });
+
+  it("detects junmai as sake", () => {
+    const r = inferCategory({ classType: "Junmai Daiginjo" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("SAKE");
+  });
+
+  it("detects daiginjo as sake", () => {
+    const r = inferCategory({ rawText: "PREMIUM DAIGINJO RICE SPIRIT BREWED IN JAPAN" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("SAKE");
+  });
+
+  it("detects london dry gin", () => {
+    const r = inferCategory({ classType: "London Dry Gin" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("GIN");
+  });
+
+  it("detects ready to drink", () => {
+    const r = inferCategory({ classType: "Ready to Drink" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("OTHER COCKTAILS");
+  });
+
+  it("infers spirits from high ABV (>20%) when no classType", () => {
+    const r = inferCategory({ alcoholContent: "40% ABV" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("OTHER SPECIALTIES & PROPRIETARIES");
+    expect(r.confidenceTier).toBe("medium");
+  });
+
+  it("infers spirits from proof statement when no classType", () => {
+    const r = inferCategory({ alcoholContent: "80 proof" });
+    expect(r.category).toBe("spirits");
+    expect(r.confidenceTier).toBe("medium");
+  });
+
+  it("does not infer spirits from low ABV", () => {
+    const r = inferCategory({ alcoholContent: "12% ABV" });
+    expect(r.category).toBeNull();
+  });
+
+  it("high ABV does not override classType match", () => {
+    const r = inferCategory({ classType: "Bourbon", alcoholContent: "45%" });
+    expect(r.subcategory).toBe("STRAIGHT BOURBON WHISKY");
+  });
+
   // ── Edge cases ────────────────────────────────────────────────────────
   it("returns null when no category can be inferred", () => {
     const r = inferCategory({ rawText: "HELLO WORLD 2024" });
