@@ -139,20 +139,19 @@ const TTB_LABEL_IMAGES: Record<string, number[]> = {
   "26003001000050": [2],  // HOOCHIE HOOCH DISTILLERY
   "26003001000071": [2, 1],  // SOFIA VICTORIA WINERY & VINEYARDS
   "26003001000078": [1],  // TANGLED VINES WINERY LLC
-  "26003001000085": [1, 2],  // BURDOCK BREWERY
+  "26003001000085": [2],  // BURDOCK BREWERY
   "26003001000092": [1],  // JS BREWERY (sake)
   "26003001000099": [1, 2],  // DOMAINE MICHEL LAFARGE
   "26003001000106": [1, 2],  // PIERRE CHEVALIERS
   "26003001000120": [1],  // BAR WATER (vodka)
   "26003001000125": [1, 2],  // TEN TO ONE (rum)
   "26005001000174": [1, 2],  // INTEMPERIE (wine)
-  "26005001000491": [1, 2, 3],  // VALDUERO
-  "26005001000647": [1, 2, 3],  // CWD (spirits)
+  "26005001000491": [2, 3],  // VALDUERO
+  "26005001000647": [2, 3],  // CWD (spirits)
   "26005001000753": [1, 2],  // MAGNOLIA COAST WINERY
   "26006001000090": [2, 3, 4],  // KINKY (cocktail)
-  "26006001000134": [1],  // OTHER HALF BREWING CO.
-  "26006001000148": [2, 1],  // SERCA
-  "26006001000155": [1, 2, 3],  // LOST DRAW
+    "26006001000148": [2, 1],  // SERCA
+  "26006001000155": [2, 3],  // LOST DRAW
   "26006001000218": [1],  // ODFJELL
   "26006001000665": [1],  // FAT HEAD'S BREWERY
   "26007001000251": [2],  // 3 AMIGOS (margarita)
@@ -591,7 +590,7 @@ const SUBMISSIONS: SubmissionDef[] = [
   { ttbId: "25335001000820", status: "submitted", submitter: "Mac & Jack's Brewing Co.", daysAgo: 0 },
   // 2026 beer
   { ttbId: "26003001000085", status: "submitted", submitter: "Burdock Brewery", daysAgo: 0 },
-  { ttbId: "26006001000134", status: "in_review", submitter: "Other Half Brewing Co.", daysAgo: 2 },
+
   { ttbId: "26006001000665", status: "submitted", submitter: "Fat Head's Brewery", daysAgo: 1 },
 
   // ── Wine ────────────────────────────────────────────────────────────────

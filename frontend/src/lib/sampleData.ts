@@ -970,35 +970,6 @@ const BEER_SAMPLES: SampleLabel[] = [
     },
   },
   {
-    key: "other-half-brewing-co-ramen-front",
-    displayName: "Other Half Brewing Co. Ramen (Front)",
-    colaSource: {
-      ttbId: "26006001000134",
-      brand: "OTHER HALF BREWING CO.",
-      fancifulName: "RAMEN",
-      classCode: "",
-      classType: "ALE",
-      originCode: "",
-      origin: "NEW YORK",
-      permit: "",
-      approved: "01/08/2026",
-    },
-    generation: {
-      labelType: "front",
-      category: "beer",
-      brandName: "OTHER HALF BREWING CO.",
-      classType: "Ale",
-      alcoholContent: "5.5% Alc. By Vol.",
-      netContents: "12 FL OZ (355 mL)",
-    },
-    expectedFields: {
-      brand_name: "OTHER HALF BREWING CO.",
-      class_type: "Ale",
-      alcohol_content: "5.5% Alc. By Vol.",
-      net_contents: "12 FL OZ (355 mL)",
-    },
-  },
-  {
     key: "fat-heads-brewery-bumble-berry-honey-blueberry-ale-front",
     displayName: "Fat Head'S Brewery Bumble Berry Honey Blueberry Ale (Front)",
     colaSource: {
@@ -3565,7 +3536,7 @@ const DEFAULT_NAME_ADDRESS: Record<string, string> = {
   "BOREAL DAWN BLACK IPA": "Boreal Dawn Black Ipa Beverage Co., Illinois",
   "LAMPLIGHTER BREWING CO.": "Lamplighter Brewing Co. Beverage Co., Massachusetts",
   "BURDOCK BREWERY": "Burdock Brewery Beverage Co., Canada",
-  "OTHER HALF BREWING CO.": "Other Half Brewing Co. Beverage Co., New York",
+
   "FAT HEAD'S BREWERY": "Fat Head'S Brewery Beverage Co., 09",
   "GRAPE BEGINNINGS WINERY": "Grape Beginnings Winery Beverage Co., Michigan",
   "LONGHORN CELLARS": "Longhorn Cellars Beverage Co., Texas",

@@ -91,8 +91,14 @@ export function extractNetContents(ctx: TextContext): Partial<ExtractedFields> {
     return { netContents: compoundNet[0].trim() };
   }
   
+  // Word-form + parenthetical: ONE PINT(16 FL OZ), ONE PINT (16 FL. OZ.)
+  const wordFormNet = text.match(/(?:one|two|three|four|five|six)\s+(?:pints?|quarts?|gallons?|liters?)\s*\(?\s*\d+\.?\d*\s*fl\.?\s*[o0]z\.?\s*\)?/i);
+  if (wordFormNet) {
+    return { netContents: wordFormNet[0].trim() };
+  }
+
   const netMatch = text.match(
-    /(\d+\.?\d*)\s*[-~]?\s*(ml|m[|l]|l|fl\.?\s*oz\.?|fluid\s+oz\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?|oz\.?|ounces?)/i,
+    /(\d+\.?\d*)\s*[-~]?\s*(ml|m[|l]|l|fl\.?\s*[o0]z\.?|fluid\s+[o0]z\.?|liters?|milliliters?|cl|pints?|pt\.?|quarts?|qt\.?|gallons?|gal\.?|[o0]z\.?|ounces?)/i,
   );
   if (netMatch) {
     return { netContents: netMatch[0].trim() };
@@ -214,6 +220,11 @@ export function extractBrandName(ctx: TextContext, classType?: string): Partial<
   
   for (const line of lines.slice(0, 8)) {
     if (line.length >= 3 && line.length <= 60 && /^[A-Z][A-Z\s&'.]+$/.test(line)) {
+      if (/^tasting\s+notes/i.test(line)) continue;
+      if (/^artwork\s+by/i.test(line)) continue;
+      if (/^brewed|^distilled|^produced|^imported|^bottled|^crafted|^fermented|^canned/i.test(line)) continue;
+      if (/^ingredients?[:\s]/i.test(line)) continue;
+      if (/^nutrition\s+facts/i.test(line)) continue;
       return { brandName: line };
     }
   }
@@ -230,6 +241,14 @@ export function extractBrandName(ctx: TextContext, classType?: string): Partial<
     if (/bottled\s+by|distilled|produced|imported|distributed|canned\s+by/i.test(line)) continue;
     if (/[=\[\]~|{}@#$^*<>]/.test(line)) continue;
     if (/calories|carbohydrate|protein|fat:/i.test(line)) continue;
+    if (/^tasting\s+notes/i.test(line)) continue;
+    if (/^artwork\s+by/i.test(line)) continue;
+    if (/^brewed|^crafted|^fermented/i.test(line)) continue;
+    if (/^ingredients?[:\s]/i.test(line)) continue;
+    if (/^nutrition\s+facts/i.test(line)) continue;
+    if (/^www\.|^@|^http/i.test(line)) continue;
+    // Skip lines that are mostly punctuation/symbols/noise
+    if (line.replace(/[^a-zA-Z]/g, "").length < line.length * 0.4) continue;
     return { brandName: line };
   }
   
