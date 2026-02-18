@@ -7,7 +7,7 @@
 "use client";
 
 import React from "react";
-import { TTBShell, C } from "@/components/TTBShell";
+import { Breadcrumbs, C } from "@/components/TTBShell";
 import { 
   Clock, 
   Users, 
@@ -23,12 +23,8 @@ import {
 
 export default function AgentWalkthroughPage() {
   return (
-    <TTBShell
-      breadcrumbs={[
-        { label: "Home", href: "/" },
-        { label: "Agent Needs Walkthrough" },
-      ]}
-    >
+    <>
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Agent Needs Walkthrough" }]} />
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px" }}>
         {/* Page Header */}
         <div style={{ marginBottom: 40 }}>
@@ -722,6 +718,6 @@ export default function AgentWalkthroughPage() {
           </div>
         </section>
       </div>
-    </TTBShell>
+    </>
   );
 }
