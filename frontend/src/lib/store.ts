@@ -806,6 +806,7 @@ function generateMockSubmissions(): Submission[] {
 
     const sub: Submission = {
       id: `SUB-${(1000 + idx).toString(36).toUpperCase()}`,
+      ttbId: def.ttbId,
       submitterId: def.submitter,
       createdAt: created,
       updatedAt: created,

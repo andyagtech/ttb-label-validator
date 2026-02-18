@@ -8,6 +8,7 @@
  */
 
 import { ChecklistItem } from "./types";
+import { inferCategory } from "./categoryMatch";
 
 // ---------------------------------------------------------------------------
 // Feature flags
@@ -35,6 +36,10 @@ export interface ExtractedFields {
   colorIngredients?: string;
   commodityStatement?: string;
   aspartameDeclaration?: string;
+  /** Inferred top-level category from label text (beer/wine/spirits) */
+  detectedCategory?: string;
+  /** Inferred subcategory from label text (e.g. "Chardonnay", "IPA", "Bourbon") */
+  detectedSubcategory?: string;
   rawText?: string;
 }
 
@@ -712,6 +717,19 @@ export function parseOcrText(rawText: string): ExtractedFields {
     }
   }
 
+  // --- Category inference ---
+  const catResult = inferCategory({
+    classType: fields.classType,
+    varietal: fields.varietal,
+    appellation: fields.appellation,
+    ageStatement: fields.ageStatement,
+    rawText: fields.rawText,
+  });
+  if (catResult.category) {
+    fields.detectedCategory = catResult.category;
+    fields.detectedSubcategory = catResult.subcategory ?? undefined;
+  }
+
   return fields;
 }
 
@@ -735,6 +753,8 @@ const FIELD_TO_CHECKLIST: Record<keyof ExtractedFields, string> = {
   colorIngredients: "color_ingredients",
   commodityStatement: "commodity_statement",
   aspartameDeclaration: "aspartame_declaration",
+  detectedCategory: "", // not mapped to a checklist item
+  detectedSubcategory: "", // not mapped to a checklist item
   rawText: "", // not mapped to a checklist item
 };
 

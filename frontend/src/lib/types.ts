@@ -339,6 +339,8 @@ export type SubmissionStatus = "draft" | "submitted" | "in_review" | "approved" 
 
 export interface Submission {
   id: string;
+  /** TTB COLA ID (e.g. "26003001000001") */
+  ttbId?: string;
   /** Who submitted this */
   submitterId: string;
   createdAt: string;

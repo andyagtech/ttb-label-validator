@@ -36,6 +36,7 @@ import {
   ChevronRight,
   Copy,
   Check,
+  ExternalLink,
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
 import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
@@ -514,6 +515,16 @@ export default function TTBReviewPage() {
               </div>
               <p className="text-[10px] text-gray-400 font-mono mt-0.5">
                 {submission.id} · {submission.submitterId} · {formatDate(submission.createdAt)}
+                {submission.ttbId && (
+                  <> · <a
+                    href={`https://www.ttbonline.gov/colasonline/viewColaDetails.do?action=publicDisplaySearchBasic&ttbid=${submission.ttbId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 text-blue-500 hover:text-blue-700 transition"
+                  >
+                    TTB #{submission.ttbId} <ExternalLink size={9} />
+                  </a></>
+                )}
               </p>
             </div>
           </div>

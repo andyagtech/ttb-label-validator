@@ -32,6 +32,7 @@ import { FIELD_LABELS } from "@/lib/styles";
 import { FIELD_CITATIONS } from "@/lib/validation";
 import type { ExtractedFields } from "@/lib/ocr";
 import type { BeverageCategory } from "@/lib/types";
+import { inferCategory, verifyCategoryMatch } from "@/lib/categoryMatch";
 
 /** Base required fields for all categories */
 const BASE_REQUIRED = ["brandName", "classType", "netContents", "healthWarning", "nameAddress"];
@@ -118,6 +119,18 @@ export default function FormVsLabelTable({
   const hasOcr = detectedFields || Object.keys(mergedOcr).length > 0;
   const REQUIRED_FIELDS = getRequiredFields(beverageCategory);
 
+  // Category inference from detected fields
+  const categoryResult = detectedFields ? inferCategory({
+    classType: detectedFields.classType,
+    varietal: detectedFields.varietal,
+    appellation: detectedFields.appellation,
+    ageStatement: detectedFields.ageStatement,
+    rawText: detectedFields.rawText,
+  }) : null;
+  const categoryVerification = (categoryResult && beverageCategory)
+    ? verifyCategoryMatch(beverageCategory, categoryResult)
+    : null;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Header */}
@@ -167,6 +180,59 @@ export default function FormVsLabelTable({
 
       {/* Field rows */}
       <div className="divide-y divide-gray-100">
+        {/* Category verification row — shown when OCR has inferred a category */}
+        {categoryVerification && categoryResult?.category && (
+          <div className={`border-l-[3px] ${
+            categoryVerification.verdict === "match" ? "border-l-emerald-400" :
+            categoryVerification.verdict === "mismatch" ? "border-l-red-400" : "border-l-gray-200"
+          } hover:bg-gray-50/60 transition`}>
+            <div className="flex items-start gap-2 px-3 py-2.5">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span className="text-[11px] font-semibold text-gray-800">Beverage Category</span>
+                  <span className="text-[8px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded border border-violet-100">Auto-Inferred</span>
+                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border flex items-center gap-1 ml-auto ${
+                    categoryVerification.verdict === "match"
+                      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                      : categoryVerification.verdict === "mismatch"
+                        ? "bg-red-100 text-red-700 border-red-200"
+                        : "bg-gray-100 text-gray-500 border-gray-200"
+                  }`}>
+                    {categoryVerification.verdict === "match"
+                      ? <><CheckCircle2 size={10} /> Match</>
+                      : categoryVerification.verdict === "mismatch"
+                        ? <><XCircle size={10} /> Mismatch</>
+                        : <><Minus size={10} /> Unknown</>}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Submitted Category</p>
+                    <p className="text-[11px] text-gray-700 capitalize">{beverageCategory}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Detected from Label</p>
+                    <p className="text-[11px] text-gray-700 capitalize">
+                      {categoryResult.category}
+                      {categoryResult.subcategory && categoryResult.subcategory !== categoryResult.category &&
+                        <span className="text-gray-500"> ({categoryResult.subcategory})</span>}
+                    </p>
+                  </div>
+                </div>
+                <div className={`mt-1.5 text-[10px] leading-snug px-2 py-1 rounded ${
+                  categoryVerification.verdict === "match"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : categoryVerification.verdict === "mismatch"
+                      ? "bg-red-50 text-red-700"
+                      : "bg-gray-50 text-gray-500"
+                }`}>
+                  {categoryVerification.message}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {Object.keys(FIELD_LABELS).map((key) => {
           const formVal = formFields?.[key];
           const detectedVal = mergedOcr[key];
