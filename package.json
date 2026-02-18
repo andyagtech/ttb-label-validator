@@ -1,0 +1,31 @@
+{
+  "name": "ttb-cola-label-validator",
+  "version": "0.1.0",
+  "description": "AI-Powered Alcohol Label Verification App for TTB COLA compliance",
+  "private": true,
+  "scripts": {
+    "lint": "cd frontend && npm run lint",
+    "lint:fix": "cd frontend && npm run lint -- --fix",
+    "test": "cd frontend && npm test",
+    "test:watch": "cd frontend && npm run test:watch",
+    "build": "cd frontend && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "start": "cd frontend && npm start",
+    "prebuild": "npm run lint",
+    "verify": "npm run lint && npm test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andyagtech/ttb-label-validator.git"
+  },
+  "keywords": [
+    "ttb",
+    "cola",
+    "label-validation",
+    "ocr",
+    "compliance",
+    "alcohol-beverage"
+  ],
+  "author": "Andy",
+  "license": "MIT"
+}
