@@ -164,6 +164,168 @@ describe("inferCategory", () => {
     expect(r.category).toBe("spirits");
   });
 
+  // ── New beer styles ────────────────────────────────────────────────────
+  it("detects wine cooler as beer/malt", () => {
+    const r = inferCategory({ classType: "Wine Cooler" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("Wine Cooler");
+  });
+
+  it("detects lambic", () => {
+    const r = inferCategory({ classType: "Lambic" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("Lambic");
+  });
+
+  it("detects gueuze", () => {
+    const r = inferCategory({ classType: "Gueuze" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("Gueuze");
+  });
+
+  it("detects schwarzbier", () => {
+    const r = inferCategory({ classType: "Schwarzbier" });
+    expect(r.category).toBe("beer");
+  });
+
+  it("detects vienna lager", () => {
+    const r = inferCategory({ classType: "Vienna Lager" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("Vienna Lager");
+  });
+
+  it("detects imperial stout", () => {
+    const r = inferCategory({ classType: "Imperial Stout" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("Imperial Stout");
+  });
+
+  it("detects red ale", () => {
+    const r = inferCategory({ classType: "Irish Red Ale" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("Red Ale");
+  });
+
+  it("detects ESB", () => {
+    const r = inferCategory({ classType: "ESB" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("Extra Special Bitter");
+  });
+
+  it("detects shandy", () => {
+    const r = inferCategory({ classType: "Shandy" });
+    expect(r.category).toBe("beer");
+  });
+
+  // ── New wine terms ─────────────────────────────────────────────────────
+  it("detects ice wine", () => {
+    const r = inferCategory({ classType: "Ice Wine" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Ice Wine");
+  });
+
+  it("detects cava", () => {
+    const r = inferCategory({ classType: "Cava" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Cava");
+  });
+
+  it("detects late harvest", () => {
+    const r = inferCategory({ classType: "Late Harvest Riesling" });
+    expect(r.category).toBe("wine");
+  });
+
+  it("detects pinot blanc as wine", () => {
+    const r = inferCategory({ varietal: "Pinot Blanc" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Pinot Blanc");
+  });
+
+  it("detects nebbiolo as wine", () => {
+    const r = inferCategory({ classType: "Nebbiolo" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Nebbiolo");
+  });
+
+  it("detects grüner veltliner as wine", () => {
+    const r = inferCategory({ varietal: "Grüner Veltliner" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Grüner Veltliner");
+  });
+
+  it("detects albariño as wine", () => {
+    const r = inferCategory({ varietal: "Albariño" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Albariño");
+  });
+
+  it("detects gamay as wine", () => {
+    const r = inferCategory({ varietal: "Gamay" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Gamay");
+  });
+
+  it("detects petite sirah as wine", () => {
+    const r = inferCategory({ classType: "Petite Sirah" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("Petite Sirah");
+  });
+
+  // ── New spirits terms ──────────────────────────────────────────────────
+  it("detects tennessee whiskey", () => {
+    const r = inferCategory({ classType: "Tennessee Whiskey" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Tennessee Whiskey");
+  });
+
+  it("detects armagnac", () => {
+    const r = inferCategory({ classType: "Armagnac" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Armagnac");
+  });
+
+  it("detects calvados", () => {
+    const r = inferCategory({ classType: "Calvados" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Calvados");
+  });
+
+  it("detects genever", () => {
+    const r = inferCategory({ classType: "Genever" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Genever");
+  });
+
+  it("detects irish cream", () => {
+    const r = inferCategory({ classType: "Irish Cream" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Irish Cream");
+  });
+
+  it("detects schnapps", () => {
+    const r = inferCategory({ classType: "Schnapps" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Schnapps");
+  });
+
+  it("detects moonshine", () => {
+    const r = inferCategory({ classType: "Moonshine" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Moonshine");
+  });
+
+  it("detects baijiu", () => {
+    const r = inferCategory({ classType: "Baijiu" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Baijiu");
+  });
+
+  it("detects aperitif", () => {
+    const r = inferCategory({ classType: "Aperitif" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("Aperitif");
+  });
+
   // ── Edge cases ────────────────────────────────────────────────────────
   it("returns null when no category can be inferred", () => {
     const r = inferCategory({ rawText: "HELLO WORLD 2024" });

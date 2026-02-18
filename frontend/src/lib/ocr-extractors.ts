@@ -290,16 +290,28 @@ export function extractClassType(ctx: TextContext): Partial<ExtractedFields> {
   const { text } = ctx;
   
   const classPatterns = [
-    /\b(\d+%\s+(?:cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|chenin\s+blanc|semillon|muscat|moscato|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits))\b/i,
-    /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water)\b/i,
-    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
+    // Varietal + percentage (wine)
+    /\b(\d+%\s+(?:cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|pinot\s+blanc|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|chenin\s+blanc|semillon|muscat|moscato|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits))\b/i,
+    // Spirits compound (RTD, seltzer, soda)
+    /\b(tequila\s+seltzer|tequila\s+with\s+[\w\s]+|vodka\s+soda|ranch\s+water|irish\s+cream)\b/i,
+    // Malt beverages
+    /\b(ale\s+with\s+[\w\s]+flavor|malt\s+beverage|flavored\s+malt\s+beverage|malt\s+liquor|hard\s+seltzer|hard\s+cider|hard\s+lemonade|wine\s+cooler)\b/i,
+    // Neutral spirits
     /\b(neutral\s+spirits|corn\s+neutral\s+spirits|grain\s+neutral\s+spirits)\b/i,
+    // IPA variants (before generic IPA/pale ale)
     /\b(double\s+india\s+pale\s+ale|hazy\s+(?:double\s+)?(?:india\s+)?pale\s+ale|black\s+(?:india\s+)?pale\s+ale|session\s+(?:india\s+)?pale\s+ale|new\s+england\s+(?:style\s+)?(?:india\s+)?pale\s+ale|(?:double|imperial)\s+IPA|DIPA)\b/i,
-    /\b(pale\s+ale|india\s+pale\s+ale|IPA|lager|stout|porter|pilsner|pils|wheat\s+(?:beer|ale)|amber\s+ale|brown\s+ale|hefeweizen|saison|sour\s+ale|(?:fruited\s+)?sour|blonde\s+ale|cream\s+ale|kolsch|kölsch|bock|doppelbock|dunkel|marzen|märzen|witbier|berliner\s+weisse|gose|barleywine|scotch\s+ale|strong\s+ale|farmhouse\s+ale|wild\s+ale|belgian\s+(?:strong|pale|dark|dubbel|tripel|quad)|tripel|dubbel|quadrupel)\b/i,
-    /\b(red\s+wine|white\s+wine|rosé|rose\s+wine|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|port|sherry|vermouth|cava|prosecco)\b/i,
-    /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|petite\s+sirah|tempranillo|sangiovese|nebbiolo|barbera|dolcetto|montepulciano)\b/i,
+    // Stout variants (before generic stout)
+    /\b(imperial\s+stout|milk\s+stout|oatmeal\s+stout)\b/i,
+    // Beer styles
+    /\b(pale\s+ale|india\s+pale\s+ale|IPA|vienna\s+lager|lager|stout|porter|pilsner|pils|wheat\s+(?:beer|ale)|amber\s+ale|brown\s+ale|red\s+ale|golden\s+ale|old\s+ale|mild\s+ale|blonde\s+ale|cream\s+ale|hefeweizen|saison|sour\s+ale|(?:fruited\s+)?sour|fruit\s+(?:beer|ale)|kolsch|kölsch|bock|doppelbock|dunkel|marzen|märzen|witbier|berliner\s+weisse?|gose|barleywine|scotch\s+ale|strong\s+ale|farmhouse\s+ale|wild\s+ale|belgian\s+(?:strong|pale|dark|dubbel|tripel|quad)|tripel|dubbel|quadrupel|lambic|gu?euze|schwarzbier|altbier|rauchbier|ESB|shandy)\b/i,
+    // Wine types
+    /\b(red\s+wine|white\s+wine|rosé|rose\s+wine|sparkling\s+wine|champagne|table\s+wine|dessert\s+wine|fortified\s+wine|ice\s*wine|natural\s+wine|late\s+harvest|blanc\s+de\s+blancs|blanc\s+de\s+noirs|port|sherry|vermouth|mead|cava|prosecco)\b/i,
+    // Wine varietals
+    /\b(cabernet\s+sauvignon|cabernet\s+franc|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|pinot\s+blanc|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|petite?\s+si?rah|petit\s+verdot|tempranillo|sangiovese|nebbiolo|barbera|dolcetto|montepulciano|grenache|mourv[eè]dre|viognier|gew[uü]rztraminer|chenin\s+blanc|semillon|muscat|moscato|gr[uü]ner\s+veltliner|alba(?:ri[nñ]o|rinho)|torront[eé]s|gamay|carm[eé]n[eè]re|marsanne|roussanne)\b/i,
+    // Spirits compound whiskey
     /\b(straight\s+(?:bourbon|rye)\s+whiskey|single\s+(?:barrel|malt)\s+(?:whiskey|whisky|scotch)|small\s+batch\s+(?:bourbon|whiskey)|tennessee\s+whiskey)\b/i,
-    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|tequila|brandy|cognac|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|ready\s+to\s+drink|cocktail|sake|saki)\b/i,
+    // Core spirits
+    /\b(blended\s+whiskey|bourbon|scotch|vodka|rum|gin|genever|tequila|brandy|cognac|armagnac|calvados|mezcal|absinthe|whisky|whiskey|rye\s+whiskey|agave\s+spirits?|sotol|raicilla|pisco|grappa|aquavit|cachaca|cachaça|soju|baijiu|amaro|aperitif|digestif|liqueur|cordial|schnapps|moonshine|ready\s+to\s+drink|cocktail|sake|saki|margarita)\b/i,
   ];
   
   for (const pat of classPatterns) {
@@ -404,7 +416,7 @@ export function extractNameAddress(ctx: TextContext): Partial<ExtractedFields> {
 
 export function extractVarietal(ctx: TextContext): Partial<ExtractedFields> {
   const { text } = ctx;
-  const varietalPatterns = /\b(cabernet\s+sauvignon|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|tempranillo|sangiovese|grenache|viognier|gewürztraminer|chenin\s+blanc|semillon|muscat|moscato)\b/i;
+  const varietalPatterns = /\b(cabernet\s+sauvignon|cabernet\s+franc|chardonnay|merlot|pinot\s+noir|pinot\s+grigio|pinot\s+gris|pinot\s+blanc|riesling|sauvignon\s+blanc|zinfandel|malbec|syrah|shiraz|petite?\s+si?rah|petit\s+verdot|tempranillo|sangiovese|nebbiolo|barbera|dolcetto|montepulciano|grenache|mourv[eè]dre|viognier|gew[uü]rztraminer|chenin\s+blanc|semillon|muscat|moscato|gr[uü]ner\s+veltliner|alba(?:ri[nñ]o|rinho)|torront[eé]s|gamay|carm[eé]n[eè]re|marsanne|roussanne)\b/i;
   const varietalMatch = text.match(varietalPatterns);
   if (varietalMatch) {
     return { varietal: varietalMatch[0].trim() };
