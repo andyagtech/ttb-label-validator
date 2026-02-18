@@ -21,16 +21,16 @@ Stage 6: OCR benchmark        →  docs/OCR_PERFORMANCE.md
 
 ## Stage 1 — Crawl Records
 
-**Script:** `scripts/crawl-ttb-records.mjs`
+**Script:** `scripts/pipeline/1-crawl-ttb-records.mjs`
 
 **What it does:** Discovers real approved COLA records by probing TTB detail pages directly. It constructs TTB IDs from known prefixes (e.g., `24003001000` for early Jan 2024) and scans nearby suffixes to find valid records.
 
 **Usage:**
 ```bash
 cd scripts
-node crawl-ttb-records.mjs                # default: 50 records, headed browser
-node crawl-ttb-records.mjs --target 100   # find 100 records
-node crawl-ttb-records.mjs --headless     # run without browser window (no CAPTCHA solving)
+node pipeline/1-crawl-ttb-records.mjs                # default: 50 records, headed browser
+node pipeline/1-crawl-ttb-records.mjs --target 100   # find 100 records
+node pipeline/1-crawl-ttb-records.mjs --headless     # run without browser window (no CAPTCHA solving)
 ```
 
 **Output:** `sample_labels/ttb_cola_records.json` — 229 records organized by category (`beer`, `wine`, `spirits`).
@@ -68,17 +68,17 @@ node crawl-ttb-records.mjs --headless     # run without browser window (no CAPTC
 
 ## Stage 2 — Download Label Images
 
-**Script:** `scripts/download-ttb-images.mjs`
+**Script:** `scripts/pipeline/2-download-ttb-images.mjs`
 
 **What it does:** Visits each COLA detail page, clicks "Printable Version" (which opens a popup), waits for all `<img>` elements to load, then extracts them via canvas → PNG.
 
 **Usage:**
 ```bash
 cd scripts
-node download-ttb-images.mjs --all              # download for ALL records
-node download-ttb-images.mjs --all --limit 25    # download 25 NEW records (skips existing)
-node download-ttb-images.mjs --ttbid 24003001000484   # single ID
-node download-ttb-images.mjs --all --force       # re-download even if files exist
+node pipeline/2-download-ttb-images.mjs --all              # download for ALL records
+node pipeline/2-download-ttb-images.mjs --all --limit 25    # download 25 NEW records (skips existing)
+node pipeline/2-download-ttb-images.mjs --ttbid 24003001000484   # single ID
+node pipeline/2-download-ttb-images.mjs --all --force       # re-download even if files exist
 ```
 
 **Output:** `sample_labels/ttb_labels_direct/{ttbId}-1.png`, `{ttbId}-2.png`, etc.
@@ -154,8 +154,8 @@ After downloading, the `ttb_labels_direct/` folder contains raw images. Many nee
 
 **If you have form screenshots** (from an earlier screenshot-based pipeline) instead of direct images, use the AI cropper:
 ```bash
-GEMINI_API_KEY=... node crop-labels-ai.mjs          # crop all
-GEMINI_API_KEY=... node crop-labels-ai.mjs --id=TTBID  # crop single form
+GEMINI_API_KEY=... node pipeline/3-crop-labels-ai.mjs          # crop all
+GEMINI_API_KEY=... node pipeline/3-crop-labels-ai.mjs --id=TTBID  # crop single form
 ```
 This sends each form screenshot to Gemini 2.0 Flash vision, which detects label bounding boxes and crops them with Sharp.
 
@@ -163,7 +163,7 @@ This sends each form screenshot to Gemini 2.0 Flash vision, which detects label 
 
 ## Stage 4 — Generate Code
 
-**Script:** `scripts/generate-sample-data.mjs`
+**Script:** `scripts/pipeline/4-generate-sample-data.mjs`
 
 **What it does:** Reads `ttb_cola_records.json` + scans `frontend/public/ttb-labels/` to auto-generate:
 1. `frontend/src/lib/sampleData.ts` — TypeScript sample data with product metadata
@@ -173,7 +173,7 @@ This sends each form screenshot to Gemini 2.0 Flash vision, which detects label 
 **Usage:**
 ```bash
 cd scripts
-node generate-sample-data.mjs
+node pipeline/4-generate-sample-data.mjs
 ```
 
 **What it generates for each product:**
@@ -186,7 +186,7 @@ node generate-sample-data.mjs
 
 ## Stage 5 — Upload to Vercel Blob CDN
 
-**Script:** `scripts/upload-labels-to-blob.mjs`
+**Script:** `scripts/pipeline/5-upload-labels-to-blob.mjs`
 
 **What it does:** Uploads all label images from `frontend/public/ttb-labels/` to the Vercel Blob CDN so they're accessible in production. Local images are gitignored — the deployed app serves images from Blob.
 
@@ -214,15 +214,15 @@ node scripts/upload-labels-to-blob.mjs --dry-run    # list files without uploadi
 
 ## Stage 6 — OCR Performance Testing
 
-**Script:** `scripts/benchmark-ocr.mjs`
+**Script:** `scripts/pipeline/6-benchmark-ocr.mjs`
 
 **What it does:** Runs Tesseract.js OCR on every label image in `frontend/public/ttb-labels/`, parses the output with the same `parseOcrText` heuristics used in the browser, and generates a Markdown performance report.
 
 **Usage:**
 ```bash
-node scripts/benchmark-ocr.mjs                # full benchmark (all images)
-node scripts/benchmark-ocr.mjs --limit 20     # test 20 images only
-node scripts/benchmark-ocr.mjs --verbose       # extra detail
+node scripts/pipeline/6-benchmark-ocr.mjs                # full benchmark (all images)
+node scripts/pipeline/6-benchmark-ocr.mjs --limit 20     # test 20 images only
+node scripts/pipeline/6-benchmark-ocr.mjs --verbose       # extra detail
 ```
 
 **Output:** `docs/OCR_PERFORMANCE.md` with:
@@ -327,13 +327,13 @@ node scripts/benchmark-ocr.mjs
 
 | Path | Description |
 |---|---|
-| `scripts/crawl-ttb-records.mjs` | Stage 1: Discover COLA records |
-| `scripts/download-ttb-images.mjs` | Stage 2: Download label `<img>` elements |
-| `scripts/crop-labels-ai.mjs` | Stage 3 (alt): AI-based crop from form screenshots |
-| `scripts/crop-labels-sam.py` | Stage 3 (alt): SAM-HQ segmentation-based crop |
-| `scripts/generate-sample-data.mjs` | Stage 4: Generate sampleData.ts |
-| `scripts/upload-labels-to-blob.mjs` | Stage 5: Upload images to Vercel Blob CDN |
-| `scripts/benchmark-ocr.mjs` | Stage 6: OCR performance benchmark |
+| `scripts/pipeline/1-crawl-ttb-records.mjs` | Stage 1: Discover COLA records |
+| `scripts/pipeline/2-download-ttb-images.mjs` | Stage 2: Download label `<img>` elements |
+| `scripts/pipeline/3-crop-labels-ai.mjs` | Stage 3 (alt): AI-based crop from form screenshots |
+| `scripts/pipeline/3-crop-labels-sam.py` | Stage 3 (alt): SAM-HQ segmentation-based crop |
+| `scripts/pipeline/4-generate-sample-data.mjs` | Stage 4: Generate sampleData.ts |
+| `scripts/pipeline/5-upload-labels-to-blob.mjs` | Stage 5: Upload images to Vercel Blob CDN |
+| `scripts/pipeline/6-benchmark-ocr.mjs` | Stage 6: OCR performance benchmark |
 | `sample_labels/ttb_cola_records.json` | All discovered COLA records (221 currently) |
 | `sample_labels/ttb-labels-blob-urls.json` | Blob CDN URL mapping (generated by Stage 5) |
 | `docs/OCR_PERFORMANCE.md` | Latest OCR benchmark results (generated by Stage 6) |
