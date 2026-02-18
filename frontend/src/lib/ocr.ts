@@ -141,58 +141,81 @@ export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOpti
   }
 
   // 4. Percentile-based contrast stretching (1st/99th percentile — robust to outliers)
+  // Build histogram of grayscale values
   const hist = new Uint32Array(256);
   for (let i = 0; i < totalPx; i++) hist[sharp[i]]++;
-  const lo1 = Math.floor(totalPx * 0.01);
-  const hi1 = Math.floor(totalPx * 0.99);
+  
+  // Find 1st and 99th percentile values (ignore extreme outliers)
+  const lo1 = Math.floor(totalPx * 0.01);  // 1% of pixels
+  const hi1 = Math.floor(totalPx * 0.99);  // 99% of pixels
   let cumLo = 0, cumHi = 0;
   let pLo = 0, pHi = 255;
+  
+  // Scan from dark to light to find 1st percentile
   for (let i = 0; i < 256; i++) {
     cumLo += hist[i];
     if (cumLo >= lo1) { pLo = i; break; }
   }
+  
+  // Scan from light to dark to find 99th percentile
   for (let i = 255; i >= 0; i--) {
     cumHi += hist[i];
     if (cumHi >= (totalPx - hi1)) { pHi = i; break; }
   }
+  
+  // Compute range for stretching (avoid division by zero)
   const range = pHi - pLo || 1;
 
   // 5. Detect inversion — if >55% of pixels are dark, the label has a dark background
+  // Tesseract expects dark text on light background, so we need to invert dark labels
   let darkCount = 0;
   for (let i = 0; i < totalPx; i++) {
-    if (sharp[i] < 128) darkCount++;
+    if (sharp[i] < 128) darkCount++;  // Count pixels darker than middle gray
   }
-  const isInverted = darkCount > totalPx * 0.55;
+  const isInverted = darkCount > totalPx * 0.55;  // >55% dark = invert needed
 
   // Apply contrast stretching (+ inversion if needed)
   const stretched = new Uint8Array(totalPx);
   for (let i = 0; i < totalPx; i++) {
+    // Map [pLo, pHi] → [0, 255] to maximize contrast
     let v = ((sharp[i] - pLo) / range) * 255;
+    // Clamp to valid range
     v = v < 0 ? 0 : v > 255 ? 255 : v;
+    // Invert if dark background detected
     if (isInverted) v = 255 - v;
     stretched[i] = Math.round(v);
   }
 
   // 5b. Optional Otsu binarization (fallback for low-confidence images)
+  // Converts grayscale to pure black/white using optimal threshold
   if (binarize) {
-    // Compute Otsu threshold on the contrast-stretched image
+    // Build histogram of contrast-stretched values
     const bHist = new Uint32Array(256);
     for (let i = 0; i < totalPx; i++) bHist[stretched[i]]++;
+    
+    // Otsu's method: find threshold that maximizes inter-class variance
+    // This separates foreground (text) from background optimally
     let total = totalPx;
     let sumAll = 0;
     for (let i = 0; i < 256; i++) sumAll += i * bHist[i];
+    
     let sumBg = 0, wBg = 0, maxVar = 0, threshold = 128;
     for (let t = 0; t < 256; t++) {
-      wBg += bHist[t];
+      wBg += bHist[t];  // Weight of background class
       if (wBg === 0) continue;
-      const wFg = total - wBg;
+      const wFg = total - wBg;  // Weight of foreground class
       if (wFg === 0) break;
+      
       sumBg += t * bHist[t];
-      const meanBg = sumBg / wBg;
-      const meanFg = (sumAll - sumBg) / wFg;
+      const meanBg = sumBg / wBg;  // Mean of background
+      const meanFg = (sumAll - sumBg) / wFg;  // Mean of foreground
+      
+      // Inter-class variance (higher = better separation)
       const variance = wBg * wFg * (meanBg - meanFg) * (meanBg - meanFg);
       if (variance > maxVar) { maxVar = variance; threshold = t; }
     }
+    
+    // Apply threshold: pixels above threshold → white, below → black
     for (let i = 0; i < totalPx; i++) {
       stretched[i] = stretched[i] > threshold ? 255 : 0;
     }
