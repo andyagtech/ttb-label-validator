@@ -54,6 +54,13 @@ import {
 } from "@/lib/styles";
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Delay (ms) before auto-running Text Detect after submission loads. */
+const AUTO_OCR_DELAY_MS = 500;
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -66,7 +73,12 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
 // ---------------------------------------------------------------------------
 // Raw OCR text block with copy button
 // ---------------------------------------------------------------------------
-function RawOcrTextBlock({ text }: { text: string }) {
+
+interface RawOcrTextBlockProps {
+  text: string;
+}
+
+function RawOcrTextBlock({ text }: RawOcrTextBlockProps) {
   const [copied, setCopied] = React.useState(false);
   const handleCopy = React.useCallback(() => {
     navigator.clipboard.writeText(text).then(() => {
@@ -208,7 +220,7 @@ export default function TTBReviewPage() {
     if (!submission || detectedFields || detecting) return;
     const timer = setTimeout(() => {
       runTextDetect();
-    }, 500);
+    }, AUTO_OCR_DELAY_MS);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submission]);

@@ -50,9 +50,13 @@ export interface ExtractedFields {
 /** Minimum width (px) for good Tesseract accuracy (~300 DPI equivalent). */
 const MIN_OCR_WIDTH = 1500;
 /** White padding added around image to help Tesseract page segmentation. */
-const PAD = 10;
+const WHITE_PADDING_PX = 10;
+/** Default sharpening amount for unsharp mask (mild enhancement for text edges). */
+const DEFAULT_SHARPEN_AMOUNT = 0.3;
 /** Confidence threshold below which we retry with binarized preprocessing. */
 export const RETRY_CONFIDENCE_THRESHOLD = 45;
+/** Grayscale conversion weights (ITU-R BT.601 standard). */
+const GRAYSCALE_WEIGHTS = { R: 0.299, G: 0.587, B: 0.114 } as const;
 
 export interface PreprocessOptions {
   /** Unsharp-mask amount (default 0.3). */
@@ -74,7 +78,12 @@ export interface PreprocessOptions {
  * Returns a new canvas ready for OCR.
  */
 export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOptions = {}): HTMLCanvasElement {
-  const { sharpenAmount: amt = 0.3, binarize = false } = opts;
+  // Validate input
+  if (!source || source.width === 0 || source.height === 0) {
+    throw new Error("Invalid canvas: must have non-zero dimensions");
+  }
+
+  const { sharpenAmount = DEFAULT_SHARPEN_AMOUNT, binarize = false } = opts;
   const srcW = source.width;
   const srcH = source.height;
 
@@ -85,8 +94,8 @@ export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOpti
 
   // 6. Create output canvas with white padding
   const out = document.createElement("canvas");
-  out.width = w + PAD * 2;
-  out.height = h + PAD * 2;
+  out.width = w + WHITE_PADDING_PX * 2;
+  out.height = h + WHITE_PADDING_PX * 2;
   const ctx = out.getContext("2d")!;
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, out.width, out.height);
@@ -94,7 +103,7 @@ export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOpti
   // Draw upscaled image with padding offset
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(source, PAD, PAD, w, h);
+  ctx.drawImage(source, WHITE_PADDING_PX, WHITE_PADDING_PX, w, h);
 
   const totalW = out.width;
   const totalH = out.height;
@@ -106,7 +115,7 @@ export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOpti
   const gray = new Uint8Array(totalPx);
   for (let i = 0; i < totalPx; i++) {
     const off = i * 4;
-    gray[i] = Math.round(0.299 * d[off] + 0.587 * d[off + 1] + 0.114 * d[off + 2]);
+    gray[i] = Math.round(GRAYSCALE_WEIGHTS.R * d[off] + GRAYSCALE_WEIGHTS.G * d[off + 1] + GRAYSCALE_WEIGHTS.B * d[off + 2]);
   }
 
   // 3. Mild sharpening — unsharp mask with 3×3 box blur
@@ -126,7 +135,7 @@ export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOpti
         }
       }
       const blurred = sum / 9;
-      const val = gray[idx] + amt * (gray[idx] - blurred);
+      const val = gray[idx] + sharpenAmount * (gray[idx] - blurred);
       sharp[idx] = Math.max(0, Math.min(255, Math.round(val)));
     }
   }
@@ -196,11 +205,11 @@ export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOpti
   }
   ctx.putImageData(imgData, 0, 0);
 
-  const parts = [`grayscale`, `sharpen(${amt})`, `contrast(p1=${pLo},p99=${pHi})`];
+  const parts = [`grayscale`, `sharpen(${sharpenAmount})`, `contrast(p1=${pLo},p99=${pHi})`];
   if (isInverted) parts.push("inverted");
   if (binarize) parts.push("otsu-binarize");
   if (scale > 1) parts.unshift(`${scale}× upscale`);
-  parts.push(`${PAD}px pad`);
+  parts.push(`${WHITE_PADDING_PX}px pad`);
   console.log(`[OCR] Preprocessed: ${srcW}×${srcH} → ${totalW}×${totalH} (${parts.join(" + ")})`);
   return out;
 }
@@ -244,13 +253,13 @@ export function detectEdgeContent(canvas: HTMLCanvasElement): { left: boolean; r
     let sum = 0;
     for (let i = 0; i < n; i++) {
       const off = i * 4;
-      sum += 0.299 * data[off] + 0.587 * data[off + 1] + 0.114 * data[off + 2];
+      sum += GRAYSCALE_WEIGHTS.R * data[off] + GRAYSCALE_WEIGHTS.G * data[off + 1] + GRAYSCALE_WEIGHTS.B * data[off + 2];
     }
     const mean = sum / n;
     let sqDiff = 0;
     for (let i = 0; i < n; i++) {
       const off = i * 4;
-      const g = 0.299 * data[off] + 0.587 * data[off + 1] + 0.114 * data[off + 2];
+      const g = GRAYSCALE_WEIGHTS.R * data[off] + GRAYSCALE_WEIGHTS.G * data[off + 1] + GRAYSCALE_WEIGHTS.B * data[off + 2];
       sqDiff += (g - mean) * (g - mean);
     }
     return Math.sqrt(sqDiff / n);

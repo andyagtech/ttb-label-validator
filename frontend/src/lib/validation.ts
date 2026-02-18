@@ -460,6 +460,11 @@ function validateHealthWarning(text: string | undefined): ValidationResult[] {
 // ABV Format — per 27 CFR 4.36 (wine), 7.71 (beer), 5.37 (spirits)
 // ---------------------------------------------------------------------------
 
+/** Minimum alcohol content for beverages subject to TTB regulation (0.5% ABV). */
+const MIN_ABV_THRESHOLD = 0.5;
+/** Maximum plausible alcohol content for validation (95% ABV). */
+const MAX_ABV_THRESHOLD = 95;
+
 /**
  * Validate alcohol content statement format.
  * Acceptable: "Alcohol __% by volume" or "__% Alc. By Vol."
