@@ -43,8 +43,10 @@ import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
 import { parseOcrText, preprocessForOcr, rotateCanvas, detectEdgeContent, cropEdgeStrip, RETRY_CONFIDENCE_THRESHOLD, type ExtractedFields, type PreprocessOptions } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
 import FormVsLabelTable from "@/components/FormVsLabelTable";
+import CategoryComplianceSummary from "@/components/CategoryComplianceSummary";
 import QuickRejectButton from "@/components/QuickRejectButton";
 import DecisionPanel from "@/components/DecisionPanel";
+import { validateExtractedFields, type ValidationResult } from "@/lib/validation";
 import {
   STATUS_STYLES,
   CATEGORY_TEXT,
@@ -154,6 +156,24 @@ export default function TTBReviewPage() {
   const toggleCheck = useCallback((fieldKey: string) => {
     setCheckStates((prev) => ({ ...prev, [fieldKey]: !prev[fieldKey] }));
   }, []);
+
+  // Validation results — computed from detected fields for compliance summary
+  const validationResults = useMemo<ValidationResult[]>(() => {
+    if (!detectedFields || !submission) return [];
+    const cat = submission.beverageCategory;
+    const frontResults = validateExtractedFields(detectedFields, cat, "front");
+    const backResults = validateExtractedFields(detectedFields, cat, "back");
+    // Deduplicate by ruleId (front + back may both check the same rules)
+    const seen = new Set<string>();
+    const merged: ValidationResult[] = [];
+    for (const r of [...frontResults, ...backResults]) {
+      if (!seen.has(r.ruleId)) {
+        seen.add(r.ruleId);
+        merged.push(r);
+      }
+    }
+    return merged;
+  }, [detectedFields, submission]);
 
   // Zoom modal for label images
   const [zoomUrl, setZoomUrl] = useState<string | null>(null);
@@ -751,19 +771,29 @@ export default function TTBReviewPage() {
                   )}
                 </div>
 
-                {/* Right: Submitted vs Detected comparison table */}
-                <FormVsLabelTable
-                  formFields={submission.formFields}
-                  mergedOcr={mergedOcr}
-                  comparisonResults={comparisonResults}
-                  comparisonSummary={comparisonSummary}
-                  detectedFields={detectedFields}
-                  checkStates={checkStates}
-                  onToggleCheck={toggleCheck}
-                  fieldSources={fieldSources}
-                  onFlagField={handleFlagField}
-                  beverageCategory={submission.beverageCategory}
-                />
+                {/* Right: Submitted vs Detected comparison table + compliance summary */}
+                <div className="space-y-4">
+                  <FormVsLabelTable
+                    formFields={submission.formFields}
+                    mergedOcr={mergedOcr}
+                    comparisonResults={comparisonResults}
+                    comparisonSummary={comparisonSummary}
+                    detectedFields={detectedFields}
+                    checkStates={checkStates}
+                    onToggleCheck={toggleCheck}
+                    fieldSources={fieldSources}
+                    onFlagField={handleFlagField}
+                    beverageCategory={submission.beverageCategory}
+                  />
+
+                  {/* Category-specific compliance summary — shown after OCR */}
+                  {validationResults.length > 0 && submission.beverageCategory && (
+                    <CategoryComplianceSummary
+                      category={submission.beverageCategory}
+                      validationResults={validationResults}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           )}

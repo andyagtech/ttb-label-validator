@@ -239,6 +239,96 @@ export const RULE_CITATIONS: Record<string, Citation> = {
     referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
   },
 
+  // Spirits-specific rules — 27 CFR Part 5
+  spirits_proof_abv_consistent: {
+    chapter: "5",
+    section: "§5.37(b)",
+    summary: "Proof and ABV% are consistent (proof ≈ 2 × ABV) per 27 CFR §5.37.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.37",
+  },
+  spirits_proof_abv_mismatch: {
+    chapter: "5",
+    section: "§5.37(b)",
+    summary: "Proof must equal twice the ABV percentage per 27 CFR §5.37(b).",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.37",
+  },
+  spirits_abv_range_ok: {
+    chapter: "5",
+    section: "§5.37",
+    summary: "ABV is within expected spirits range (>15%) per 27 CFR §5.37.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.37",
+  },
+  spirits_abv_range_low: {
+    chapter: "5",
+    section: "§5.37",
+    summary: "ABV appears low for spirits. Verify category is correct or if this is a ready-to-drink product.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.37",
+  },
+  spirits_straight_age_note: {
+    chapter: "5",
+    section: "§5.74",
+    summary: "Straight whisky aged less than 4 years must carry an age statement per 27 CFR §5.74.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.74",
+  },
+  spirits_straight_age_ok: {
+    chapter: "5",
+    section: "§5.74",
+    summary: "Age statement found on straight whisky label per 27 CFR §5.74.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-5/subpart-F/section-5.74",
+  },
+
+  // Wine-specific rules — 27 CFR Part 4
+  wine_varietal_75_note: {
+    chapter: "4",
+    section: "§4.23(a)",
+    summary: "Varietal wine must contain at least 75% of the named grape (85% for AVA-designated) per 27 CFR §4.23.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.23",
+  },
+  wine_abv_range_ok: {
+    chapter: "4",
+    section: "§4.36",
+    summary: "ABV is within expected wine range per 27 CFR §4.36.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.36",
+  },
+  wine_abv_range_high: {
+    chapter: "4",
+    section: "§4.36",
+    summary: "ABV appears high for wine (>24%). Verify product category — may be a fortified wine or spirits.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.36",
+  },
+  wine_vintage_plausible: {
+    chapter: "4",
+    section: "§4.27",
+    summary: "Vintage year is within a plausible range per 27 CFR §4.27.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.27",
+  },
+  wine_vintage_implausible: {
+    chapter: "4",
+    section: "§4.27",
+    summary: "Vintage year appears implausible — verify it is correct per 27 CFR §4.27.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-4/subpart-D/section-4.27",
+  },
+
+  // Beer-specific rules — 27 CFR Part 7
+  beer_fmb_composition_note: {
+    chapter: "7",
+    section: "§7.24a",
+    summary: "Flavored malt beverages may require a statement of composition per TTB Ruling 2004-1.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7",
+  },
+  beer_abv_range_ok: {
+    chapter: "7",
+    section: "§7.71",
+    summary: "ABV is within expected malt beverage range per 27 CFR §7.71.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7/subpart-E/section-7.71",
+  },
+  beer_abv_range_high: {
+    chapter: "7",
+    section: "§7.71",
+    summary: "ABV appears high for a malt beverage (>15%). Verify product category is correct.",
+    referenceUrl: "https://www.ecfr.gov/current/title-27/chapter-I/subchapter-A/part-7/subpart-E/section-7.71",
+  },
+
   // Cross-field rules — wine
   varietal_requires_appellation: {
     chapter: "1",
@@ -920,6 +1010,259 @@ function validateClassType(text: string | undefined, category: BeverageCategory)
 }
 
 // ---------------------------------------------------------------------------
+// Shared ABV parser — extracts numeric ABV value from alcohol content text
+// ---------------------------------------------------------------------------
+
+function parseAbvNumber(text: string | undefined): number | null {
+  if (!text) return null;
+  // Try "XX proof" first — proof / 2 = ABV
+  const proofMatch = text.match(/(\d{2,3})\s*proof/i);
+  if (proofMatch) return parseFloat(proofMatch[1]) / 2;
+  // Try percentage
+  const pctMatch = text.match(/(\d{1,2}\.?\d?)\s*%/);
+  if (pctMatch) return parseFloat(pctMatch[1]);
+  return null;
+}
+
+function parseProofNumber(text: string | undefined): number | null {
+  if (!text) return null;
+  const m = text.match(/(\d{2,3})\s*proof/i);
+  return m ? parseFloat(m[1]) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Spirits-specific validation — 27 CFR Part 5
+// ---------------------------------------------------------------------------
+
+function validateSpiritsSpecific(fields: ExtractedFields): ValidationResult[] {
+  const results: ValidationResult[] = [];
+
+  // Proof / ABV consistency check
+  if (fields.alcoholContent) {
+    const abv = parseAbvNumber(fields.alcoholContent);
+    const proof = parseProofNumber(fields.alcoholContent);
+
+    // If both proof and ABV% are present, check consistency (proof ≈ 2 × ABV)
+    const pctMatch = fields.alcoholContent.match(/(\d{1,2}\.?\d?)\s*%/);
+    if (proof !== null && pctMatch) {
+      const abvFromPct = parseFloat(pctMatch[1]);
+      const expectedProof = abvFromPct * 2;
+      const tolerance = 1.5; // allow rounding
+      if (Math.abs(proof - expectedProof) <= tolerance) {
+        results.push({
+          ruleId: "spirits_proof_abv_consistent",
+          checklistItemId: "alcohol_content",
+          severity: "info",
+          message: `Proof (${proof}) and ABV (${abvFromPct}%) are consistent.`,
+          pass: true,
+          citation: citationFor("spirits_proof_abv_consistent"),
+        });
+      } else {
+        results.push({
+          ruleId: "spirits_proof_abv_mismatch",
+          checklistItemId: "alcohol_content",
+          severity: "warning",
+          message: `Proof (${proof}) does not match ABV (${abvFromPct}%) — expected proof to be ${expectedProof}.`,
+          suggestion: "Proof must equal twice the percentage of alcohol by volume per 27 CFR §5.37(b).",
+          pass: false,
+          citation: citationFor("spirits_proof_abv_mismatch"),
+        });
+      }
+    }
+
+    // ABV range check for spirits
+    if (abv !== null) {
+      if (abv >= 15) {
+        results.push({
+          ruleId: "spirits_abv_range_ok",
+          checklistItemId: "alcohol_content",
+          severity: "info",
+          message: `ABV ${abv}% is within expected spirits range.`,
+          pass: true,
+          citation: citationFor("spirits_abv_range_ok"),
+        });
+      } else {
+        results.push({
+          ruleId: "spirits_abv_range_low",
+          checklistItemId: "alcohol_content",
+          severity: "warning",
+          message: `ABV ${abv}% is unusually low for spirits.`,
+          suggestion: "Verify the beverage category. Products under 15% ABV may be wine or a ready-to-drink cocktail.",
+          pass: false,
+          citation: citationFor("spirits_abv_range_low"),
+        });
+      }
+    }
+  }
+
+  // Straight whisky age statement check (27 CFR §5.74)
+  const ct = (fields.classType || "").toLowerCase();
+  const isStraight = /\bstraight\b/i.test(ct);
+  if (isStraight) {
+    if (fields.ageStatement) {
+      results.push({
+        ruleId: "spirits_straight_age_ok",
+        checklistItemId: "age_statement",
+        severity: "info",
+        message: "Age statement found on straight whisky — compliant with 27 CFR §5.74.",
+        pass: true,
+        citation: citationFor("spirits_straight_age_ok"),
+      });
+    } else {
+      results.push({
+        ruleId: "spirits_straight_age_note",
+        checklistItemId: "age_statement",
+        severity: "warning",
+        message: "\"Straight\" whisky without an age statement — must be aged at least 4 years.",
+        suggestion: "If aged less than 4 years, an age statement is required per 27 CFR §5.74. Verify with producer records.",
+        pass: false,
+        citation: citationFor("spirits_straight_age_note"),
+      });
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Wine-specific validation — 27 CFR Part 4
+// ---------------------------------------------------------------------------
+
+function validateWineSpecific(fields: ExtractedFields): ValidationResult[] {
+  const results: ValidationResult[] = [];
+
+  // Varietal percentage note (27 CFR §4.23)
+  if (fields.varietal) {
+    results.push({
+      ruleId: "wine_varietal_75_note",
+      checklistItemId: "varietal",
+      severity: "info",
+      message: `Varietal "${fields.varietal}" stated — at least 75% must be this grape (85% if AVA-designated).`,
+      pass: true,
+      citation: citationFor("wine_varietal_75_note"),
+    });
+  }
+
+  // Wine ABV range check (27 CFR §4.36)
+  if (fields.alcoholContent) {
+    const abv = parseAbvNumber(fields.alcoholContent);
+    if (abv !== null) {
+      if (abv <= 24) {
+        results.push({
+          ruleId: "wine_abv_range_ok",
+          checklistItemId: "alcohol_content",
+          severity: "info",
+          message: `ABV ${abv}% is within expected wine range.`,
+          pass: true,
+          citation: citationFor("wine_abv_range_ok"),
+        });
+      } else {
+        results.push({
+          ruleId: "wine_abv_range_high",
+          checklistItemId: "alcohol_content",
+          severity: "warning",
+          message: `ABV ${abv}% is unusually high for wine.`,
+          suggestion: "Wine above 24% ABV is rare. Verify this is not a fortified wine or spirits product.",
+          pass: false,
+          citation: citationFor("wine_abv_range_high"),
+        });
+      }
+    }
+  }
+
+  // Vintage year plausibility (27 CFR §4.27)
+  if (fields.vintageDate) {
+    const yearMatch = fields.vintageDate.match(/(\d{4})/);
+    if (yearMatch) {
+      const year = parseInt(yearMatch[1], 10);
+      const currentYear = new Date().getFullYear();
+      if (year >= 1900 && year <= currentYear) {
+        results.push({
+          ruleId: "wine_vintage_plausible",
+          checklistItemId: "vintage_date",
+          severity: "info",
+          message: `Vintage year ${year} is plausible.`,
+          pass: true,
+          citation: citationFor("wine_vintage_plausible"),
+        });
+      } else {
+        results.push({
+          ruleId: "wine_vintage_implausible",
+          checklistItemId: "vintage_date",
+          severity: "warning",
+          message: `Vintage year ${year} appears implausible.`,
+          suggestion: year > currentYear
+            ? "Vintage year is in the future — verify the year is correct."
+            : "Vintage year is before 1900 — verify the year is correct.",
+          pass: false,
+          citation: citationFor("wine_vintage_implausible"),
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Beer-specific validation — 27 CFR Part 7
+// ---------------------------------------------------------------------------
+
+/** Class/type keywords that indicate a flavored malt beverage */
+const FMB_KEYWORDS = [
+  "flavored malt beverage", "hard seltzer", "hard cider", "hard lemonade",
+  "wine cooler", "malt cooler", "seltzer", "flavored malt",
+];
+
+function validateBeerSpecific(fields: ExtractedFields): ValidationResult[] {
+  const results: ValidationResult[] = [];
+
+  // FMB composition statement note
+  const ct = (fields.classType || "").toLowerCase();
+  const isFmb = FMB_KEYWORDS.some((kw) => ct.includes(kw));
+  if (isFmb) {
+    results.push({
+      ruleId: "beer_fmb_composition_note",
+      checklistItemId: "class_type",
+      severity: "info",
+      message: "Flavored malt beverage detected — a statement of composition may be required.",
+      suggestion: "Per TTB Ruling 2004-1, FMBs derived from malt base with added flavors may need a composition statement on the label.",
+      pass: true,
+      citation: citationFor("beer_fmb_composition_note"),
+    });
+  }
+
+  // Beer ABV range check
+  if (fields.alcoholContent) {
+    const abv = parseAbvNumber(fields.alcoholContent);
+    if (abv !== null) {
+      if (abv <= 15) {
+        results.push({
+          ruleId: "beer_abv_range_ok",
+          checklistItemId: "alcohol_content",
+          severity: "info",
+          message: `ABV ${abv}% is within expected malt beverage range.`,
+          pass: true,
+          citation: citationFor("beer_abv_range_ok"),
+        });
+      } else {
+        results.push({
+          ruleId: "beer_abv_range_high",
+          checklistItemId: "alcohol_content",
+          severity: "warning",
+          message: `ABV ${abv}% is unusually high for a malt beverage.`,
+          suggestion: "Most malt beverages are under 15% ABV. Verify the beverage category is correct.",
+          pass: false,
+          citation: citationFor("beer_abv_range_high"),
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Cross-field rules
 // ---------------------------------------------------------------------------
 
@@ -1083,6 +1426,15 @@ export function validateExtractedFields(
       pass: true,
       citation: citationFor("aspartame_declaration_present"),
     });
+  }
+
+  // --- Category-specific validation rules ---
+  if (category === "spirits") {
+    results.push(...validateSpiritsSpecific(fields));
+  } else if (category === "wine") {
+    results.push(...validateWineSpecific(fields));
+  } else if (category === "beer") {
+    results.push(...validateBeerSpecific(fields));
   }
 
   // --- Cross-field rules ---

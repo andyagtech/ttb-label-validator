@@ -299,6 +299,251 @@ describe("Cross-field rules", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Spirits-specific validation rules
+// ---------------------------------------------------------------------------
+
+describe("Spirits-specific validation", () => {
+  it("proof/ABV consistency passes when correct (90 proof = 45%)", () => {
+    const fields: ExtractedFields = {
+      classType: "Bourbon",
+      alcoholContent: "45% Alc./Vol. (90 Proof)",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    const rule = findRule(results, "spirits_proof_abv_consistent");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+  });
+
+  it("proof/ABV mismatch when inconsistent (80 proof vs 45%)", () => {
+    const fields: ExtractedFields = {
+      classType: "Bourbon",
+      alcoholContent: "45% Alc./Vol. (80 Proof)",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    const rule = findRule(results, "spirits_proof_abv_mismatch");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(false);
+  });
+
+  it("ABV range OK for typical spirits (40%)", () => {
+    const fields: ExtractedFields = {
+      classType: "Vodka",
+      alcoholContent: "40% Alc./Vol.",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    const rule = findRule(results, "spirits_abv_range_ok");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+  });
+
+  it("ABV range warning for low spirits (10%)", () => {
+    const fields: ExtractedFields = {
+      classType: "Cocktail",
+      alcoholContent: "10% Alc./Vol.",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    const rule = findRule(results, "spirits_abv_range_low");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(false);
+  });
+
+  it("straight whisky without age statement warns", () => {
+    const fields: ExtractedFields = {
+      classType: "Straight Bourbon Whiskey",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    const rule = findRule(results, "spirits_straight_age_note");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(false);
+  });
+
+  it("straight whisky with age statement passes", () => {
+    const fields: ExtractedFields = {
+      classType: "Straight Bourbon Whiskey",
+      ageStatement: "Aged 6 years",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    const rule = findRule(results, "spirits_straight_age_ok");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+  });
+
+  it("non-straight spirits do not trigger age warning", () => {
+    const fields: ExtractedFields = {
+      classType: "Vodka",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    expect(findRule(results, "spirits_straight_age_note")).toBeUndefined();
+    expect(findRule(results, "spirits_straight_age_ok")).toBeUndefined();
+  });
+
+  it("spirits rules do not fire for wine category", () => {
+    const fields: ExtractedFields = {
+      classType: "Straight Bourbon Whiskey",
+      alcoholContent: "45% Alc./Vol. (90 Proof)",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    expect(findRule(results, "spirits_proof_abv_consistent")).toBeUndefined();
+    expect(findRule(results, "spirits_abv_range_ok")).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wine-specific validation rules
+// ---------------------------------------------------------------------------
+
+describe("Wine-specific validation", () => {
+  it("varietal 75% note fires when varietal present", () => {
+    const fields: ExtractedFields = {
+      varietal: "Pinot Noir",
+      appellation: "Willamette Valley",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    const rule = findRule(results, "wine_varietal_75_note");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+    expect(rule!.message).toContain("75%");
+    expect(rule!.message).toContain("85%");
+  });
+
+  it("varietal note does not fire when no varietal", () => {
+    const fields: ExtractedFields = {
+      classType: "Red Wine",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    expect(findRule(results, "wine_varietal_75_note")).toBeUndefined();
+  });
+
+  it("wine ABV range OK for 14%", () => {
+    const fields: ExtractedFields = {
+      alcoholContent: "14% Alc. By Vol.",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    const rule = findRule(results, "wine_abv_range_ok");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+  });
+
+  it("wine ABV range warns above 24%", () => {
+    const fields: ExtractedFields = {
+      alcoholContent: "28% Alc. By Vol.",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    const rule = findRule(results, "wine_abv_range_high");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(false);
+  });
+
+  it("vintage year 2022 is plausible", () => {
+    const fields: ExtractedFields = {
+      vintageDate: "2022",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    const rule = findRule(results, "wine_vintage_plausible");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+  });
+
+  it("vintage year 2099 is implausible (future)", () => {
+    const fields: ExtractedFields = {
+      vintageDate: "2099",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    const rule = findRule(results, "wine_vintage_implausible");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(false);
+    expect(rule!.suggestion).toContain("future");
+  });
+
+  it("vintage year 1850 is implausible (too old)", () => {
+    const fields: ExtractedFields = {
+      vintageDate: "1850",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    const rule = findRule(results, "wine_vintage_implausible");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(false);
+    expect(rule!.suggestion).toContain("before 1900");
+  });
+
+  it("wine rules do not fire for spirits category", () => {
+    const fields: ExtractedFields = {
+      varietal: "Pinot Noir",
+      alcoholContent: "14% Alc. By Vol.",
+      vintageDate: "2022",
+    };
+    const results = validateExtractedFields(fields, "spirits", "front");
+    expect(findRule(results, "wine_varietal_75_note")).toBeUndefined();
+    expect(findRule(results, "wine_abv_range_ok")).toBeUndefined();
+    expect(findRule(results, "wine_vintage_plausible")).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Beer-specific validation rules
+// ---------------------------------------------------------------------------
+
+describe("Beer-specific validation", () => {
+  it("FMB composition note for hard seltzer", () => {
+    const fields: ExtractedFields = {
+      classType: "Hard Seltzer",
+    };
+    const results = validateExtractedFields(fields, "beer", "front");
+    const rule = findRule(results, "beer_fmb_composition_note");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+    expect(rule!.message).toContain("statement of composition");
+  });
+
+  it("FMB composition note for flavored malt beverage", () => {
+    const fields: ExtractedFields = {
+      classType: "Flavored Malt Beverage",
+    };
+    const results = validateExtractedFields(fields, "beer", "front");
+    const rule = findRule(results, "beer_fmb_composition_note");
+    expect(rule).toBeDefined();
+  });
+
+  it("no FMB note for regular beer", () => {
+    const fields: ExtractedFields = {
+      classType: "India Pale Ale",
+    };
+    const results = validateExtractedFields(fields, "beer", "front");
+    expect(findRule(results, "beer_fmb_composition_note")).toBeUndefined();
+  });
+
+  it("beer ABV range OK for 5%", () => {
+    const fields: ExtractedFields = {
+      alcoholContent: "5% Alc. By Vol.",
+    };
+    const results = validateExtractedFields(fields, "beer", "front");
+    const rule = findRule(results, "beer_abv_range_ok");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(true);
+  });
+
+  it("beer ABV range warns above 15%", () => {
+    const fields: ExtractedFields = {
+      alcoholContent: "18% Alc. By Vol.",
+    };
+    const results = validateExtractedFields(fields, "beer", "front");
+    const rule = findRule(results, "beer_abv_range_high");
+    expect(rule).toBeDefined();
+    expect(rule!.pass).toBe(false);
+  });
+
+  it("beer rules do not fire for wine category", () => {
+    const fields: ExtractedFields = {
+      classType: "Hard Seltzer",
+      alcoholContent: "5% Alc. By Vol.",
+    };
+    const results = validateExtractedFields(fields, "wine", "front");
+    expect(findRule(results, "beer_fmb_composition_note")).toBeUndefined();
+    expect(findRule(results, "beer_abv_range_ok")).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Sample Label from PROJECT_DESCRIPTION.md (Line 93-99)
 // ---------------------------------------------------------------------------
 
@@ -395,6 +640,23 @@ describe("Citations", () => {
       "age_statement_present",
       "varietal_requires_appellation",
       "vintage_requires_appellation",
+      // Spirits-specific
+      "spirits_proof_abv_consistent",
+      "spirits_proof_abv_mismatch",
+      "spirits_abv_range_ok",
+      "spirits_abv_range_low",
+      "spirits_straight_age_note",
+      "spirits_straight_age_ok",
+      // Wine-specific
+      "wine_varietal_75_note",
+      "wine_abv_range_ok",
+      "wine_abv_range_high",
+      "wine_vintage_plausible",
+      "wine_vintage_implausible",
+      // Beer-specific
+      "beer_fmb_composition_note",
+      "beer_abv_range_ok",
+      "beer_abv_range_high",
     ];
 
     for (const ruleId of expectedRuleIds) {
