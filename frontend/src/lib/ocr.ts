@@ -66,7 +66,9 @@ export interface PreprocessOptions {
 }
 
 /**
- * Preprocess a canvas for OCR:
+ * Preprocess a canvas for OCR with multi-stage image enhancement.
+ * 
+ * Applies the following transformations to optimize text recognition:
  *   1. Upscale small images to ≥1500px wide (~300 DPI)
  *   2. Convert to grayscale (removes color noise)
  *   3. Mild sharpening (unsharp mask — improves text edges)
@@ -75,7 +77,22 @@ export interface PreprocessOptions {
  *   5b. (Optional) Otsu binarization — used as fallback when initial OCR confidence is low
  *   6. 10px white padding (helps Tesseract layout analysis)
  *
- * Returns a new canvas ready for OCR.
+ * @param source - Source canvas containing the label image to preprocess
+ * @param opts - Preprocessing options
+ * @param opts.sharpenAmount - Unsharp mask amount (default: 0.3). Higher values = more sharpening.
+ * @param opts.binarize - Apply Otsu binarization to convert to pure black/white (default: false)
+ * @returns New canvas with preprocessed image ready for OCR
+ * @throws {Error} If source canvas has zero dimensions
+ * 
+ * @example
+ * // Basic usage
+ * const canvas = document.getElementById('label');
+ * const processed = preprocessForOcr(canvas);
+ * const text = await runTesseractOcr(processed);
+ * 
+ * @example
+ * // With binarization for low-confidence retry
+ * const processed = preprocessForOcr(canvas, { binarize: true });
  */
 export function preprocessForOcr(source: HTMLCanvasElement, opts: PreprocessOptions = {}): HTMLCanvasElement {
   // Validate input
@@ -261,8 +278,23 @@ const EDGE_TEXT_STDEV_THRESHOLD = 25;
  * to an expensive rotation + OCR pass, this function cheaply checks whether
  * the edge strips even have content worth reading.
  *
- * Returns which edges (left/right) have pixel variance above the threshold.
- * If both are false, rotation can be skipped entirely — saving ~2–5 seconds.
+ * Uses grayscale standard deviation as a proxy for text presence:
+ * - Solid backgrounds (green, white, black): stdev < 15
+ * - Text on background: stdev > 30
+ * - Threshold set at 25 (empirically tuned)
+ *
+ * @param canvas - Canvas containing the label image to analyze
+ * @returns Object with boolean flags indicating which edges have text content
+ * @returns {boolean} left - True if left edge has text (stdev > 25)
+ * @returns {boolean} right - True if right edge has text (stdev > 25)
+ * 
+ * @example
+ * const edges = detectEdgeContent(canvas);
+ * if (edges.left) {
+ *   const strip = cropEdgeStrip(canvas, 'left');
+ *   const rotated = rotateCanvas(strip, 90);
+ *   // OCR the rotated strip
+ * }
  */
 export function detectEdgeContent(canvas: HTMLCanvasElement): { left: boolean; right: boolean } {
   const ctx = canvas.getContext("2d")!;
@@ -301,8 +333,18 @@ export function detectEdgeContent(canvas: HTMLCanvasElement): { left: boolean; r
 
 /**
  * Crop a vertical strip from the left or right edge of a canvas.
+ * 
  * Used to extract just the rotated-text region for OCR instead of
- * processing the entire image.
+ * processing the entire image. Significantly faster than rotating
+ * the full image (processes only 15% of pixels).
+ *
+ * @param canvas - Source canvas to crop from
+ * @param side - Which edge to crop ('left' or 'right')
+ * @returns New canvas containing only the edge strip (15% of original width)
+ * 
+ * @example
+ * const leftStrip = cropEdgeStrip(canvas, 'left');
+ * const rotated = rotateCanvas(leftStrip, 90);
  */
 export function cropEdgeStrip(canvas: HTMLCanvasElement, side: "left" | "right"): HTMLCanvasElement {
   const w = canvas.width;
@@ -320,12 +362,22 @@ export function cropEdgeStrip(canvas: HTMLCanvasElement, side: "left" | "right")
 
 /**
  * Rotate a canvas by the given degrees (90, 180, or 270).
+ * 
  * Returns a new canvas with the image drawn at the specified rotation.
- *
  * Used for multi-pass OCR: some labels print the government warning or
  * other required text rotated 90° (vertical). Tesseract cannot read
  * rotated text, so we rotate the image and OCR it separately, then merge
  * results from all orientations.
+ *
+ * @param source - Canvas to rotate
+ * @param degrees - Rotation angle (90, 180, or 270 degrees clockwise)
+ * @returns New canvas with rotated image. Dimensions are swapped for 90°/270°.
+ * 
+ * @example
+ * // Rotate edge strip 90° to make vertical text horizontal
+ * const strip = cropEdgeStrip(canvas, 'left');
+ * const rotated = rotateCanvas(strip, 90);
+ * const text = await runTesseractOcr(rotated);
  */
 export function rotateCanvas(source: HTMLCanvasElement, degrees: 90 | 180 | 270): HTMLCanvasElement {
   const out = document.createElement("canvas");

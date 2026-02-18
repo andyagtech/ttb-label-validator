@@ -173,17 +173,39 @@ export interface MatchResult {
 
 /**
  * Compare a form value against an OCR-extracted label value.
- * Returns a similarity score and verdict.
- *
+ * 
+ * Returns a similarity score (0-100) and human-readable verdict.
  * The comparison is case-insensitive and accent-insensitive by default.
- * It uses multiple strategies to find the best match:
- *   1. Exact normalized match
- *   2. Direct containment ("France" in "Product of France")
- *   3. Core-value containment (strip "Product of" prefix, then compare)
- *   4. Token overlap (what % of form words appear in detected text)
- *   5. Levenshtein edit distance
+ * 
+ * Uses multiple strategies to find the best match:
+ *   1. Exact normalized match (100 pts)
+ *   2. Direct containment — "France" in "Product of France" (95 pts)
+ *   3. Core-value containment — strip "Product of" prefix, then compare (93 pts)
+ *   4. Token overlap — what % of form words appear in detected text (0-100 pts)
+ *   5. Fuzzy token overlap — allows minor OCR misreads (edit distance ≤ 1)
+ *   6. Levenshtein edit distance — character-level similarity
+ *   7. Approximate substring matching — for OCR blobs with extra text
  *
  * The best score from all strategies wins.
+ *
+ * @param formValue - Value from the COLA application form (user-submitted)
+ * @param labelValue - Value extracted from the label image via OCR
+ * @returns Match result with score (0-100), verdict, and explanation message
+ * 
+ * @example
+ * // Exact match
+ * compareFields("STONE'S THROW", "Stone's Throw")
+ * // => { score: 100, verdict: "exact", message: "Exact match." }
+ * 
+ * @example
+ * // Containment match
+ * compareFields("France", "Product of France")
+ * // => { score: 95, verdict: "match", message: "Match — one value contains the other." }
+ * 
+ * @example
+ * // Token overlap
+ * compareFields("Old Tom Distillery", "Old Tom Distilery, London")
+ * // => { score: 90+, verdict: "match", message: "Match — 100% token overlap..." }
  */
 export function compareFields(formValue: string | undefined, labelValue: string | undefined): MatchResult {
   if (!formValue && !labelValue) {
