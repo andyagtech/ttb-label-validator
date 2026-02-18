@@ -7,7 +7,7 @@
  */
 
 import { Submission, SubmissionStatus, ReviewRecord, ReviewFinding, BeverageCategory, SubmissionLabel } from "./types";
-import { getSampleProducts, type SampleProduct } from "./sampleData";
+import { getSampleProducts, GOV_WARNING, type SampleProduct } from "./sampleData";
 import { loadManifest } from "./blobStorage";
 
 // ---------------------------------------------------------------------------
@@ -427,7 +427,7 @@ function buildFormFields(product: SampleProduct): Record<string, string> {
   if (front.age_statement) ff.ageStatement = front.age_statement;
   if (back.name_address) ff.nameAddress = back.name_address;
   if (back.country_origin) ff.countryOfOrigin = back.country_origin;
-  if (back.health_warning) ff.healthWarning = back.health_warning;
+  ff.healthWarning = GOV_WARNING;
   if (back.sulfite_declaration) ff.sulfiteDeclaration = back.sulfite_declaration;
   if (back.color_ingredients) ff.colorIngredients = back.color_ingredients;
   if (back.commodity_statement) ff.commodityStatement = back.commodity_statement;

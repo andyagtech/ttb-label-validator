@@ -459,22 +459,31 @@ export function parseOcrText(rawText: string): ExtractedFields {
   }
 
   // --- Government warning ---
+  // Helper: given a raw slice, truncate at "HEALTH PROBLEMS" end-marker
+  const truncateWarning = (raw: string): string => {
+    const endMatch = raw.match(/health\s+problems[\s.!;,)]*(?:\b|$)/i);
+    if (endMatch && endMatch.index !== undefined) {
+      return raw.slice(0, endMatch.index + endMatch[0].length).trim();
+    }
+    return raw.trim();
+  };
+
   if (/government\s+warning/i.test(text)) {
     const gwStart = text.search(/government\s+warning/i);
-    // Capture up to 500 chars to get both statements
-    fields.healthWarning = text.slice(gwStart, gwStart + 500).trim();
+    // Capture up to 500 chars to get both statements, then truncate at end marker
+    fields.healthWarning = truncateWarning(text.slice(gwStart, gwStart + 500));
   }
   // Fallback: "SURGEON GENERAL" without the "GOVERNMENT WARNING" prefix
   // (sometimes Tesseract misreads the header but captures the body)
   if (!fields.healthWarning && /surgeon\s+general/i.test(text)) {
     const sgStart = text.search(/surgeon\s+general/i);
     const start = Math.max(0, sgStart - 40); // grab a bit before for context
-    fields.healthWarning = text.slice(start, sgStart + 500).trim();
+    fields.healthWarning = truncateWarning(text.slice(start, sgStart + 500));
   }
   // Fallback 2: "ACCORDING TO THE" + "BIRTH DEFECTS" — fragmented OCR
   if (!fields.healthWarning && /according\s+to\s+the/i.test(text) && /birth\s+defects/i.test(text)) {
     const atStart = text.search(/according\s+to\s+the/i);
-    fields.healthWarning = text.slice(Math.max(0, atStart - 30), atStart + 500).trim();
+    fields.healthWarning = truncateWarning(text.slice(Math.max(0, atStart - 30), atStart + 500));
   }
 
   // --- Contains Sulfites ---
