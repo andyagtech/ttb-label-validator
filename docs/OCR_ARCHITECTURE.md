@@ -291,6 +291,8 @@ await worker.setParameters({
 
 This is a **heuristic regex parser** — it doesn't use ML, just pattern matching against the raw Tesseract output. It extracts 15 field types from unstructured OCR text.
 
+**📖 For detailed parser structure, flow diagrams, and field-by-field strategies, see [`OCR_PARSER_REFERENCE.md`](./OCR_PARSER_REFERENCE.md)**
+
 ### Input Preparation (lines 254–259)
 ```javascript
 const text = rawText.replace(/\n/g, " ").replace(/\s+/g, " ");  // flat string for regex
