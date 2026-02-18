@@ -557,20 +557,6 @@ const FIELD_TO_CHECKLIST: Record<keyof ExtractedFields, string> = {
   detectedSubcategory: "", // not mapped to a checklist item
   rawText: "", // not mapped to a checklist item
 };
-  vintageDate: "vintage_date",
-  varietal: "varietal",
-  healthWarning: "health_warning",
-  nameAddress: "name_address",
-  countryOfOrigin: "country_origin",
-  sulfiteDeclaration: "sulfite_declaration",
-  ageStatement: "age_statement",
-  colorIngredients: "color_ingredients",
-  commodityStatement: "commodity_statement",
-  aspartameDeclaration: "aspartame_declaration",
-  detectedCategory: "", // not mapped to a checklist item
-  detectedSubcategory: "", // not mapped to a checklist item
-  rawText: "", // not mapped to a checklist item
-};
 
 /**
  * Apply extracted fields to checklist items as detectedValues.
