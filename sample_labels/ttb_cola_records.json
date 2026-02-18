@@ -38,7 +38,7 @@
     },
     {
       "ttbId": "24003001000078",
-      "brandName": "KÜNSTLER BREWING",
+      "brandName": "K\u00dcNSTLER BREWING",
       "fancifulName": "HOP TRAIN",
       "classType": "ALE",
       "origin": "TEXAS",
@@ -218,7 +218,7 @@
     },
     {
       "ttbId": "25335001000197",
-      "brandName": "CZECH 10°",
+      "brandName": "CZECH 10\u00b0",
       "fancifulName": "",
       "classType": "BEER",
       "origin": "PENNSYLVANIA",
@@ -530,6 +530,14 @@
       "origin": "KANSAS",
       "status": "APPROVED",
       "approvalDate": "12/03/2025"
+    },
+    {
+      "ttbId": "26006001000665",
+      "brandName": "FAT HEAD'S BREWERY",
+      "fancifulName": "BUMBLE BERRY HONEY BLUEBERRY ALE",
+      "classType": "ALE",
+      "origin": "09",
+      "approvalDate": "02/09/2026"
     }
   ],
   "wine": [
@@ -1624,12 +1632,44 @@
     },
     {
       "ttbId": "25336001000625",
-      "brandName": "JEAN-YVES PÉRON",
+      "brandName": "JEAN-YVES P\u00c9RON",
       "fancifulName": "I VICINI",
       "classType": "TABLE RED WINE",
       "origin": "FRANCE",
       "status": "APPROVED",
       "approvalDate": "12/08/2025"
+    },
+    {
+      "ttbId": "26005001000174",
+      "brandName": "INTEMPERIE",
+      "fancifulName": "",
+      "classType": "TABLE RED WINE",
+      "origin": "62",
+      "approvalDate": "01/26/2026"
+    },
+    {
+      "ttbId": "26005001000491",
+      "brandName": "VALDUERO",
+      "fancifulName": "",
+      "classType": "TABLE WHITE WINE",
+      "origin": "52",
+      "approvalDate": "02/05/2026"
+    },
+    {
+      "ttbId": "26005001000753",
+      "brandName": "MAGNOLIA COAST WINERY",
+      "fancifulName": "",
+      "classType": "TABLE WHITE WINE",
+      "origin": "50",
+      "approvalDate": "02/10/2026"
+    },
+    {
+      "ttbId": "26006001000033",
+      "brandName": "SYMINGTON",
+      "fancifulName": "",
+      "classType": "TABLE RED WINE",
+      "origin": "54",
+      "approvalDate": "01/27/2026"
     }
   ],
   "spirits": [
@@ -1992,6 +2032,30 @@
       "origin": "KENTUCKY",
       "status": "APPROVED",
       "approvalDate": "12/04/2025"
+    },
+    {
+      "ttbId": "26005001000647",
+      "brandName": "CWD",
+      "fancifulName": "",
+      "classType": "983",
+      "origin": "81",
+      "approvalDate": "01/30/2026"
+    },
+    {
+      "ttbId": "26006001000090",
+      "brandName": "KINKY",
+      "fancifulName": "STRAWBERRY WATERMELON",
+      "classType": "601",
+      "origin": "22",
+      "approvalDate": "01/23/2026"
+    },
+    {
+      "ttbId": "26007001000251",
+      "brandName": "3 AMIGOS",
+      "fancifulName": "MARGARITA",
+      "classType": "724",
+      "origin": "11",
+      "approvalDate": "01/23/2026"
     }
   ]
 }

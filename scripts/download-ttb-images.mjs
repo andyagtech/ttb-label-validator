@@ -35,9 +35,9 @@ const IMAGE_LOAD_TIMEOUT_MS = 45_000;
 const CAPTCHA_WAIT_TIMEOUT_MS = 120_000;
 
 const BROKEN_IDS = [
-  '23312001000445',  // Anchor Brewing
-  '24051001000312',  // Samuel Adams / Castle Brewing
-  '24023001000567',  // Heineken / Monsieur Touton
+  // Cleared — previously listed IDs were re-inspected and images are fine.
+  // 23312001000445 (Crafted Cask) and 24023001000567 (Tenute Capaldo) have valid images.
+  // 24051001000312 (Samuel Adams) was never in ttb_cola_records.json.
 ];
 
 // No longer need a hardcoded REAL_IDS filter — all records in the file are now real
@@ -51,6 +51,7 @@ let force = false;
 let downloadBroken = false;
 let downloadAll = false;
 let downloadLimit = Infinity;
+let prefixFilter = null;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--ttbid' && args[i + 1]) singleTtbId = args[i + 1];
@@ -59,6 +60,7 @@ for (let i = 0; i < args.length; i++) {
   if (args[i] === '--broken') downloadBroken = true;
   if (args[i] === '--all') downloadAll = true;
   if (args[i] === '--limit' && args[i + 1]) downloadLimit = parseInt(args[i + 1]);
+  if (args[i] === '--prefix' && args[i + 1]) prefixFilter = args[i + 1];
 }
 
 // ── Load records ────────────────────────────────────────────────────────────
@@ -270,9 +272,15 @@ async function main() {
     console.log(`🔄 Targeting ${records.length} broken IDs: ${BROKEN_IDS.join(', ')}`);
   } else if (singleTtbId) {
     records = records.filter(r => r.ttbId === singleTtbId);
-  } else if (!downloadAll) {
-    console.error('❌ Specify --broken, --ttbid XXXX, or --all');
+  } else if (!downloadAll && !prefixFilter) {
+    console.error('❌ Specify --broken, --ttbid XXXX, --prefix XX, or --all');
     process.exit(1);
+  }
+
+  // Filter by prefix (e.g. --prefix 26 for 2026 records)
+  if (prefixFilter) {
+    records = records.filter(r => r.ttbId.startsWith(prefixFilter));
+    console.log(`🔍 Filtered to ${records.length} records with prefix '${prefixFilter}'`);
   }
 
   // When using --limit, shuffle to get a diverse category mix

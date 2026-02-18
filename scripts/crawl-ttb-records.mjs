@@ -34,6 +34,30 @@ if (targetIdx >= 0 && args[targetIdx + 1]) TARGET = parseInt(args[targetIdx + 1]
 // These prefixes come from known good IDs across recent years.
 // Mix of 2023 and 2024 prefixes for variety.
 const PREFIXES = [
+  // Jan 2026 — 1-2 months old, many should be approved (PRIORITY)
+  '26001001000',  // Jan 1
+  '26003001000',  // Jan 3
+  '26006001000',  // Jan 6
+  '26008001000',  // Jan 8
+  '26010001000',  // Jan 10
+  '26013001000',  // Jan 13
+  '26015001000',  // Jan 15
+  '26018001000',  // Jan 18
+  '26020001000',  // Jan 20
+  '26022001000',  // Jan 22
+  '26025001000',  // Jan 25
+  '26027001000',  // Jan 27
+  '26029001000',  // Jan 29
+  '26031001000',  // Jan 31
+  // Feb 2026
+  '26032001000',  // Feb 1
+  '26034001000',  // Feb 3
+  '26036001000',  // Feb 5
+  '26038001000',  // Feb 7
+  '26040001000',  // Feb 9
+  '26042001000',  // Feb 11
+  '26044001000',  // Feb 13
+  '26046001000',  // Feb 15
   // Dec 2025 — ~600 records/day, 2-3 months old, most approved
   '25335001000',  // Dec 1
   '25336001000',  // Dec 2
@@ -50,21 +74,6 @@ const PREFIXES = [
   '25360001000',  // Dec 26
   '25362001000',  // Dec 28
   '25365001000',  // Dec 31
-  // Jan 2026 — dense coverage (1-2 months old, many should be approved)
-  '26001001000',  // Jan 1
-  '26003001000',  // Jan 3
-  '26006001000',  // Jan 6
-  '26008001000',  // Jan 8
-  '26010001000',  // Jan 10
-  '26013001000',  // Jan 13
-  '26015001000',  // Jan 15
-  '26018001000',  // Jan 18
-  '26020001000',  // Jan 20
-  '26022001000',  // Jan 22
-  '26025001000',  // Jan 25
-  '26027001000',  // Jan 27
-  '26029001000',  // Jan 29
-  '26031001000',  // Jan 31
   // Late Nov 2025
   '25320001000',  // Nov 16
   '25325001000',  // Nov 21

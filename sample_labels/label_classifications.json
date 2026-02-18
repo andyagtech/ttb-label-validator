@@ -1,0 +1,554 @@
+{
+  "classifications": {
+    "26003001000001": [
+      {
+        "num": 1,
+        "file": "26003001000001-1.png",
+        "type": "unknown",
+        "confidence": 0.5,
+        "reason": "The image only contains a signature, which is not enough information to classify the label type."
+      },
+      {
+        "num": 2,
+        "file": "26003001000001-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label includes the government warning, producer/importer address, barcode, and other compliance information, indicating it is a back label."
+      },
+      {
+        "num": 3,
+        "file": "26003001000001-3.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label features a prominent brand name (Bruno Pilzer) and product name (Grappa Pinot Nero) along with artistic elements, indicating it is the main front label."
+      },
+      {
+        "num": 4,
+        "file": "26003001000001-4.png",
+        "type": "front",
+        "confidence": 0.9,
+        "reason": "The label prominently displays the product name 'Grappa di Pinot Nero' in a simple, clean design, suggesting it's the main label."
+      }
+    ],
+    "26003001000015": [
+      {
+        "num": 1,
+        "file": "26003001000015-1.png",
+        "type": "unknown",
+        "confidence": 0.5,
+        "reason": "The image shows a signature on a blue background, which is not enough information to determine the label type."
+      },
+      {
+        "num": 2,
+        "file": "26003001000015-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label prominently features the brand name \"Roanoke Vineyards\" and the product name \"The Magnetic Fields\" along with the vintage year, which are typical elements of a front label."
+      },
+      {
+        "num": 3,
+        "file": "26003001000015-3.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, producer address, and ingredients, which are typical features of a back label."
+      }
+    ],
+    "26003001000022": [
+      {
+        "num": 1,
+        "file": "26003001000022-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label has the brand name 'Mazoyeres Chambertin' prominently displayed, along with the vintage year and other descriptive text, making it likely the front label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000022-2.png",
+        "type": "unknown",
+        "confidence": 1,
+        "reason": "The image is completely black, so the label type cannot be determined."
+      }
+    ],
+    "26003001000029": [
+      {
+        "num": 1,
+        "file": "26003001000029-1.png",
+        "type": "unknown",
+        "confidence": 0.7,
+        "reason": "The image appears to be a signature on a plain background, which doesn't fit any of the defined label types."
+      },
+      {
+        "num": 2,
+        "file": "26003001000029-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains a government warning, barcode, producer address, and ingredients, which are all characteristics of a back label."
+      }
+    ],
+    "26003001000036": [
+      {
+        "num": 1,
+        "file": "26003001000036-1.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, importer information, and other compliance details, indicating it is a back label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000036-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label features a prominent brand name (Billaud-Simon), artwork, and product name (Chablis Premier Cru), indicating it's the main front label."
+      }
+    ],
+    "26003001000043": [
+      {
+        "num": 1,
+        "file": "26003001000043-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label prominently displays the brand name \"BRUNO COLIN\", the product name \"SAINT-AUBIN\", and other descriptive information, making it a front label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000043-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, importer information, and other compliance-related text, indicating it is a back label."
+      }
+    ],
+    "26003001000050": [
+      {
+        "num": 1,
+        "file": "26003001000050-1.png",
+        "type": "unknown",
+        "confidence": 0.5,
+        "reason": "The image only contains a signature and it is not possible to determine the label type."
+      },
+      {
+        "num": 2,
+        "file": "26003001000050-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, ingredients, and producer address, which are all characteristics of a back label."
+      }
+    ],
+    "26003001000071": [
+      {
+        "num": 1,
+        "file": "26003001000071-1.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, producer address, and other compliance information, indicating it is a back label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000071-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label features a prominent brand name (Sofia Victoria), logo, and product name (Syrah), indicating it's the main front label."
+      }
+    ],
+    "26003001000078": [
+      {
+        "num": 1,
+        "file": "26003001000078-1.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, producer address, and ingredients, which are typical of a back label."
+      }
+    ],
+    "26003001000085": [
+      {
+        "num": 1,
+        "file": "26003001000085-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a prominent brand name in a stylized font, suggesting it is the main/front label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000085-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains a government warning, importer information, and other compliance details, indicating it is a back label."
+      }
+    ],
+    "26003001000092": [
+      {
+        "num": 1,
+        "file": "26003001000092-1.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "The label includes the government warning, producer address, and ingredients, which are typical of a back label."
+      }
+    ],
+    "26003001000099": [
+      {
+        "num": 1,
+        "file": "26003001000099-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label has a prominent brand name \"Volnay\", a logo, and other product information, making it likely the front label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000099-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, volume, alcohol content, and importer information, which are all typical of a back label."
+      }
+    ],
+    "26003001000106": [
+      {
+        "num": 1,
+        "file": "26003001000106-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label features a prominent brand name (Pierre Girardin) and product name (Les Chevalieres) with a logo, indicating it's the front label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000106-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, importer information, and other compliance-related text, indicating it is a back label."
+      }
+    ],
+    "26003001000120": [
+      {
+        "num": 1,
+        "file": "26003001000120-1.png",
+        "type": "front",
+        "confidence": 0.9,
+        "reason": "This label has a prominent brand name ('bar water'), product name ('CITRON'), and artwork, which are typical of a front label, even though it also contains the government warning."
+      }
+    ],
+    "26003001000125": [
+      {
+        "num": 1,
+        "file": "26003001000125-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a prominent brand name \"TEN TO ONE\", product name \"AMBA CARIBBEAN RUM\", and a logo, which are typical characteristics of a front label."
+      },
+      {
+        "num": 2,
+        "file": "26003001000125-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains a government warning, barcode, importer address, and tasting notes, all indicative of a back label."
+      }
+    ],
+    "26005001000174": [
+      {
+        "num": 1,
+        "file": "26005001000174-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a prominent brand name (MALMA), product name (INTEMPERIE), and artistic design, indicating it's the main front label."
+      },
+      {
+        "num": 2,
+        "file": "26005001000174-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, importer information, barcode, and producer address, all of which are characteristic of a back label."
+      }
+    ],
+    "26005001000491": [
+      {
+        "num": 1,
+        "file": "26005001000491-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a prominent brand name in a stylized font, suggesting it's the main front label."
+      },
+      {
+        "num": 2,
+        "file": "26005001000491-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a prominent brand name \"Valduero\", logo, and product information, which are typical characteristics of a front label."
+      },
+      {
+        "num": 3,
+        "file": "26005001000491-3.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, barcode, importer address, and producer information, which are all characteristic of a back label."
+      }
+    ],
+    "26005001000647": [
+      {
+        "num": 1,
+        "file": "26005001000647-1.png",
+        "type": "front",
+        "confidence": 0.9,
+        "reason": "The image shows a prominent brand name, suggesting it's the main label."
+      },
+      {
+        "num": 2,
+        "file": "26005001000647-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label has a prominent brand logo, product name, and ABV, which are typical features of a front label."
+      },
+      {
+        "num": 3,
+        "file": "26005001000647-3.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, importer/bottler information, and a block of text, indicating it is a back label."
+      }
+    ],
+    "26005001000753": [
+      {
+        "num": 1,
+        "file": "26005001000753-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label features a prominent brand name, logo, and product name, indicating it is the front label."
+      },
+      {
+        "num": 2,
+        "file": "26005001000753-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, ingredients, and producer address, which are typical features of a back label."
+      }
+    ],
+    "26006001000090": [
+      {
+        "num": 1,
+        "file": "26006001000090-1.png",
+        "type": "unknown",
+        "confidence": 0.5,
+        "reason": "This appears to be a signature, not a product label from an alcoholic beverage."
+      },
+      {
+        "num": 2,
+        "file": "26006001000090-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label prominently displays the product name 'STRAWBERRY WATERMELON' and describes the flavor profile, which is typical of a front label."
+      },
+      {
+        "num": 3,
+        "file": "26006001000090-3.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a large brand name ('KINKY') and a simple design, indicating it is the main/front label."
+      },
+      {
+        "num": 4,
+        "file": "26006001000090-4.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, barcode, and producer address, which are all indicative of a back label."
+      }
+    ],
+    "26006001000134": [
+      {
+        "num": 1,
+        "file": "26006001000134-1.png",
+        "type": "front",
+        "confidence": 0.9,
+        "reason": "The label features a prominent brand name, 'Cynthia Taub', in a stylized font, suggesting it is the main/primary brand label."
+      }
+    ],
+    "26006001000148": [
+      {
+        "num": 1,
+        "file": "26006001000148-1.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains a government warning, barcode, importer address, and production details, all typical of a back label."
+      },
+      {
+        "num": 2,
+        "file": "26006001000148-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a prominent brand name (SERCA), artwork, and product information, suggesting it is the main front label."
+      }
+    ],
+    "26006001000155": [
+      {
+        "num": 1,
+        "file": "26006001000155-1.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "The label features a prominent brand name ('Jane Hale') in a stylized font, suggesting it's the main front label."
+      },
+      {
+        "num": 2,
+        "file": "26006001000155-2.png",
+        "type": "front",
+        "confidence": 0.95,
+        "reason": "This label features a prominent brand name ('Lost Draw'), artwork, and the product name ('Tempranillo'), indicating it is the main/front label."
+      },
+      {
+        "num": 3,
+        "file": "26006001000155-3.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, producer address, and a barcode, which are all indicative of a back label."
+      }
+    ],
+    "26006001000218": [
+      {
+        "num": 1,
+        "file": "26006001000218-1.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains a government warning, importer address, barcode, and other compliance information, indicating it is a back label."
+      }
+    ],
+    "26006001000281": [
+      {
+        "num": 1,
+        "file": "26006001000281-1.png",
+        "type": "unknown",
+        "confidence": 0.7,
+        "reason": "This appears to be a signature, not a typical label found on alcoholic beverages."
+      }
+    ],
+    "26006001000665": [
+      {
+        "num": 1,
+        "file": "26006001000665-1.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label includes a government warning, barcode, and brewery address, which are typical features of a back label."
+      }
+    ],
+    "26007001000251": [
+      {
+        "num": 1,
+        "file": "26007001000251-1.png",
+        "type": "unknown",
+        "confidence": 0.5,
+        "reason": "The image only contains a signature and lacks the necessary information to classify it as a specific type of alcohol label."
+      },
+      {
+        "num": 2,
+        "file": "26007001000251-2.png",
+        "type": "back",
+        "confidence": 0.95,
+        "reason": "This label contains the government warning, barcode, producer/packager information, and website address, all typical of a back label."
+      }
+    ]
+  },
+  "ttbLabelImages": {
+    "26003001000001": [
+      3,
+      2,
+      4,
+      1
+    ],
+    "26003001000015": [
+      2,
+      3,
+      1
+    ],
+    "26003001000022": [
+      1,
+      2
+    ],
+    "26003001000029": [
+      2,
+      1
+    ],
+    "26003001000036": [
+      2,
+      1
+    ],
+    "26003001000043": [
+      1,
+      2
+    ],
+    "26003001000050": [
+      2,
+      1
+    ],
+    "26003001000071": [
+      2,
+      1
+    ],
+    "26003001000078": [
+      1
+    ],
+    "26003001000085": [
+      1,
+      2
+    ],
+    "26003001000092": [
+      1
+    ],
+    "26003001000099": [
+      1,
+      2
+    ],
+    "26003001000106": [
+      1,
+      2
+    ],
+    "26003001000120": [
+      1
+    ],
+    "26003001000125": [
+      1,
+      2
+    ],
+    "26005001000174": [
+      1,
+      2
+    ],
+    "26005001000491": [
+      1,
+      3,
+      2
+    ],
+    "26005001000647": [
+      2,
+      3,
+      1
+    ],
+    "26005001000753": [
+      1,
+      2
+    ],
+    "26006001000090": [
+      2,
+      4,
+      3,
+      1
+    ],
+    "26006001000134": [
+      1
+    ],
+    "26006001000148": [
+      2,
+      1
+    ],
+    "26006001000155": [
+      1,
+      3,
+      2
+    ],
+    "26006001000218": [
+      1
+    ],
+    "26006001000281": [
+      1
+    ],
+    "26006001000665": [
+      1
+    ],
+    "26007001000251": [
+      2,
+      1
+    ]
+  }
+}
