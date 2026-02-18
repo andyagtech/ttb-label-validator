@@ -78,6 +78,71 @@ function tokenOverlap(needle: string[], haystack: string[]): number {
 }
 
 /**
+ * Fuzzy token overlap — like tokenOverlap but allows minor OCR misreads.
+ * A needle token counts as matched if an exact match exists OR if any haystack
+ * token has Levenshtein distance ≤ 1 (for tokens ≥ 4 chars).
+ */
+function fuzzyTokenOverlap(needle: string[], haystack: string[]): number {
+  if (needle.length === 0) return 0;
+  const haystackSet = new Set(haystack);
+  let matched = 0;
+  for (const t of needle) {
+    if (haystackSet.has(t)) {
+      matched++;
+    } else if (t.length >= 4) {
+      // Allow small OCR misreads for longer tokens
+      for (const h of haystack) {
+        if (Math.abs(t.length - h.length) <= 1 && levenshtein(t, h) <= 1) {
+          matched++;
+          break;
+        }
+      }
+    }
+  }
+  return matched / needle.length;
+}
+
+/**
+ * Semi-global alignment: find the minimum edit distance when matching `needle`
+ * as an approximate substring within `haystack`.
+ *
+ * Unlike standard Levenshtein, starting/ending gaps in the haystack are free.
+ * This handles the common case where submitted text is embedded in a larger
+ * OCR blob (e.g. health warning surrounded by other label text).
+ *
+ * Time: O(m×n), Space: O(n) using rolling rows.
+ */
+function substringEditDistance(needle: string, haystack: string): number {
+  const m = needle.length;
+  const n = haystack.length;
+  if (m === 0) return 0;
+  if (n === 0) return m;
+
+  // Two-row DP: prev = dp[i-1], curr = dp[i]
+  let prev = new Array(n + 1).fill(0); // row 0: starting anywhere in haystack is free
+  let curr = new Array(n + 1).fill(0);
+
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i; // matching against empty haystack prefix
+    for (let j = 1; j <= n; j++) {
+      if (needle[i - 1] === haystack[j - 1]) {
+        curr[j] = prev[j - 1];
+      } else {
+        curr[j] = 1 + Math.min(prev[j], curr[j - 1], prev[j - 1]);
+      }
+    }
+    [prev, curr] = [curr, prev];
+  }
+
+  // Minimum in last filled row = best substring match
+  let minDist = m;
+  for (let j = 0; j <= n; j++) {
+    minDist = Math.min(minDist, prev[j]);
+  }
+  return minDist;
+}
+
+/**
  * Levenshtein distance between two strings.
  */
 function levenshtein(a: string, b: string): number {
@@ -158,6 +223,11 @@ export function compareFields(formValue: string | undefined, labelValue: string 
   const reverseOverlap = tokenOverlap(labelTokens, formTokens);
   const bestOverlap = Math.max(overlap, reverseOverlap);
 
+  // 4b. Fuzzy token overlap — allows minor OCR misreads (edit distance ≤ 1)
+  const fuzzyOverlap = fuzzyTokenOverlap(formTokens, labelTokens);
+  const fuzzyReverseOverlap = fuzzyTokenOverlap(labelTokens, formTokens);
+  const bestFuzzyOverlap = Math.max(fuzzyOverlap, fuzzyReverseOverlap);
+
   // 5. Levenshtein-based similarity
   const maxLen = Math.max(normForm.length, normLabel.length);
   const dist = maxLen === 0 ? 0 : levenshtein(normForm, normLabel);
@@ -168,25 +238,45 @@ export function compareFields(formValue: string | undefined, labelValue: string 
   const coreDist = coreMaxLen === 0 ? 0 : levenshtein(coreForm, coreLabel);
   const coreLevScore = coreMaxLen === 0 ? 100 : Math.round(((coreMaxLen - coreDist) / coreMaxLen) * 100);
 
-  // Token overlap score: if 80%+ of form tokens are found, that's a strong match
+  // 6. Approximate substring matching — when one string is much longer,
+  //    find the best-matching window (handles OCR blobs with extra text)
+  let substringScore = 0;
+  const lenRatio = Math.max(normForm.length, normLabel.length) / Math.max(1, Math.min(normForm.length, normLabel.length));
+  if (lenRatio >= 1.3) {
+    const [shorter, longer] = normForm.length <= normLabel.length
+      ? [normForm, normLabel]
+      : [normLabel, normForm];
+    const subDist = substringEditDistance(shorter, longer);
+    substringScore = Math.round(((shorter.length - subDist) / shorter.length) * 100);
+  }
+
+  // Token overlap scores
   const tokenScore = Math.round(bestOverlap * 100);
+  const fuzzyTokenScore = Math.round(bestFuzzyOverlap * 100);
 
   // Take the best score from all strategies
-  const bestScore = Math.max(levScore, coreLevScore, tokenScore);
+  const bestScore = Math.max(levScore, coreLevScore, tokenScore, fuzzyTokenScore, substringScore);
 
   if (bestScore >= 90) {
-    const reason = bestScore === tokenScore && tokenScore > levScore
-      ? `Token match (${tokenScore}% of words found).`
-      : bestScore === coreLevScore && coreLevScore > levScore
-        ? `Core value match (${coreLevScore}% similar, prefix differences ignored).`
-        : `Very close match (${bestScore}% similar).`;
+    const reason = bestScore === substringScore && substringScore > tokenScore && substringScore > levScore
+      ? `Substring match (${substringScore}% of submitted text found in detected text).`
+      : bestScore === fuzzyTokenScore && fuzzyTokenScore > tokenScore && fuzzyTokenScore > levScore
+        ? `Fuzzy token match (${fuzzyTokenScore}% of words found, allowing minor OCR errors).`
+        : bestScore === tokenScore && tokenScore > levScore
+          ? `Token match (${tokenScore}% of words found).`
+          : bestScore === coreLevScore && coreLevScore > levScore
+            ? `Core value match (${coreLevScore}% similar, prefix differences ignored).`
+            : `Very close match (${bestScore}% similar).`;
     return { score: bestScore, verdict: "match", message: reason };
   }
   if (bestScore >= 70) {
+    const reason = bestScore === substringScore
+      ? `Partial substring match (${substringScore}% of submitted text found). Review the differences.`
+      : `Possible match (${bestScore}% similar). Review the differences.`;
     return {
       score: bestScore,
       verdict: "close",
-      message: `Possible match (${bestScore}% similar). Review the differences.`,
+      message: reason,
     };
   }
   return {

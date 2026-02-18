@@ -143,4 +143,39 @@ describe("compareFields", () => {
     expect(result.verdict).toBe("match");
     expect(result.score).toBeGreaterThanOrEqual(90);
   });
+
+  // --- Substring matching: submitted text embedded in OCR blob ---
+  it("matches health warning embedded in OCR blob (Cimino example)", () => {
+    const submitted = "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.";
+    const detected = "-ITALIA GOVERNMENT yg ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. 0 CONSUMPTION OF ALCOHOLIC BEVERAGES YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS. RED WINE NET.CONT. 1.5L ALC. 13% BY VOL. PRODUCT OF ITALY CONTAINS SULFITES 8\"101150%02248";
+    const result = compareFields(submitted, detected);
+    expect(result.score).toBeGreaterThanOrEqual(90);
+    expect(result.verdict).toBe("match");
+  });
+
+  it("exact-matches health warning that only differs by case", () => {
+    const submitted = "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.";
+    const detected = "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.";
+    const result = compareFields(submitted, detected);
+    expect(result.score).toBe(100);
+    expect(result.verdict).toBe("exact");
+  });
+
+  it("matches when detected value has extra text before and after", () => {
+    const result = compareFields(
+      "750 mL",
+      "WINE CELLAR IMPORTS 750 mL PRODUCT OF ITALY",
+    );
+    expect(result.score).toBeGreaterThanOrEqual(90);
+    expect(result.verdict).toBe("match");
+  });
+
+  it("fuzzy token match: OCR misread on one word still matches", () => {
+    const result = compareFields(
+      "Bottled by Stone's Throw Distillery, Portland, OR",
+      "Bottled by Stone's Throw Distilery, Portlnad, OR",
+    );
+    expect(result.score).toBeGreaterThanOrEqual(90);
+    expect(result.verdict).toBe("match");
+  });
 });
