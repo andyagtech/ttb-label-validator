@@ -105,10 +105,10 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "The system would take 30, 40 seconds sometimes to process a single label. 
+                  &ldquo;The system would take 30, 40 seconds sometimes to process a single label. 
                   Our agents just went back to doing it by eye because they could do five labels 
-                  in the time it took the machine to do one. If we can't get results back in about 
-                  5 seconds, nobody's going to use it."
+                  in the time it took the machine to do one. If we can&rsquo;t get results back in about 
+                  5 seconds, nobody&rsquo;s going to use it.&rdquo;
                 </p>
                 <div
                   style={{
@@ -168,9 +168,9 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "During peak season, we get these big importers who dump 200, 300 label applications 
+                  &ldquo;During peak season, we get these big importers who dump 200, 300 label applications 
                   on us at once. Right now we literally have to process them one at a time. If there was 
-                  some way to handle batch uploads, that would be huge."
+                  some way to handle batch uploads, that would be huge.&rdquo;
                 </p>
                 <div
                   style={{
@@ -229,9 +229,9 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "We need something my mother could figure out—she's 73 and just learned to video call 
+                  &ldquo;We need something my mother could figure out&mdash;she&rsquo;s 73 and just learned to video call 
                   her grandkids last year, if that gives you a benchmark. Half our team is over 50. 
-                  Clean, obvious, no hunting for buttons."
+                  Clean, obvious, no hunting for buttons.&rdquo;
                 </p>
                 <div
                   style={{
@@ -318,9 +318,9 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "For this prototype, we're not looking to integrate with COLA directly—that's a whole 
+                  &ldquo;For this prototype, we&rsquo;re not looking to integrate with COLA directly&mdash;that&rsquo;s a whole 
                   different beast with its own authorization requirements. Think of this as a standalone 
-                  proof-of-concept that could potentially inform future procurement decisions."
+                  proof-of-concept that could potentially inform future procurement decisions.&rdquo;
                 </p>
                 <div
                   style={{
@@ -379,9 +379,9 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "Our network blocks outbound traffic to a lot of domains, so keep that in mind if you're 
-                  thinking about cloud APIs. During the scanning vendor pilot, half their features didn't 
-                  work because our firewall blocked connections to their ML endpoints."
+                  &ldquo;Our network blocks outbound traffic to a lot of domains, so keep that in mind if you&rsquo;re 
+                  thinking about cloud APIs. During the scanning vendor pilot, half their features didn&rsquo;t 
+                  work because our firewall blocked connections to their ML endpoints.&rdquo;
                 </p>
                 <div
                   style={{
@@ -466,10 +466,10 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "The thing about label review is there's nuance. You can't just pattern match everything. 
-                  Like, I had one last week where the brand name was 'STONE'S THROW' on the label but 
-                  'Stone's Throw' in the application. Technically a mismatch? Sure. But it's obviously 
-                  the same thing. You need judgment."
+                  &ldquo;The thing about label review is there&rsquo;s nuance. You can&rsquo;t just pattern match everything. 
+                  Like, I had one last week where the brand name was &lsquo;STONE&rsquo;S THROW&rsquo; on the label but 
+                  &lsquo;Stone&rsquo;s Throw&rsquo; in the application. Technically a mismatch? Sure. But it&rsquo;s obviously 
+                  the same thing. You need judgment.&rdquo;
                 </p>
                 <div
                   style={{
@@ -485,7 +485,7 @@ export default function AgentWalkthroughPage() {
                   </div>
                   <ul style={{ margin: 0, paddingLeft: 20, color: C.darkGray, lineHeight: 1.8 }}>
                     <li><strong>Levenshtein distance:</strong> Measures similarity between strings</li>
-                    <li><strong>Case-insensitive matching:</strong> "STONE'S THROW" = "Stone's Throw"</li>
+                    <li><strong>Case-insensitive matching:</strong> &ldquo;STONE&rsquo;S THROW&rdquo; = &ldquo;Stone&rsquo;s Throw&rdquo;</li>
                     <li><strong>Punctuation normalization:</strong> Handles apostrophes, hyphens, spaces</li>
                     <li><strong>Substring matching:</strong> Finds partial matches in longer text</li>
                     <li><strong>Configurable thresholds:</strong> Balance precision vs recall</li>
@@ -557,10 +557,10 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "The warning statement check is actually trickier than it sounds. It has to be exact. 
-                  Like, word-for-word, and the 'GOVERNMENT WARNING:' part has to be in all caps and bold. 
-                  I caught one last month where they used 'Government Warning' in title case instead of 
-                  all caps. Rejected."
+                  &ldquo;The warning statement check is actually trickier than it sounds. It has to be exact. 
+                  Like, word-for-word, and the &lsquo;GOVERNMENT WARNING:&rsquo; part has to be in all caps and bold. 
+                  I caught one last month where they used &lsquo;Government Warning&rsquo; in title case instead of 
+                  all caps. Rejected.&rdquo;
                 </p>
                 <div
                   style={{
@@ -575,9 +575,9 @@ export default function AgentWalkthroughPage() {
                     <strong style={{ color: C.darkNavy }}>Solution Implemented:</strong>
                   </div>
                   <ul style={{ margin: 0, paddingLeft: 20, color: C.darkGray, lineHeight: 1.8 }}>
-                    <li><strong>Pattern matching:</strong> Detects "GOVERNMENT WARNING:" in all caps</li>
+                    <li><strong>Pattern matching:</strong> Detects &ldquo;GOVERNMENT WARNING:&rdquo; in all caps</li>
                     <li><strong>5 fallback strategies:</strong> Handles fragmented OCR text</li>
-                    <li><strong>Truncation logic:</strong> Stops at "health problems" end-marker</li>
+                    <li><strong>Truncation logic:</strong> Stops at &ldquo;health problems&rdquo; end-marker</li>
                     <li><strong>OCR error tolerance:</strong> Handles GOVERNMEN, GOVERNMENI, WARNIN6</li>
                     <li><strong>76 unit tests:</strong> Comprehensive edge case coverage</li>
                   </ul>
@@ -620,10 +620,10 @@ export default function AgentWalkthroughPage() {
                     lineHeight: 1.6,
                   }}
                 >
-                  "It would be amazing if the tool could handle images that aren't perfectly shot. 
-                  I've seen labels that are photographed at weird angles, or the lighting is bad, or 
-                  there's glare on the bottle. Right now if an agent can't read the label they just 
-                  reject it and ask for a better image."
+                  &ldquo;It would be amazing if the tool could handle images that aren&rsquo;t perfectly shot. 
+                  I&rsquo;ve seen labels that are photographed at weird angles, or the lighting is bad, or 
+                  there&rsquo;s glare on the bottle. Right now if an agent can&rsquo;t read the label they just 
+                  reject it and ask for a better image.&rdquo;
                 </p>
                 <div
                   style={{
