@@ -497,6 +497,7 @@ export function inferCategoryFromFields(fields: Partial<ExtractedFields>): Parti
     varietal: fields.varietal,
     appellation: fields.appellation,
     ageStatement: fields.ageStatement,
+    alcoholContent: fields.alcoholContent,
     rawText: fields.rawText,
   });
   

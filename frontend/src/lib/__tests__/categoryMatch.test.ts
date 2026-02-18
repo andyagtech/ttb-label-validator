@@ -37,6 +37,7 @@ describe("inferCategory", () => {
     const r = inferCategory({ rawText: "BREWED WITH PALE ALE MALT" });
     expect(r.category).toBe("beer");
     expect(r.confidence).toBeLessThanOrEqual(0.7);
+    expect(r.confidenceTier).toBe("low");
   });
 
   it("detects hard seltzer as beer/malt", () => {
@@ -80,7 +81,10 @@ describe("inferCategory", () => {
   it("detects wine from appellation", () => {
     const r = inferCategory({ appellation: "Napa Valley" });
     expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("TABLE WHITE WINE");
+    expect(r.subcategoryFamily).toBe("TABLE WINE");
     expect(r.confidence).toBeGreaterThanOrEqual(0.8);
+    expect(r.confidenceTier).toBe("medium");
   });
 
   it("detects bourgogne as wine", () => {
@@ -145,7 +149,10 @@ describe("inferCategory", () => {
   it("detects spirits from age statement", () => {
     const r = inferCategory({ ageStatement: "Aged 12 Years" });
     expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("WHISKY SPECIALTIES");
+    expect(r.subcategoryFamily).toBe("WHISKY");
     expect(r.confidence).toBeGreaterThanOrEqual(0.8);
+    expect(r.confidenceTier).toBe("medium");
   });
 
   it("detects sake as spirits", () => {
@@ -326,16 +333,145 @@ describe("inferCategory", () => {
     expect(r.subcategory).toBe("LIQUEUR");
   });
 
+  // ── Two-tier output ─────────────────────────────────────────────────
+  it("returns subcategoryFamily for beer", () => {
+    const r = inferCategory({ classType: "Imperial Stout" });
+    expect(r.subcategory).toBe("STOUT");
+    expect(r.subcategoryFamily).toBe("ALE");
+  });
+
+  it("returns subcategoryFamily for wine", () => {
+    const r = inferCategory({ classType: "Pinot Noir" });
+    expect(r.subcategory).toBe("TABLE RED WINE");
+    expect(r.subcategoryFamily).toBe("TABLE WINE");
+  });
+
+  it("returns subcategoryFamily for spirits", () => {
+    const r = inferCategory({ classType: "Straight Bourbon Whiskey" });
+    expect(r.subcategory).toBe("STRAIGHT BOURBON WHISKY");
+    expect(r.subcategoryFamily).toBe("WHISKY");
+  });
+
+  it("returns subcategoryFamily AGAVE for tequila", () => {
+    const r = inferCategory({ classType: "Tequila" });
+    expect(r.subcategory).toBe("TEQUILA");
+    expect(r.subcategoryFamily).toBe("AGAVE");
+  });
+
+  it("returns subcategoryFamily SPARKLING WINE for champagne", () => {
+    const r = inferCategory({ classType: "Champagne" });
+    expect(r.subcategory).toBe("SPARKLING WINE/CHAMPAGNE");
+    expect(r.subcategoryFamily).toBe("SPARKLING WINE");
+  });
+
+  it("returns subcategoryFamily DESSERT WINE for port", () => {
+    const r = inferCategory({ classType: "Port Wine" });
+    expect(r.subcategory).toBe("DESSERT /PORT/SHERRY/(COOKING) WINE");
+    expect(r.subcategoryFamily).toBe("DESSERT WINE");
+  });
+
+  it("returns subcategoryFamily MALT BEVERAGES for hard seltzer", () => {
+    const r = inferCategory({ classType: "Hard Seltzer" });
+    expect(r.subcategory).toBe("MALT BEVERAGES SPECIALITIES - FLAVORED");
+    expect(r.subcategoryFamily).toBe("MALT BEVERAGES");
+  });
+
+  // ── Confidence tiers ────────────────────────────────────────────────
+  it("returns high confidence tier for classType match", () => {
+    const r = inferCategory({ classType: "IPA" });
+    expect(r.confidenceTier).toBe("high");
+    expect(r.confidence).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it("returns high confidence tier for varietal match", () => {
+    const r = inferCategory({ varietal: "Chardonnay" });
+    expect(r.confidenceTier).toBe("high");
+    expect(r.confidence).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it("returns medium confidence tier for appellation", () => {
+    const r = inferCategory({ appellation: "Napa Valley" });
+    expect(r.confidenceTier).toBe("medium");
+  });
+
+  it("returns medium confidence tier for age statement", () => {
+    const r = inferCategory({ ageStatement: "Aged 12 Years" });
+    expect(r.confidenceTier).toBe("medium");
+  });
+
+  it("returns low confidence tier for raw text match", () => {
+    const r = inferCategory({ rawText: "CRAFT BREWED ALE" });
+    expect(r.confidenceTier).toBe("low");
+  });
+
+  it("returns null confidence tier when no match", () => {
+    const r = inferCategory({});
+    expect(r.confidenceTier).toBeNull();
+  });
+
+  // ── ABV-based wine classification ──────────────────────────────────
+  it("upgrades table red wine to dessert wine when ABV > 14%", () => {
+    const r = inferCategory({ classType: "Red Wine", alcoholContent: "18.5% ABV" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("DESSERT /PORT/SHERRY/(COOKING) WINE");
+    expect(r.subcategoryFamily).toBe("TABLE WINE");
+  });
+
+  it("upgrades table white wine to dessert wine when ABV > 14%", () => {
+    const r = inferCategory({ varietal: "Chardonnay", alcoholContent: "16% ALC/VOL" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("DESSERT /PORT/SHERRY/(COOKING) WINE");
+  });
+
+  it("keeps table wine when ABV <= 14%", () => {
+    const r = inferCategory({ classType: "Red Wine", alcoholContent: "13.5%" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("TABLE RED WINE");
+  });
+
+  it("does not upgrade sparkling wine based on ABV", () => {
+    const r = inferCategory({ classType: "Sparkling Wine", alcoholContent: "15%" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("SPARKLING WINE/CHAMPAGNE");
+  });
+
+  it("does not upgrade rosé based on ABV", () => {
+    const r = inferCategory({ classType: "Rosé", alcoholContent: "15%" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("ROSE WINE");
+  });
+
+  it("handles proof-based ABV for wine", () => {
+    const r = inferCategory({ classType: "Red Wine", alcoholContent: "36 proof" });
+    expect(r.category).toBe("wine");
+    expect(r.subcategory).toBe("DESSERT /PORT/SHERRY/(COOKING) WINE");
+  });
+
+  it("does not affect beer classification with ABV", () => {
+    const r = inferCategory({ classType: "IPA", alcoholContent: "8.5%" });
+    expect(r.category).toBe("beer");
+    expect(r.subcategory).toBe("ALE");
+  });
+
+  it("does not affect spirits classification with ABV", () => {
+    const r = inferCategory({ classType: "Bourbon", alcoholContent: "45%" });
+    expect(r.category).toBe("spirits");
+    expect(r.subcategory).toBe("STRAIGHT BOURBON WHISKY");
+  });
+
   // ── Edge cases ────────────────────────────────────────────────────────
   it("returns null when no category can be inferred", () => {
     const r = inferCategory({ rawText: "HELLO WORLD 2024" });
     expect(r.category).toBeNull();
     expect(r.confidence).toBe(0);
+    expect(r.subcategoryFamily).toBeNull();
+    expect(r.confidenceTier).toBeNull();
   });
 
   it("returns null for empty fields", () => {
     const r = inferCategory({});
     expect(r.category).toBeNull();
+    expect(r.subcategoryFamily).toBeNull();
   });
 
   it("classType takes priority over raw text", () => {

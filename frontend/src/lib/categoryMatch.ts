@@ -257,10 +257,23 @@ const SUBCATEGORY_MAP: SubcategoryEntry[] = [
 export interface CategoryInference {
   /** Inferred top-level category (beer/wine/spirits), or null if unable to determine */
   category: BeverageCategory | null;
-  /** Official TTB class/type code (e.g. "ALE", "TABLE RED WINE", "STRAIGHT BOURBON WHISKY") */
+  /** Best-effort specific TTB class/type code (e.g. "ALE", "TABLE RED WINE", "STRAIGHT BOURBON WHISKY") */
   subcategory: string | null;
+  /**
+   * Broad family-level subcategory — higher accuracy than subcategory.
+   * Collapses specific codes into families: all whisky → "WHISKY", all rum → "RUM",
+   * table red/white/rosé → "TABLE WINE", etc.
+   */
+  subcategoryFamily: string | null;
   /** 0-1 confidence in the inference */
   confidence: number;
+  /**
+   * Discrete confidence tier for agent consumption:
+   *   "high"   — classType or varietal matched directly (≥0.9)
+   *   "medium" — appellation, ABV, or age statement used (0.7–0.89)
+   *   "low"    — raw text fallback or generic term (≤0.69)
+   */
+  confidenceTier: "high" | "medium" | "low" | null;
   /** The OCR text fragment that triggered the match */
   matchedTerm: string | null;
 }
@@ -281,40 +294,68 @@ export function inferCategory(
     varietal?: string;
     appellation?: string;
     ageStatement?: string;
+    alcoholContent?: string;
     rawText?: string;
   },
 ): CategoryInference {
-  const noResult: CategoryInference = { category: null, subcategory: null, confidence: 0, matchedTerm: null };
+  const noResult: CategoryInference = {
+    category: null, subcategory: null, subcategoryFamily: null,
+    confidence: 0, confidenceTier: null, matchedTerm: null,
+  };
+
+  let result: CategoryInference | null = null;
 
   // Priority 1: classType — highest confidence, already parsed
-  if (fields.classType) {
-    const result = matchText(fields.classType);
-    if (result) return { ...result, confidence: 0.95 };
+  if (!result && fields.classType) {
+    const m = matchText(fields.classType);
+    if (m) result = { ...m, confidence: 0.95, confidenceTier: "high" };
   }
 
   // Priority 2: varietal — strong wine indicator
-  if (fields.varietal) {
-    const result = matchText(fields.varietal);
-    if (result) return { ...result, confidence: 0.9 };
+  if (!result && fields.varietal) {
+    const m = matchText(fields.varietal);
+    if (m) result = { ...m, confidence: 0.9, confidenceTier: "high" };
   }
 
   // Priority 3: appellation — implies wine
-  if (fields.appellation) {
-    return { category: "wine", subcategory: "Wine", confidence: 0.85, matchedTerm: fields.appellation };
+  if (!result && fields.appellation) {
+    result = {
+      category: "wine", subcategory: "TABLE WHITE WINE", subcategoryFamily: "TABLE WINE",
+      confidence: 0.85, confidenceTier: "medium", matchedTerm: fields.appellation,
+    };
   }
 
   // Priority 4: age statement — strong spirits indicator
-  if (fields.ageStatement) {
-    return { category: "spirits", subcategory: "Aged Spirit", confidence: 0.8, matchedTerm: fields.ageStatement };
+  if (!result && fields.ageStatement) {
+    result = {
+      category: "spirits", subcategory: "WHISKY SPECIALTIES", subcategoryFamily: "WHISKY",
+      confidence: 0.8, confidenceTier: "medium", matchedTerm: fields.ageStatement,
+    };
   }
 
   // Priority 5: raw text scan — lower confidence
-  if (fields.rawText) {
-    const result = matchText(fields.rawText);
-    if (result) return { ...result, confidence: 0.7 };
+  if (!result && fields.rawText) {
+    const m = matchText(fields.rawText);
+    if (m) result = { ...m, confidence: 0.6, confidenceTier: "low" };
   }
 
-  return noResult;
+  if (!result) return noResult;
+
+  // ── ABV-based post-processing ───────────────────────────────────────────
+  // TTB rule: wine > 14% ABV is dessert wine (27 CFR 4.21(b)(3))
+  const abv = parseAbv(fields.alcoholContent);
+  if (abv !== null && result.category === "wine") {
+    const isTableWine = result.subcategory?.startsWith("TABLE ") ?? false;
+    if (isTableWine && abv > 14) {
+      result = {
+        ...result,
+        subcategory: "DESSERT /PORT/SHERRY/(COOKING) WINE",
+        // Family stays as wine family — the ABV upgrade only changes specific code
+      };
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -369,6 +410,8 @@ function matchText(text: string): Omit<CategoryInference, "confidence"> | null {
       return {
         category: entry.parent,
         subcategory: entry.subcategory,
+        subcategoryFamily: toFamily(entry.parent, entry.subcategory),
+        confidenceTier: null, // caller sets this
         matchedTerm: m[0],
       };
     }
@@ -378,4 +421,53 @@ function matchText(text: string): Omit<CategoryInference, "confidence"> | null {
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Parse ABV percentage from alcoholContent string.
+ * Handles formats like "12.5%", "12.5% ABV", "12.5% ALC/VOL", "80 proof".
+ * Returns numeric ABV or null.
+ */
+function parseAbv(alcoholContent?: string): number | null {
+  if (!alcoholContent) return null;
+  // Percentage format: "12.5%" or "12.5% ABV" etc.
+  const pctMatch = alcoholContent.match(/(\d+\.?\d*)\s*%/);
+  if (pctMatch) return parseFloat(pctMatch[1]);
+  // Proof format: "80 proof" → 40% ABV
+  const proofMatch = alcoholContent.match(/(\d+\.?\d*)\s*proof/i);
+  if (proofMatch) return parseFloat(proofMatch[1]) / 2;
+  return null;
+}
+
+/**
+ * Collapse a specific TTB subcategory code into its broad family.
+ * Agents can rely on family for high-accuracy decisions.
+ */
+function toFamily(category: BeverageCategory, subcategory: string): string {
+  switch (category) {
+    case "beer":
+      if (subcategory === "ALE" || subcategory === "STOUT") return "ALE";
+      if (subcategory.includes("MALT BEVERAGES")) return "MALT BEVERAGES";
+      return "BEER";
+    case "wine":
+      if (subcategory.startsWith("TABLE ")) return "TABLE WINE";
+      if (subcategory.includes("DESSERT") || subcategory.includes("PORT") || subcategory.includes("SHERRY")) return "DESSERT WINE";
+      if (subcategory.includes("SPARKLING") || subcategory.includes("CHAMPAGNE") || subcategory === "CARBONATED WINE") return "SPARKLING WINE";
+      if (subcategory === "ROSE WINE") return "TABLE WINE";
+      if (subcategory.includes("HONEY")) return "TABLE WINE";
+      return "TABLE WINE";
+    case "spirits":
+      if (subcategory.includes("WHISKY") || subcategory.includes("BOURBON")) return "WHISKY";
+      if (subcategory.includes("RUM")) return "RUM";
+      if (subcategory.includes("BRANDY") || subcategory.includes("GRAPPA") || subcategory.includes("PISCO")) return "BRANDY";
+      if (subcategory.includes("TEQUILA") || subcategory.includes("MEZCAL") || subcategory.includes("AGAVE")) return "AGAVE";
+      if (subcategory.includes("VODKA")) return "VODKA";
+      if (subcategory.includes("GIN")) return "GIN";
+      if (subcategory.includes("LIQUEUR") || subcategory.includes("CORDIAL")) return "LIQUEUR";
+      if (subcategory === "SAKE") return "SAKE";
+      if (subcategory.includes("COCKTAIL")) return "COCKTAILS";
+      return "OTHER SPIRITS";
+    default:
+      return subcategory;
+  }
 }

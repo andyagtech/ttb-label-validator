@@ -125,6 +125,7 @@ export default function FormVsLabelTable({
     varietal: detectedFields.varietal,
     appellation: detectedFields.appellation,
     ageStatement: detectedFields.ageStatement,
+    alcoholContent: detectedFields.alcoholContent,
     rawText: detectedFields.rawText,
   }) : null;
   const categoryVerification = (categoryResult && beverageCategory)
