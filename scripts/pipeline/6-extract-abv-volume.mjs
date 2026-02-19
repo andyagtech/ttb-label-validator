@@ -22,7 +22,11 @@ const ROOT = join(__dirname, '..', '..');
 const ENRICHED_PATH = join(ROOT, 'sample_labels', 'enriched_cola_fields.json');
 const IMAGES_DIR = join(ROOT, 'frontend', 'public', 'ttb-labels');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'REDACTED_KEY';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error('❌ GEMINI_API_KEY environment variable is required');
+  process.exit(1);
+}
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // ---------------------------------------------------------------------------
