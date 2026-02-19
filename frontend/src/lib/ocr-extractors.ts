@@ -41,20 +41,20 @@ export function extractAlcoholContent(ctx: TextContext): Partial<ExtractedFields
   const { text } = ctx;
   
   const abvPatterns = [
-    /alcohol\s*(?:\(alc\))?\s+(\d+\.?\d*)\s*%\s*by\s+vol(?:ume)?/i,
-    /alcohol\s+by\s+volume:\s*(\d+\.?\d*)\s*%/i,
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*by\s*vol\.?/i,
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*\/\s*vol\.?/i,
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*[i1l]\s*vol\.?/i,
-    /(\d+\.?\d*)\s*%\s*alc\.?\s*[./]?\s*n[o0]l\.?/i,
-    /alc[.,]?\s*(\d+\.?\d*)\s*%\s*by\s*vol\.?/i,
-    /alc\.?\s*\/\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
-    /alc\.?\s*[./]?\s*n[o0]l\.?\s*(\d+\.?\d*)\s*%/i,
-    /alc\.?\s*[i1l]\s*vol\.?\s*(\d+\.?\d*)\s*%/i,
-    /(\d+\.?\d*)\s*%\s*alcohol\s*(?:\(alc\))?\s*(?:by\s+vol(?:ume)?|\/\s*vol(?:ume)?)/i,
+    /alcohol\s*(?:\(alc\))?\s+(\d+[.,]?\d*)\s*%\s*by\s+vol(?:ume)?/i,
+    /alcohol\s+by\s+volume:\s*(\d+[.,]?\d*)\s*%/i,
+    /(\d+[.,]?\d*)\s*%\s*alc\.?\s*by\s*vol\.?/i,
+    /(\d+[.,]?\d*)\s*%\s*alc\.?\s*\/\s*vol\.?/i,
+    /(\d+[.,]?\d*)\s*%\s*alc\.?\s*[i1l]\s*vol\.?/i,
+    /(\d+[.,]?\d*)\s*%\s*alc\.?\s*[./]?\s*n[o0]l\.?/i,
+    /alc[.,]?\s*(\d+[.,]?\d*)\s*%\s*by\s*vol\.?/i,
+    /alc\.?\s*\/\s*vol\.?\s*(\d+[.,]?\d*)\s*%/i,
+    /alc\.?\s*[./]?\s*n[o0]l\.?\s*(\d+[.,]?\d*)\s*%/i,
+    /alc\.?\s*[i1l]\s*vol\.?\s*(\d+[.,]?\d*)\s*%/i,
+    /(\d+[.,]?\d*)\s*%\s*alcohol\s*(?:\(alc\))?\s*(?:by\s+vol(?:ume)?|\/\s*vol(?:ume)?)/i,
     /\(?(\d+)\s*proof\)?/i,
-    /(\d+\.?\d*)\s*%\s*alc/i,
-    /alc[.,]?\s*(\d+\.?\d*)\s*%/i,
+    /(\d+[.,]?\d*)\s*%\s*alc/i,
+    /alc[.,]?\s*(\d+[.,]?\d*)\s*%/i,
   ];
   
   for (const pat of abvPatterns) {

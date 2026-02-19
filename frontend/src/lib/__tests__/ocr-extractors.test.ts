@@ -73,6 +73,21 @@ describe("extractAlcoholContent", () => {
     expect(result.alcoholContent).toBe("ALC, 5% BY VOL.");
   });
 
+  it("handles European comma decimal (Alc.13,2% By Vol.)", () => {
+    const result = extractAlcoholContent(ctx("Alc.13,2% By Vol."));
+    expect(result.alcoholContent).toBe("Alc.13,2% By Vol.");
+  });
+
+  it("handles European comma decimal (14,5% alc/vol)", () => {
+    const result = extractAlcoholContent(ctx("14,5% alc/vol"));
+    expect(result.alcoholContent).toBe("14,5% alc/vol");
+  });
+
+  it("handles European comma decimal with space (Alc. 12,5 % vol)", () => {
+    const result = extractAlcoholContent(ctx("Alc. 12,5 % By Vol."));
+    expect(result.alcoholContent).toBe("Alc. 12,5 % By Vol.");
+  });
+
   it("returns empty for no ABV", () => {
     const result = extractAlcoholContent(ctx("No alcohol content here"));
     expect(result.alcoholContent).toBeUndefined();

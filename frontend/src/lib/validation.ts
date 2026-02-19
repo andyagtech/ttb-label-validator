@@ -1018,9 +1018,9 @@ function parseAbvNumber(text: string | undefined): number | null {
   // Try "XX proof" first — proof / 2 = ABV
   const proofMatch = text.match(/(\d{2,3})\s*proof/i);
   if (proofMatch) return parseFloat(proofMatch[1]) / 2;
-  // Try percentage
-  const pctMatch = text.match(/(\d{1,2}\.?\d?)\s*%/);
-  if (pctMatch) return parseFloat(pctMatch[1]);
+  // Try percentage (accept comma as European decimal separator: 13,2%)
+  const pctMatch = text.match(/(\d{1,2}[.,]?\d?)\s*%/);
+  if (pctMatch) return parseFloat(pctMatch[1].replace(',', '.'));
   return null;
 }
 

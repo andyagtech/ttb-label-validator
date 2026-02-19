@@ -468,12 +468,12 @@ function capitalize(s: string): string {
  */
 function parseAbv(alcoholContent?: string): number | null {
   if (!alcoholContent) return null;
-  // Percentage format: "12.5%" or "12.5% ABV" etc.
-  const pctMatch = alcoholContent.match(/(\d+\.?\d*)\s*%/);
-  if (pctMatch) return parseFloat(pctMatch[1]);
+  // Percentage format: "12.5%" or "12,5%" (European comma decimal) etc.
+  const pctMatch = alcoholContent.match(/(\d+[.,]?\d*)\s*%/);
+  if (pctMatch) return parseFloat(pctMatch[1].replace(',', '.'));
   // Proof format: "80 proof" → 40% ABV
-  const proofMatch = alcoholContent.match(/(\d+\.?\d*)\s*proof/i);
-  if (proofMatch) return parseFloat(proofMatch[1]) / 2;
+  const proofMatch = alcoholContent.match(/(\d+[.,]?\d*)\s*proof/i);
+  if (proofMatch) return parseFloat(proofMatch[1].replace(',', '.')) / 2;
   return null;
 }
 
