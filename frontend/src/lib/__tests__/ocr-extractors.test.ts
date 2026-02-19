@@ -456,24 +456,44 @@ describe("extractVintageDate", () => {
 });
 
 describe("extractCountryOfOrigin", () => {
-  it("extracts Product of format", () => {
+  it("extracts Product of format → normalized country name", () => {
     const result = extractCountryOfOrigin(ctx("Product of France"));
-    expect(result.countryOfOrigin).toBe("Product of France");
+    expect(result.countryOfOrigin).toBe("FRANCE");
   });
 
   it("extracts Made in format", () => {
     const result = extractCountryOfOrigin(ctx("Made in USA"));
-    expect(result.countryOfOrigin).toBe("Made in USA");
+    expect(result.countryOfOrigin).toBe("USA");
   });
 
   it("extracts Spanish format (Hecho en)", () => {
     const result = extractCountryOfOrigin(ctx("Hecho en Mexico"));
-    expect(result.countryOfOrigin).toBe("Hecho en Mexico");
+    expect(result.countryOfOrigin).toBe("MEXICO");
   });
 
   it("extracts Spanish format (Producto de)", () => {
     const result = extractCountryOfOrigin(ctx("Producto de Mexico"));
-    expect(result.countryOfOrigin).toBe("Producto de Mexico");
+    expect(result.countryOfOrigin).toBe("MEXICO");
+  });
+
+  it("strips trailing 'CONTAINS SULFITES' from country", () => {
+    const result = extractCountryOfOrigin(ctx("PRODUCT OF ITALY CONTAINS SULFITES"));
+    expect(result.countryOfOrigin).toBe("ITALY");
+  });
+
+  it("handles 'Product of the USA'", () => {
+    const result = extractCountryOfOrigin(ctx("Product of the USA"));
+    expect(result.countryOfOrigin).toBe("USA");
+  });
+
+  it("handles 'Produced in the United States'", () => {
+    const result = extractCountryOfOrigin(ctx("Produced in the United States"));
+    expect(result.countryOfOrigin).toBe("UNITED STATES");
+  });
+
+  it("handles 'Imported from Italy'", () => {
+    const result = extractCountryOfOrigin(ctx("Imported from Italy"));
+    expect(result.countryOfOrigin).toBe("ITALY");
   });
 
   it("returns empty for no country", () => {

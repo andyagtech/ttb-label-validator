@@ -58,6 +58,9 @@ for (const cat of ['beer', 'wine', 'spirits']) {
         wineAppellation: e.wineAppellation || '',
         brandName: e.brandName || r.brandName || '',
         fancifulName: e.fancifulName || r.fancifulName || '',
+        // Vision-extracted fields (from Gemini label image analysis)
+        visionAlcohol: e.alcoholContent || null,
+        visionNetContents: e.netContents || null,
       });
     }
   }
@@ -197,8 +200,9 @@ for (const [cat, catRecords] of Object.entries(byCategory)) {
     const displayFanciful = r.fancifulName ? titleCase(r.fancifulName) : '';
     const displayName = displayFanciful ? `${displayBrand} ${displayFanciful}` : displayBrand;
     const classType = r.classType || (cat === 'beer' ? 'Ale' : cat === 'wine' ? 'Wine' : 'Spirits');
-    const alc = defaultAlcohol(cat, classType);
-    const net = defaultNetContents(cat);
+    // Use vision-extracted values when available, fall back to defaults
+    const alc = r.visionAlcohol || defaultAlcohol(cat, classType);
+    const net = r.visionNetContents || defaultNetContents(cat);
     const origin = r.origin || '';
 
     // Front label
@@ -221,8 +225,8 @@ for (const [cat, catRecords] of Object.entries(byCategory)) {
     ts += `      category: "${cat}",\n`;
     ts += `      brandName: "${esc(r.brandName)}",\n`;
     ts += `      classType: "${esc(titleCase(classType))}",\n`;
-    ts += `      alcoholContent: "${alc}",\n`;
-    ts += `      netContents: "${net}",\n`;
+    ts += `      alcoholContent: "${esc(alc)}",\n`;
+    ts += `      netContents: "${esc(net)}",\n`;
     if (origin && cat !== 'beer') {
       ts += `      countryOfOrigin: "${esc(origin)}",\n`;
     }
@@ -230,8 +234,8 @@ for (const [cat, catRecords] of Object.entries(byCategory)) {
     ts += `    expectedFields: {\n`;
     ts += `      brand_name: "${esc(r.brandName)}",\n`;
     ts += `      class_type: "${esc(titleCase(classType))}",\n`;
-    ts += `      alcohol_content: "${alc}",\n`;
-    ts += `      net_contents: "${net}",\n`;
+    ts += `      alcohol_content: "${esc(alc)}",\n`;
+    ts += `      net_contents: "${esc(net)}",\n`;
     // Add varietal from enriched COLA data (ground truth from submitted form)
     if (r.grapeVarietal) {
       ts += `      varietal: "${esc(r.grapeVarietal)}",\n`;

@@ -442,23 +442,68 @@ export function extractVintageDate(ctx: TextContext): Partial<ExtractedFields> {
   return {};
 }
 
+// Known countries for alcohol label origin matching (longest-first for multi-word)
+const KNOWN_COUNTRIES = [
+  'TRINIDAD AND TOBAGO', 'DOMINICAN REPUBLIC', 'UNITED KINGDOM', 'UNITED STATES',
+  'CZECH REPUBLIC', 'SOUTH AFRICA', 'SOUTH KOREA', 'NEW ZEALAND', 'COSTA RICA',
+  'EL SALVADOR', 'SRI LANKA',
+  'ARGENTINA', 'AUSTRALIA', 'AUSTRIA', 'BELGIUM', 'BOLIVIA', 'BRAZIL', 'BULGARIA',
+  'CAMBODIA', 'CANADA', 'CHILE', 'CHINA', 'COLOMBIA', 'CROATIA', 'CUBA', 'CZECHIA',
+  'DENMARK', 'ECUADOR', 'EGYPT', 'ENGLAND', 'ESTONIA', 'ETHIOPIA',
+  'FIJI', 'FINLAND', 'FRANCE', 'GEORGIA', 'GERMANY', 'GREECE', 'GUATEMALA',
+  'HAITI', 'HONDURAS', 'HUNGARY', 'ICELAND', 'INDIA', 'INDONESIA', 'IRELAND',
+  'ISRAEL', 'ITALY', 'JAMAICA', 'JAPAN', 'KENYA', 'KOREA', 'LATVIA', 'LEBANON',
+  'LITHUANIA', 'LUXEMBOURG', 'MEXICO', 'MOLDOVA', 'MOROCCO', 'NETHERLANDS',
+  'NICARAGUA', 'NIGERIA', 'NORWAY', 'PANAMA', 'PARAGUAY', 'PERU', 'PHILIPPINES',
+  'POLAND', 'PORTUGAL', 'ROMANIA', 'RUSSIA', 'SCOTLAND', 'SERBIA', 'SINGAPORE',
+  'SLOVAKIA', 'SLOVENIA', 'SPAIN', 'SWEDEN', 'SWITZERLAND', 'TAIWAN', 'THAILAND',
+  'TRINIDAD', 'TUNISIA', 'TURKEY', 'UKRAINE', 'URUGUAY', 'VENEZUELA', 'VIETNAM',
+  'WALES', 'USA',
+];
+
+// Prefix patterns that introduce a country-of-origin statement on labels
+const ORIGIN_PREFIXES = [
+  /PRODUCT\s+OF\s+(?:THE\s+)?/g,
+  /PRODUCED\s+IN\s+(?:THE\s+)?/g,
+  /IMPORTED\s+FROM\s+/g,
+  /MADE\s+IN\s+(?:THE\s+)?/g,
+  /BOTTLED\s+IN\s+(?:THE\s+)?/g,
+  /HECHO\s+EN\s+/g,
+  /PRODUCTO\s+DE\s+/g,
+];
+
 export function extractCountryOfOrigin(ctx: TextContext): Partial<ExtractedFields> {
-  const { text } = ctx;
-  const countryPatterns = [
-    /\b(product\s+of\s+[\w\s]+)/i,
-    /\b(imported\s+(?:from|by)\s+[\w\s]+)/i,
-    /\b(made\s+in\s+[\w\s]+)/i,
-    /\b(hecho\s+en\s+[\w\s]+)/i,
-    /\b(producto\s+de\s+[\w\s]+)/i,
-    /\b(product\s+of\s+the\s+usa)/i,
-    /\b(produced\s+in\s+[\w\s]+)/i,
-  ];
-  for (const pat of countryPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      return { countryOfOrigin: m[0].trim() };
+  const upper = ctx.text.toUpperCase();
+
+  // Try each prefix, then match a known country after it
+  for (const prefixRe of ORIGIN_PREFIXES) {
+    prefixRe.lastIndex = 0;
+    const pm = prefixRe.exec(upper);
+    if (pm) {
+      const after = upper.slice(pm.index + pm[0].length);
+      for (const country of KNOWN_COUNTRIES) {
+        if (after.startsWith(country)) {
+          const next = after[country.length];
+          if (!next || /[\s.,;:!)\-]/.test(next)) {
+            return { countryOfOrigin: country };
+          }
+        }
+      }
+      // Fallback: take 1-3 words, strip known non-country trailing words
+      const fb = after.match(/^([A-Z]+(?:\s+[A-Z]+){0,2})/);
+      if (fb) {
+        const cleaned = fb[1]
+          .replace(/\s+(?:CONTAINS|SULFITES|GOVERNMENT|WARNING|ALCOHOL|ALC|NET|BOTTLED|PRODUCED|IMPORTED|WINE|BEER|SPIRITS|AND|CANNED|PACKED|ESTATE)\b.*/, '')
+          .trim();
+        if (cleaned && cleaned.length > 1) return { countryOfOrigin: cleaned };
+      }
     }
   }
+
+  // Handle U.S.A. / U.S. format
+  const usa = ctx.text.match(/\bU\.?\s*S\.?\s*A\.?\b/i);
+  if (usa) return { countryOfOrigin: 'USA' };
+
   return {};
 }
 

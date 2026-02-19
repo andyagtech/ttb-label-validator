@@ -18,7 +18,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "unknown",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alc.13,2% By Vol.",
+    "netContents": "750 ml",
+    "_visionExtracted": true
   },
   "24003001000484": {
     "ttbId": "24003001000484",
@@ -39,7 +42,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "4.5% ALC./VOL. 14 IBU",
+    "netContents": "12 fl. OZ",
+    "_visionExtracted": true
   },
   "24003001000638": {
     "ttbId": "24003001000638",
@@ -60,7 +66,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 4.3% BY VOLUME",
+    "netContents": "12FL. OZ.",
+    "_visionExtracted": true
   },
   "24003001000414": {
     "ttbId": "24003001000414",
@@ -81,7 +90,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "4.9%ALC./VOL.",
+    "netContents": "1PINT",
+    "_visionExtracted": true
   },
   "24003001000582": {
     "ttbId": "24003001000582",
@@ -102,7 +114,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6.2% ALC/VOL",
+    "netContents": "5.2 US GAL",
+    "_visionExtracted": true
   },
   "24003001000078": {
     "ttbId": "24003001000078",
@@ -123,7 +138,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6.0% ALC. BY VOL.",
+    "netContents": "16 FL OZ (1PT) 473 ML",
+    "_visionExtracted": true
   },
   "24003001000113": {
     "ttbId": "24003001000113",
@@ -144,7 +162,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6 % Alcohol By Volume",
+    "netContents": "5.16 U.S. Gallons",
+    "_visionExtracted": true
   },
   "24003001000525": {
     "ttbId": "24003001000525",
@@ -165,7 +186,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "15% ALC./VOL",
+    "netContents": "12.7 FL. OZ. / 375ML",
+    "_visionExtracted": true
   },
   "24003001000701": {
     "ttbId": "24003001000701",
@@ -186,7 +210,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 8.0% BY VOL.",
+    "netContents": "ONE PINT (16 FL OZ)",
+    "_visionExtracted": true
   },
   "24003001000722": {
     "ttbId": "24003001000722",
@@ -228,7 +255,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "4.5% Alc./Vol.",
+    "netContents": "1 Pint",
+    "_visionExtracted": true
   },
   "24003001000008": {
     "ttbId": "24003001000008",
@@ -270,7 +300,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6% ALC. BY VOL.",
+    "netContents": "12 FL.OZ.",
+    "_visionExtracted": true
   },
   "24003001000645": {
     "ttbId": "24003001000645",
@@ -291,7 +324,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "5.8% ALC./VOL.",
+    "_visionExtracted": true
   },
   "24012001000345": {
     "ttbId": "24012001000345",
@@ -312,7 +347,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6.0% ALC/VOL",
+    "netContents": "1 QUART",
+    "_visionExtracted": true
   },
   "24012001000891": {
     "ttbId": "24012001000891",
@@ -333,7 +371,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6.9\n%ALC\nVOL",
+    "netContents": "5.16 GALLONS",
+    "_visionExtracted": true
   },
   "24045001000123": {
     "ttbId": "24045001000123",
@@ -354,7 +395,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "7.7% Alc. by Vol.",
+    "netContents": "15.5 US GALLONS",
+    "_visionExtracted": true
   },
   "24045001000891": {
     "ttbId": "24045001000891",
@@ -375,7 +419,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "11.1% ALCOHOL BY VOLUME",
+    "netContents": "1 PINT 8.5 FL OZ",
+    "_visionExtracted": true
   },
   "25335001000820": {
     "ttbId": "25335001000820",
@@ -396,7 +443,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. BY VOL. 8.1%",
+    "netContents": "12 FL. OZ.",
+    "_visionExtracted": true
   },
   "25335001000421": {
     "ttbId": "25335001000421",
@@ -417,7 +467,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "netContents": "15.5 U.S. Gallons",
+    "_visionExtracted": true
   },
   "25335001000428": {
     "ttbId": "25335001000428",
@@ -438,7 +490,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "netContents": "15.5 U.S. Gallons",
+    "_visionExtracted": true
   },
   "25335001000694": {
     "ttbId": "25335001000694",
@@ -459,7 +513,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "5% ALCOHOL/VOLUME",
+    "netContents": "1PINT",
+    "_visionExtracted": true
   },
   "25335001000169": {
     "ttbId": "25335001000169",
@@ -480,7 +537,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "15.7% Alc. by Vol.",
+    "_visionExtracted": true
   },
   "25335001000295": {
     "ttbId": "25335001000295",
@@ -501,7 +560,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "2.8% ALC./VOL.",
+    "_visionExtracted": true
   },
   "25335001000316": {
     "ttbId": "25335001000316",
@@ -522,7 +583,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "7.4% ALC/VOL",
+    "netContents": "16 FL OZ",
+    "_visionExtracted": true
   },
   "25335001000197": {
     "ttbId": "25335001000197",
@@ -543,7 +607,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "3.6% alc. by vol.",
+    "netContents": "5.16 gallons",
+    "_visionExtracted": true
   },
   "25335001000386": {
     "ttbId": "25335001000386",
@@ -564,7 +631,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "4.0% ALC BY VOL",
+    "netContents": "12 FL OZ",
+    "_visionExtracted": true
   },
   "25335001000078": {
     "ttbId": "25335001000078",
@@ -585,7 +655,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "5.2% ALCOHOL BY VOLUME",
+    "netContents": "1 PINT 6 FLUID OUNCES",
+    "_visionExtracted": true
   },
   "25335001000981": {
     "ttbId": "25335001000981",
@@ -606,7 +679,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 4.8% BY VOL.",
+    "_visionExtracted": true
   },
   "25335001000603": {
     "ttbId": "25335001000603",
@@ -627,7 +702,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6.0% ALC./VOL.",
+    "netContents": "15.5 gallons",
+    "_visionExtracted": true
   },
   "25335001000085": {
     "ttbId": "25335001000085",
@@ -648,7 +726,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "8% ALC. BY VOL",
+    "netContents": "16 FL. OZ.",
+    "_visionExtracted": true
   },
   "25335001000325": {
     "ttbId": "25335001000325",
@@ -669,7 +750,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6.6% ALC/VOL",
+    "netContents": "16OZ",
+    "_visionExtracted": true
   },
   "25335001000267": {
     "ttbId": "25335001000267",
@@ -690,7 +774,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "5.4% ALC/VOL",
+    "netContents": "1 PINT",
+    "_visionExtracted": true
   },
   "25335001000775": {
     "ttbId": "25335001000775",
@@ -1152,7 +1239,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "6.3% alc/vol",
+    "netContents": "5.16 US GALS",
+    "_visionExtracted": true
   },
   "26006001000134": {
     "ttbId": "26006001000134",
@@ -1278,7 +1368,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "beer",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. BY VOL. 5.3%",
+    "netContents": "12 FL. OZ.",
+    "_visionExtracted": true
   },
   "24003001000715": {
     "ttbId": "24003001000715",
@@ -1299,7 +1392,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "14.2 % Alc. by Vol",
+    "_visionExtracted": true
   },
   "24003001000421": {
     "ttbId": "24003001000421",
@@ -1320,7 +1415,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 12.5% BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24003001000325": {
     "ttbId": "24003001000325",
@@ -1341,7 +1439,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "11.54%",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "24003001000600": {
     "ttbId": "24003001000600",
@@ -1362,7 +1463,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 14.5 % BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24003001000666": {
     "ttbId": "24003001000666",
@@ -1383,7 +1487,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "14.5% ALC. / VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24003001000225": {
     "ttbId": "24003001000225",
@@ -1404,7 +1511,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 13.5% by vol.",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "24003001000190": {
     "ttbId": "24003001000190",
@@ -1425,7 +1535,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alc. 11% by Vol.",
+    "_visionExtracted": true
   },
   "24003001000393": {
     "ttbId": "24003001000393",
@@ -1446,7 +1558,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 14% BY VOL",
+    "netContents": "NET CONT. 750 mL",
+    "_visionExtracted": true
   },
   "24003001000200": {
     "ttbId": "24003001000200",
@@ -1467,7 +1582,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 13% BY VOL.",
+    "netContents": "1.5L",
+    "_visionExtracted": true
   },
   "24003001000330": {
     "ttbId": "24003001000330",
@@ -1488,7 +1606,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13.8% ALC/VOL",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "24012001000123": {
     "ttbId": "24012001000123",
@@ -1509,7 +1630,8 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "_visionExtracted": true
   },
   "24023001000345": {
     "ttbId": "24023001000345",
@@ -1530,7 +1652,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "12.7% ALCOHOL BY VOLUME",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "24023001000567": {
     "ttbId": "24023001000567",
@@ -1551,7 +1676,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC 13,5% BY VOL.",
+    "netContents": "NET.CONT. 750ml",
+    "_visionExtracted": true
   },
   "24023001000678": {
     "ttbId": "24023001000678",
@@ -1572,7 +1700,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alcohol 13.7% by Volume",
+    "_visionExtracted": true
   },
   "24034001000123": {
     "ttbId": "24034001000123",
@@ -1593,7 +1723,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alc. 12.2% BY VOL.",
+    "netContents": "750 mL",
+    "_visionExtracted": true
   },
   "24045001000234": {
     "ttbId": "24045001000234",
@@ -1614,7 +1747,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC 14.5% BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24045001000567": {
     "ttbId": "24045001000567",
@@ -1635,7 +1771,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 12% BY VOL.",
+    "netContents": "NET CONT. 750 ML.",
+    "_visionExtracted": true
   },
   "24078001000345": {
     "ttbId": "24078001000345",
@@ -1656,7 +1795,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 13.5% BY VOL.",
+    "netContents": "NET CONTENTS 750 ML",
+    "_visionExtracted": true
   },
   "24078001000678": {
     "ttbId": "24078001000678",
@@ -1677,7 +1819,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13% ALC./VOL.",
+    "netContents": "750 mL",
+    "_visionExtracted": true
   },
   "24078001000891": {
     "ttbId": "24078001000891",
@@ -1698,7 +1843,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC 13.5% BY VOL",
+    "_visionExtracted": true
   },
   "24089001000156": {
     "ttbId": "24089001000156",
@@ -1719,7 +1866,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 14.5% BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24089001000456": {
     "ttbId": "24089001000456",
@@ -1740,7 +1890,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 15% BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24089001000678": {
     "ttbId": "24089001000678",
@@ -1761,7 +1914,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "14% ALC BY VOL.",
+    "netContents": "375ML",
+    "_visionExtracted": true
   },
   "25335001000491": {
     "ttbId": "25335001000491",
@@ -1782,7 +1938,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "alc. 12% by vol",
+    "netContents": "1.5L",
+    "_visionExtracted": true
   },
   "25335001000533": {
     "ttbId": "25335001000533",
@@ -1803,7 +1962,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "14,5% Vol.",
+    "netContents": "e 750 mL",
+    "_visionExtracted": true
   },
   "25335001000708": {
     "ttbId": "25335001000708",
@@ -1824,7 +1986,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 14% BY VOL",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "25335001000561": {
     "ttbId": "25335001000561",
@@ -1845,7 +2010,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 13%",
+    "netContents": "750 ML.",
+    "_visionExtracted": true
   },
   "25335001000666": {
     "ttbId": "25335001000666",
@@ -1866,7 +2034,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alc. 17.5% by vol.",
+    "netContents": "375mL",
+    "_visionExtracted": true
   },
   "25335001000393": {
     "ttbId": "25335001000393",
@@ -1887,7 +2058,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 8.0% BY VOL.",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "25335001000932": {
     "ttbId": "25335001000932",
@@ -1908,7 +2082,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC.BY.VOL 11-14%",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "25335001000736": {
     "ttbId": "25335001000736",
@@ -1929,7 +2106,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "11,5% vol.",
+    "netContents": "75cl",
+    "_visionExtracted": true
   },
   "25335001000960": {
     "ttbId": "25335001000960",
@@ -1950,7 +2130,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 12.4% BY VOL.",
+    "_visionExtracted": true
   },
   "25335001000652": {
     "ttbId": "25335001000652",
@@ -1971,7 +2153,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "12.5% ALC. BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "25335001000624": {
     "ttbId": "25335001000624",
@@ -1992,7 +2177,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13% Alc. by Vol",
+    "netContents": "0.75 L",
+    "_visionExtracted": true
   },
   "25335001000825": {
     "ttbId": "25335001000825",
@@ -3315,7 +3503,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 13% BY VOL",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "26003001000036": {
     "ttbId": "26003001000036",
@@ -3336,7 +3527,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alc. 11-14% by vol.",
+    "netContents": "750ml",
+    "_visionExtracted": true
   },
   "26003001000043": {
     "ttbId": "26003001000043",
@@ -3357,7 +3551,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13.5% ABV",
+    "netContents": "750mL",
+    "_visionExtracted": true
   },
   "26003001000015": {
     "ttbId": "26003001000015",
@@ -3378,7 +3575,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "14% Alcohol by Volume",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "26003001000029": {
     "ttbId": "26003001000029",
@@ -3399,7 +3599,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 8% BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "26003001000078": {
     "ttbId": "26003001000078",
@@ -3420,7 +3623,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alc. 12% by Vol.",
+    "netContents": "750ml",
+    "_visionExtracted": true
   },
   "26003001000099": {
     "ttbId": "26003001000099",
@@ -3441,7 +3647,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13.0% ABV",
+    "netContents": "750 mL",
+    "_visionExtracted": true
   },
   "26003001000071": {
     "ttbId": "26003001000071",
@@ -3462,7 +3671,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "15% ALC/VOL",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "26003001000106": {
     "ttbId": "26003001000106",
@@ -3483,7 +3695,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13.5 ABV",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "26006001000148": {
     "ttbId": "26006001000148",
@@ -3504,7 +3719,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13.7% BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "26006001000155": {
     "ttbId": "26006001000155",
@@ -3525,7 +3743,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "13.9% ALC BY VOL",
+    "netContents": "750 mL",
+    "_visionExtracted": true
   },
   "26006001000281": {
     "ttbId": "26006001000281",
@@ -3567,7 +3788,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC.12.0% BY VOL",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "25335001000900": {
     "ttbId": "25335001000900",
@@ -3861,7 +4085,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "12.5% ALC. BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "26005001000753": {
     "ttbId": "26005001000753",
@@ -3882,7 +4109,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "wine",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "Alc. 12.5% by Vol",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "26006001000033": {
     "ttbId": "26006001000033",
@@ -3924,7 +4154,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "46% ALC./VOL. (92PROOF)",
+    "netContents": "750 ml",
+    "_visionExtracted": true
   },
   "24003001000736": {
     "ttbId": "24003001000736",
@@ -3945,7 +4178,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "40% ALC/VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24003001000085": {
     "ttbId": "24003001000085",
@@ -3966,7 +4202,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "90 proof (45% alc/vol)",
+    "netContents": "750ml",
+    "_visionExtracted": true
   },
   "24003001000169": {
     "ttbId": "24003001000169",
@@ -3987,7 +4226,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "44% ALC. BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24003001000350": {
     "ttbId": "24003001000350",
@@ -4008,7 +4250,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "8.5%\nALC/VOL",
+    "netContents": "12 FL.OZ\n(355ML)",
+    "_visionExtracted": true
   },
   "24003001000001": {
     "ttbId": "24003001000001",
@@ -4029,7 +4274,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "40% ALC/VOL • 80 Proof",
+    "netContents": "50ml",
+    "_visionExtracted": true
   },
   "24003001000561": {
     "ttbId": "24003001000561",
@@ -4050,7 +4298,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "50% ALC. BY VOL.",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24003001000281": {
     "ttbId": "24003001000281",
@@ -4071,7 +4322,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "4.5% ALC/VOL",
+    "netContents": "12 FL OZ (355 ML)",
+    "_visionExtracted": true
   },
   "23312001000445": {
     "ttbId": "23312001000445",
@@ -4092,7 +4346,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "45%",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "24012001000567": {
     "ttbId": "24012001000567",
@@ -4113,7 +4370,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "45% ALC/VOL",
+    "netContents": "750 mL",
+    "_visionExtracted": true
   },
   "24067001000456": {
     "ttbId": "24067001000456",
@@ -4134,7 +4394,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "52 % PROOF",
+    "netContents": "750ML",
+    "_visionExtracted": true
   },
   "25335001000995": {
     "ttbId": "25335001000995",
@@ -4155,7 +4418,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "52.2%",
+    "netContents": "700 ML",
+    "_visionExtracted": true
   },
   "25335001000650": {
     "ttbId": "25335001000650",
@@ -4176,7 +4442,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "49.5 % Alc./Vol.",
+    "netContents": "750 ml",
+    "_visionExtracted": true
   },
   "25335001000050": {
     "ttbId": "25335001000050",
@@ -4239,7 +4508,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 40% BY VOL.",
+    "netContents": "700mL",
+    "_visionExtracted": true
   },
   "25335001000850": {
     "ttbId": "25335001000850",
@@ -4260,7 +4532,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "40% ALC BY VOL. (80 PROOF)",
+    "netContents": "1.75 L",
+    "_visionExtracted": true
   },
   "25335001000029": {
     "ttbId": "25335001000029",
@@ -4281,7 +4556,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "30% ALC./VOL.",
+    "netContents": "CONT. 750 ML.",
+    "_visionExtracted": true
   },
   "25335001000687": {
     "ttbId": "25335001000687",
@@ -4323,7 +4601,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "7% ALC/VOL",
+    "netContents": "12 fl. oz. (355mL)",
+    "_visionExtracted": true
   },
   "25335001000547": {
     "ttbId": "25335001000547",
@@ -4344,7 +4625,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "14.9% ALC/VOL.",
+    "netContents": "200ml",
+    "_visionExtracted": true
   },
   "25335001000875": {
     "ttbId": "25335001000875",
@@ -4365,7 +4649,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "45% ALC\nBY VOLUME",
+    "netContents": "750mL",
+    "_visionExtracted": true
   },
   "25335001000463": {
     "ttbId": "25335001000463",
@@ -4386,7 +4673,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "75.5 % ALC./VOL.",
+    "netContents": "1 L",
+    "_visionExtracted": true
   },
   "25336001000876": {
     "ttbId": "25336001000876",
@@ -4428,7 +4718,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "12.5% ALC by VOL",
+    "netContents": "750ml",
+    "_visionExtracted": true
   },
   "25336001000827": {
     "ttbId": "25336001000827",
@@ -4470,7 +4763,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "80 PROOF | 40% ALC/VOL",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "25336001000302": {
     "ttbId": "25336001000302",
@@ -4491,7 +4787,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC BY VOL 62%",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "25338001000463": {
     "ttbId": "25338001000463",
@@ -4533,7 +4832,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "40% Alc.Vol. (80PROOF)",
+    "netContents": "CONT.NET.700ml",
+    "_visionExtracted": true
   },
   "25338001000250": {
     "ttbId": "25338001000250",
@@ -4554,7 +4856,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "40% ALC/VOL",
+    "netContents": "750ml",
+    "_visionExtracted": true
   },
   "25338001000625": {
     "ttbId": "25338001000625",
@@ -4596,7 +4901,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "45% ALC. BY VOL. (90 PROOF)",
+    "netContents": "1 LITER",
+    "_visionExtracted": true
   },
   "26003001000050": {
     "ttbId": "26003001000050",
@@ -4617,7 +4925,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "20% ALC/VOL\n40 PROOF",
+    "netContents": "900 ML",
+    "_visionExtracted": true
   },
   "26003001000001": {
     "ttbId": "26003001000001",
@@ -4638,7 +4949,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "ALC. 43% BY VOL.",
+    "netContents": "NET CONT. 700ML",
+    "_visionExtracted": true
   },
   "26003001000120": {
     "ttbId": "26003001000120",
@@ -4659,7 +4973,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "30% ALC/VOL",
+    "netContents": "1 LITER",
+    "_visionExtracted": true
   },
   "26003001000092": {
     "ttbId": "26003001000092",
@@ -4680,7 +4997,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "15% ABV",
+    "netContents": "375 ML",
+    "_visionExtracted": true
   },
   "25336001000610": {
     "ttbId": "25336001000610",
@@ -4764,7 +5084,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "40% ALC/VOL",
+    "netContents": "750 ML",
+    "_visionExtracted": true
   },
   "26006001000090": {
     "ttbId": "26006001000090",
@@ -4785,7 +5108,10 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "17% ALC./VOL.",
+    "netContents": "750mL",
+    "_visionExtracted": true
   },
   "26007001000251": {
     "ttbId": "26007001000251",
@@ -4806,6 +5132,9 @@
     "plantRegistry": "",
     "classTypeDescription": "",
     "_category": "spirits",
-    "_scraped": true
+    "_scraped": true,
+    "alcoholContent": "10% ALC/VOL",
+    "netContents": "355ml",
+    "_visionExtracted": true
   }
 }

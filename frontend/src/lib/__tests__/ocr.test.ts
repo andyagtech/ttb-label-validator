@@ -166,14 +166,14 @@ describe("parseOcrText — class/type", () => {
 // ---------------------------------------------------------------------------
 
 describe("parseOcrText — country of origin", () => {
-  it('detects "Product of France"', () => {
+  it('detects "Product of France" → normalized to FRANCE', () => {
     const fields = parseOcrText("Brand\nProduct of France\n750 mL");
-    expect(fields.countryOfOrigin).toMatch(/Product of France/i);
+    expect(fields.countryOfOrigin).toBe("FRANCE");
   });
 
-  it('detects "Imported from Italy"', () => {
+  it('detects "Imported from Italy" → normalized to ITALY', () => {
     const fields = parseOcrText("Brand\nImported from Italy\n750 mL");
-    expect(fields.countryOfOrigin).toMatch(/Italy/i);
+    expect(fields.countryOfOrigin).toBe("ITALY");
   });
 });
 
