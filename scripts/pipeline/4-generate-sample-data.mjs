@@ -13,10 +13,12 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const RECORDS_PATH = join(__dirname, '..', 'sample_labels', 'ttb_cola_records.json');
-const IMAGES_DIR = join(__dirname, '..', 'frontend', 'public', 'ttb-labels');
-const SAMPLE_DATA_PATH = join(__dirname, '..', 'frontend', 'src', 'lib', 'sampleData.ts');
-const STORE_PATH = join(__dirname, '..', 'frontend', 'src', 'lib', 'store.ts');
+const ROOT = join(__dirname, '..', '..');
+const RECORDS_PATH = join(ROOT, 'sample_labels', 'ttb_cola_records.json');
+const ENRICHED_PATH = join(ROOT, 'sample_labels', 'enriched_cola_fields.json');
+const IMAGES_DIR = join(ROOT, 'frontend', 'public', 'ttb-labels');
+const SAMPLE_DATA_PATH = join(ROOT, 'frontend', 'src', 'lib', 'sampleData.ts');
+const STORE_PATH = join(ROOT, 'frontend', 'src', 'lib', 'store.ts');
 
 // ── 1. Scan images directory ────────────────────────────────────────────────
 const imageFiles = readdirSync(IMAGES_DIR).filter(f => f.endsWith('.png'));
@@ -34,13 +36,29 @@ for (const id of Object.keys(imageMap)) {
 
 console.log(`📸 ${Object.keys(imageMap).length} TTB IDs with images (${imageFiles.length} total files)`);
 
-// ── 2. Load records and filter to those with images ─────────────────────────
+// ── 2. Load records and enriched COLA fields, filter to those with images ────
 const allRecords = JSON.parse(readFileSync(RECORDS_PATH, 'utf-8'));
+let enriched = {};
+try { enriched = JSON.parse(readFileSync(ENRICHED_PATH, 'utf-8')); } catch { /* no enriched data */ }
+console.log(`📋 ${Object.keys(enriched).length} enriched COLA records loaded`);
+
 const records = [];
 for (const cat of ['beer', 'wine', 'spirits']) {
   for (const r of (allRecords[cat] || [])) {
     if (imageMap[r.ttbId]) {
-      records.push({ ...r, category: cat });
+      // Merge enriched COLA detail page data into the record
+      const e = enriched[r.ttbId] || {};
+      records.push({
+        ...r,
+        category: cat,
+        // Use enriched fields as ground truth (scraped from COLA detail page)
+        classType: e.classTypeCode || r.classType || '',
+        origin: e.originCode || r.origin || '',
+        grapeVarietal: (e.grapeVarietal && e.grapeVarietal !== 'N/A') ? e.grapeVarietal : '',
+        wineAppellation: e.wineAppellation || '',
+        brandName: e.brandName || r.brandName || '',
+        fancifulName: e.fancifulName || r.fancifulName || '',
+      });
     }
   }
 }
@@ -81,6 +99,11 @@ function slugify(brand, fanciful) {
 
 function titleCase(s) {
   return s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/** Escape a value for safe embedding in a TS string literal */
+function esc(s) {
+  return (s || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ').replace(/\r/g, '');
 }
 
 // ── 4. Generate sampleData.ts ───────────────────────────────────────────────
@@ -131,6 +154,9 @@ export interface ExpectedFields {
   vintage_date?: string;
   varietal?: string;
   age_statement?: string;
+  color_ingredients?: string;
+  commodity_statement?: string;
+  aspartame_declaration?: string;
 }
 
 export interface SampleLabel {
@@ -145,7 +171,7 @@ export interface SampleLabel {
 // Health warning constant
 // ---------------------------------------------------------------------------
 
-const GOV_WARNING =
+export const GOV_WARNING =
   "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.";
 
 `;
@@ -178,34 +204,42 @@ for (const [cat, catRecords] of Object.entries(byCategory)) {
     // Front label
     ts += `  {\n`;
     ts += `    key: "${slug}-front",\n`;
-    ts += `    displayName: "${displayName} (Front)",\n`;
+    ts += `    displayName: "${esc(displayName)} (Front)",\n`;
     ts += `    colaSource: {\n`;
     ts += `      ttbId: "${r.ttbId}",\n`;
-    ts += `      brand: "${(r.brandName || '').replace(/"/g, '\\"')}",\n`;
-    ts += `      fancifulName: "${(r.fancifulName || '').replace(/"/g, '\\"')}",\n`;
+    ts += `      brand: "${esc(r.brandName)}",\n`;
+    ts += `      fancifulName: "${esc(r.fancifulName)}",\n`;
     ts += `      classCode: "",\n`;
-    ts += `      classType: "${(classType || '').replace(/"/g, '\\"')}",\n`;
+    ts += `      classType: "${esc(classType)}",\n`;
     ts += `      originCode: "",\n`;
-    ts += `      origin: "${origin.replace(/"/g, '\\"')}",\n`;
+    ts += `      origin: "${esc(origin)}",\n`;
     ts += `      permit: "",\n`;
     ts += `      approved: "${r.approvalDate || r.completedDate || ''}",\n`;
     ts += `    },\n`;
     ts += `    generation: {\n`;
     ts += `      labelType: "front",\n`;
     ts += `      category: "${cat}",\n`;
-    ts += `      brandName: "${(r.brandName || '').replace(/"/g, '\\"')}",\n`;
-    ts += `      classType: "${titleCase(classType).replace(/"/g, '\\"')}",\n`;
+    ts += `      brandName: "${esc(r.brandName)}",\n`;
+    ts += `      classType: "${esc(titleCase(classType))}",\n`;
     ts += `      alcoholContent: "${alc}",\n`;
     ts += `      netContents: "${net}",\n`;
     if (origin && cat !== 'beer') {
-      ts += `      countryOfOrigin: "${origin.replace(/"/g, '\\"')}",\n`;
+      ts += `      countryOfOrigin: "${esc(origin)}",\n`;
     }
     ts += `    },\n`;
     ts += `    expectedFields: {\n`;
-    ts += `      brand_name: "${(r.brandName || '').replace(/"/g, '\\"')}",\n`;
-    ts += `      class_type: "${titleCase(classType).replace(/"/g, '\\"')}",\n`;
+    ts += `      brand_name: "${esc(r.brandName)}",\n`;
+    ts += `      class_type: "${esc(titleCase(classType))}",\n`;
     ts += `      alcohol_content: "${alc}",\n`;
     ts += `      net_contents: "${net}",\n`;
+    // Add varietal from enriched COLA data (ground truth from submitted form)
+    if (r.grapeVarietal) {
+      ts += `      varietal: "${esc(r.grapeVarietal)}",\n`;
+    }
+    // Add appellation from enriched COLA data
+    if (r.wineAppellation) {
+      ts += `      appellation: "${esc(r.wineAppellation)}",\n`;
+    }
     ts += `    },\n`;
     ts += `  },\n`;
   }
@@ -249,10 +283,10 @@ const DEFAULT_NAME_ADDRESS: Record<string, string> = {
 
 // Generate name/address defaults
 for (const r of records) {
-  const brand = (r.brandName || '').replace(/"/g, '\\"');
+  const brand = esc(r.brandName);
   const origin = r.origin || '';
-  const addr = origin ? `${titleCase(brand)} Beverage Co., ${titleCase(origin)}` : `${titleCase(brand)} Beverage Co.`;
-  ts += `  "${brand}": "${addr}",\n`;
+  const addr = origin ? `${titleCase(brand)} Beverage Co., ${esc(titleCase(origin))}` : `${titleCase(brand)} Beverage Co.`;
+  ts += `  "${brand}": "${esc(addr)}",\n`;
 }
 
 ts += `};
@@ -335,7 +369,7 @@ console.log(`\n📝 TTB_LABEL_IMAGES block (${Object.keys(imageMap).length} entr
 console.log(ttbBlock);
 
 // Write TTB_LABEL_IMAGES block to a temp file for easy copy
-writeFileSync(join(__dirname, '..', 'sample_labels', 'ttb_label_images_block.txt'), ttbBlock);
+writeFileSync(join(ROOT, 'sample_labels', 'ttb_label_images_block.txt'), ttbBlock);
 console.log(`\n💾 Block saved to sample_labels/ttb_label_images_block.txt`);
 
 // ── 6. Generate store.ts overrides ──────────────────────────────────────────
@@ -442,7 +476,7 @@ for (let i = 0; i < total; i++) {
   }
 }
 
-writeFileSync(join(__dirname, '..', 'sample_labels', 'store_overrides_block.txt'), overrideLines);
+writeFileSync(join(ROOT, 'sample_labels', 'store_overrides_block.txt'), overrideLines);
 console.log(`💾 Store overrides block saved to sample_labels/store_overrides_block.txt`);
 
 console.log('\n✅ Done! Now update store.ts with the TTB_LABEL_IMAGES block and overrides.');
