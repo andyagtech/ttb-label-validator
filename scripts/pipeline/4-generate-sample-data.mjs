@@ -175,7 +175,7 @@ export interface SampleLabel {
 // ---------------------------------------------------------------------------
 
 export const GOV_WARNING =
-  "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.";
+  "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.";
 
 `;
 
@@ -224,7 +224,7 @@ for (const [cat, catRecords] of Object.entries(byCategory)) {
     ts += `      labelType: "front",\n`;
     ts += `      category: "${cat}",\n`;
     ts += `      brandName: "${esc(r.brandName)}",\n`;
-    ts += `      classType: "${esc(titleCase(classType))}",\n`;
+    ts += `      classType: "${esc(classType)}",\n`;
     ts += `      alcoholContent: "${esc(alc)}",\n`;
     ts += `      netContents: "${esc(net)}",\n`;
     if (origin && cat !== 'beer') {
@@ -233,7 +233,7 @@ for (const [cat, catRecords] of Object.entries(byCategory)) {
     ts += `    },\n`;
     ts += `    expectedFields: {\n`;
     ts += `      brand_name: "${esc(r.brandName)}",\n`;
-    ts += `      class_type: "${esc(titleCase(classType))}",\n`;
+    ts += `      class_type: "${esc(classType)}",\n`;
     ts += `      alcohol_content: "${esc(alc)}",\n`;
     ts += `      net_contents: "${esc(net)}",\n`;
     // Add varietal from enriched COLA data (ground truth from submitted form)
