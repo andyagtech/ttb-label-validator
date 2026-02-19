@@ -88,6 +88,30 @@ ttb_page/
 frontend/public/ttb-labels/*.png
 
 # ---------------------------------------------------------------------------
+# Raw TTB screenshots & pipeline artifacts (large binaries, kept locally only)
+# ---------------------------------------------------------------------------
+sample_labels/ttb_labels_direct/
+sample_labels/ttb_images/
+sample_labels/*.png
+sample_labels/*.avif
+sample_labels/*.heic
+sample_labels/*.jpg
+sample_labels/*.webp
+sample_labels/*.pdf
+sample_labels/*.docx
+scripts/assets/eng.traineddata
+
+# ---------------------------------------------------------------------------
+# Reference documents (PDFs, kept locally only)
+# ---------------------------------------------------------------------------
+references/
+
+# ---------------------------------------------------------------------------
+# Tesseract training data (downloaded at runtime by Tesseract.js)
+# ---------------------------------------------------------------------------
+eng.traineddata
+
+# ---------------------------------------------------------------------------
 # Misc
 # ---------------------------------------------------------------------------
 *.log
