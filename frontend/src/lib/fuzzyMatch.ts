@@ -307,3 +307,107 @@ export function compareFields(formValue: string | undefined, labelValue: string 
     message: `Mismatch (${bestScore}% similar). Values appear different.`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Form-guided OCR search
+// ---------------------------------------------------------------------------
+
+/**
+ * Form-guided OCR search — for each submitted form value, search the raw
+ * OCR text for a match. When a form value appears in the raw OCR text,
+ * use the matching text as the detected value rather than relying solely
+ * on blind field extraction heuristics.
+ *
+ * This fixes the core matching gap: when "INTEMPERIE" is submitted and
+ * "INTEMPERIE" is in the raw OCR, it should appear as detected — even
+ * if the blind `extractBrandName()` heuristic picked up garbage.
+ *
+ * Strategies (in order):
+ *   1. Exact line match (normalized, case-insensitive)
+ *   2. Line containment — a line contains the form value
+ *   3. Full-text containment — form value spans line boundaries
+ *   4. Fuzzy substring match — handles minor OCR misreads (≤20% edit distance)
+ *
+ * @param formFields - Submitted form field values (key → value)
+ * @param rawText - Raw OCR text from the label
+ * @param currentDetected - Current blind-extracted values (used to decide overrides)
+ * @returns Record of field key → detected value (only fields where search found a match)
+ */
+export function searchRawTextForFormValues(
+  formFields: Record<string, string | undefined>,
+  rawText: string,
+  currentDetected?: Record<string, string>,
+): Record<string, string> {
+  const results: Record<string, string> = {};
+  if (!rawText) return results;
+
+  const normalizedRaw = normalize(rawText);
+  const lines = rawText.split(/\n/).map((l) => l.trim()).filter(Boolean);
+
+  for (const [key, formValue] of Object.entries(formFields)) {
+    if (!formValue || formValue.trim().length < 2) continue;
+
+    const normForm = normalize(formValue);
+    if (normForm.length < 2) continue;
+
+    // Skip if blind extractor already found something that matches the form value well
+    if (currentDetected?.[key]) {
+      const currentNorm = normalize(currentDetected[key]);
+      if (currentNorm === normForm || currentNorm.includes(normForm) || normForm.includes(currentNorm)) {
+        continue; // blind extraction is already good — no override needed
+      }
+    }
+
+    // Strategy 1: Exact line match (case-insensitive, normalized)
+    let found = false;
+    for (const line of lines) {
+      if (normalize(line) === normForm) {
+        results[key] = line; // preserve original OCR casing
+        found = true;
+        break;
+      }
+    }
+    if (found) continue;
+
+    // Strategy 2: Line contains the form value
+    for (const line of lines) {
+      const normLine = normalize(line);
+      if (normLine.includes(normForm)) {
+        // Extract the best matching portion if the line is much longer
+        if (normLine.length > normForm.length * 1.5) {
+          results[key] = formValue; // use form value since it's confirmed present
+        } else {
+          results[key] = line; // line is close in length — use OCR text
+        }
+        found = true;
+        break;
+      }
+      // Also check if form value contains the line (e.g. form: "Product of Argentina", line: "Argentina")
+      // Require line to be ≥70% of form value length to avoid partial hits when value spans lines
+      if (normForm.includes(normLine) && normLine.length >= normForm.length * 0.7) {
+        results[key] = line;
+        found = true;
+        break;
+      }
+    }
+    if (found) continue;
+
+    // Strategy 3: Full-text containment (form value may span line boundaries)
+    if (normalizedRaw.includes(normForm)) {
+      results[key] = formValue;
+      continue;
+    }
+
+    // Strategy 4: Fuzzy substring match (handles OCR errors like "INTEMPER|E" → "INTEMPERIE")
+    // Only for values ≥ 4 chars to avoid false positives
+    if (normForm.length >= 4) {
+      const subDist = substringEditDistance(normForm, normalizedRaw);
+      const maxAllowed = Math.max(1, Math.floor(normForm.length * 0.2));
+      if (subDist <= maxAllowed) {
+        results[key] = formValue;
+      }
+    }
+  }
+
+  return results;
+}

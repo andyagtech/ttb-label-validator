@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalize, compareFields } from "../fuzzyMatch";
+import { normalize, compareFields, searchRawTextForFormValues } from "../fuzzyMatch";
 
 // ---------------------------------------------------------------------------
 // normalize()
@@ -177,5 +177,141 @@ describe("compareFields", () => {
     );
     expect(result.score).toBeGreaterThanOrEqual(90);
     expect(result.verdict).toBe("match");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// searchRawTextForFormValues() — form-guided OCR search
+// ---------------------------------------------------------------------------
+
+describe("searchRawTextForFormValues", () => {
+  const rawText = [
+    "|",
+    "{",
+    "INTEMPERIE",
+    "MALBEC",
+    "",
+    "Producto de Argentina",
+    "13.5% Alc. By Vol.",
+    "750 ml",
+  ].join("\n");
+
+  it("finds exact brand name on its own line (INTEMPERIE case)", () => {
+    const result = searchRawTextForFormValues(
+      { brandName: "INTEMPERIE" },
+      rawText,
+    );
+    expect(result.brandName).toBe("INTEMPERIE");
+  });
+
+  it("finds brand name case-insensitively", () => {
+    const result = searchRawTextForFormValues(
+      { brandName: "Intemperie" },
+      rawText,
+    );
+    expect(result.brandName).toBe("INTEMPERIE"); // preserves OCR casing
+  });
+
+  it("finds varietal on its own line", () => {
+    const result = searchRawTextForFormValues(
+      { classType: "MALBEC" },
+      rawText,
+    );
+    expect(result.classType).toBe("MALBEC");
+  });
+
+  it("finds value contained in a line (Argentina in 'Producto de Argentina')", () => {
+    const result = searchRawTextForFormValues(
+      { countryOfOrigin: "Argentina" },
+      rawText,
+    );
+    expect(result.countryOfOrigin).toBeDefined();
+  });
+
+  it("finds alcohol content", () => {
+    const result = searchRawTextForFormValues(
+      { alcoholContent: "13.5% Alc. By Vol." },
+      rawText,
+    );
+    expect(result.alcoholContent).toBeDefined();
+  });
+
+  it("does NOT override when blind extractor already matched well", () => {
+    const result = searchRawTextForFormValues(
+      { brandName: "INTEMPERIE" },
+      rawText,
+      { brandName: "INTEMPERIE" }, // blind extractor got it right
+    );
+    // Should skip — no override needed
+    expect(result.brandName).toBeUndefined();
+  });
+
+  it("DOES override when blind extractor found garbage", () => {
+    const result = searchRawTextForFormValues(
+      { brandName: "INTEMPERIE" },
+      rawText,
+      { brandName: "Toy \\" }, // blind extractor got garbage
+    );
+    expect(result.brandName).toBe("INTEMPERIE");
+  });
+
+  it("returns empty for values not in the OCR text", () => {
+    const result = searchRawTextForFormValues(
+      { brandName: "NONEXISTENT BRAND" },
+      rawText,
+    );
+    expect(result.brandName).toBeUndefined();
+  });
+
+  it("skips very short form values (< 2 chars)", () => {
+    const result = searchRawTextForFormValues(
+      { brandName: "X" },
+      rawText,
+    );
+    expect(result.brandName).toBeUndefined();
+  });
+
+  it("handles empty raw text", () => {
+    const result = searchRawTextForFormValues(
+      { brandName: "INTEMPERIE" },
+      "",
+    );
+    expect(result.brandName).toBeUndefined();
+  });
+
+  it("fuzzy matches OCR errors (1-char difference)", () => {
+    // Simulate OCR misread: "INTEMPER|E" instead of "INTEMPERIE"
+    const ocrWithError = "INTEMPER|E\nMALBEC";
+    const result = searchRawTextForFormValues(
+      { brandName: "INTEMPERIE" },
+      ocrWithError,
+    );
+    expect(result.brandName).toBe("INTEMPERIE");
+  });
+
+  it("finds form value spanning line boundaries", () => {
+    const multiLineOcr = "OLD TOM\nDISTILLERY\nBourbon";
+    const result = searchRawTextForFormValues(
+      { brandName: "Old Tom Distillery" },
+      multiLineOcr,
+    );
+    // "old tom distillery" should be found in the normalized full text
+    expect(result.brandName).toBe("Old Tom Distillery");
+  });
+
+  it("handles multiple fields at once", () => {
+    const result = searchRawTextForFormValues(
+      {
+        brandName: "INTEMPERIE",
+        classType: "Malbec",
+        countryOfOrigin: "Argentina",
+        netContents: "750 ml",
+      },
+      rawText,
+    );
+    expect(result.brandName).toBe("INTEMPERIE");
+    expect(result.classType).toBe("MALBEC");
+    expect(result.countryOfOrigin).toBeDefined();
+    expect(result.netContents).toBeDefined();
   });
 });

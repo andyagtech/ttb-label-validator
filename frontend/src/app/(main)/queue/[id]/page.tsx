@@ -39,7 +39,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Submission, ReviewDecision, ReviewFinding } from "@/lib/types";
-import { compareFields, MatchResult } from "@/lib/fuzzyMatch";
+import { compareFields, searchRawTextForFormValues, MatchResult } from "@/lib/fuzzyMatch";
 import { parseOcrText, preprocessForOcr, rotateCanvas, detectEdgeContent, cropEdgeStrip, RETRY_CONFIDENCE_THRESHOLD, type ExtractedFields, type PreprocessOptions } from "@/lib/ocr";
 import { Breadcrumbs } from "@/components/TTBShell";
 import FormVsLabelTable from "@/components/FormVsLabelTable";
@@ -409,6 +409,22 @@ export default function TTBReviewPage() {
     for (const [k, v] of Object.entries(detectedFields)) {
       if (v && k !== "rawText" && !merged[k]) merged[k] = v;
     }
+
+    // Form-guided search: when a submitted form value exists in the raw OCR
+    // text but the blind extractor missed or misidentified it, use the
+    // form-guided result instead.  This is the key fix for cases like
+    // "INTEMPERIE" appearing in raw OCR but extractBrandName picking up garbage.
+    if (submission?.formFields && detectedFields.rawText) {
+      const guided = searchRawTextForFormValues(
+        submission.formFields,
+        detectedFields.rawText,
+        merged,
+      );
+      for (const [k, v] of Object.entries(guided)) {
+        merged[k] = v; // override blind extraction with form-guided match
+      }
+    }
+
     return merged;
   }, [submission, detectedFields]);
 
