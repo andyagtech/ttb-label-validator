@@ -10,6 +10,7 @@ AI-powered alcohol label verification tool for TTB (Alcohol and Tobacco Tax and 
 | All source code | ✅ | `frontend/`, `backend/`, `docs/` |
 | README with setup & run instructions | ✅ | This file |
 | Documentation of approach & assumptions | ✅ | [Approach & Core Concept](#approach--core-concept) below, plus `docs/INFRASTRUCTURE_JUSTIFICATION.md` |
+| Simulated vs real data & future roadmap | ✅ | [`docs/SIMULATED_VS_REAL.md`](docs/SIMULATED_VS_REAL.md) |
 | Deployed Application URL | ✅ | **[https://ttb-demo-pipeline.vercel.app](https://ttb-demo-pipeline.vercel.app)** |
 | Working prototype | ✅ | Live at the URL above — 115 pre-loaded submissions ready to review |
 
@@ -699,6 +700,7 @@ ttb_cola_project/
 │   ├── COVERAGE.md              # Feature/test/walkthrough coverage matrix
 │   ├── PLAN.md                  # Original build plan with phased milestones
 │   ├── PROJECT_DESCRIPTION.md   # Take-home project brief
+│   ├── SIMULATED_VS_REAL.md     # What is simulated vs real data, and future roadmap
 │   ├── openapi.yaml             # OpenAPI 3.1 spec for all API endpoints
 │   ├── VALIDATION_AND_REVIEW_ARCHITECTURE.md # Two-tier validation + review queue design
 │   └── INFRASTRUCTURE_JUSTIFICATION.md # Capacity analysis, cost projections, roadmap
