@@ -678,7 +678,10 @@ export default function EditorPage() {
                     justifyContent: "space-between",
                     fontSize: 12,
                   }}>
-                    <span style={{ color: C.navy }}>{e.ocrStatus}</span>
+                    <span style={{ color: C.navy, display: "flex", alignItems: "center", gap: 6 }}>
+                      {e.isAutoScanning && <Loader2 size={13} className="animate-spin" />}
+                      {e.ocrStatus}
+                    </span>
                     <button onClick={() => e.setOcrStatus(null)} style={{ background: "none", border: "none", color: C.lightBlue, cursor: "pointer", marginLeft: 8 }}>
                       <X size={12} />
                     </button>

@@ -140,6 +140,8 @@ export interface EditorStateReturn {
   setIsSharpening: (v: boolean) => void;
 
   // ── OCR / extraction ────────────────────────────────────────────────
+  /** Whether auto-OCR is scanning a freshly uploaded image. */
+  isAutoScanning: boolean;
   /** Run browser-side Tesseract.js OCR. */
   handleQuickCheck: () => Promise<void>;
   /** Run server-side AI vision model OCR. */
@@ -242,6 +244,7 @@ export function useEditorState(): EditorStateReturn {
   const [isSharpening, setIsSharpening] = useState(false);
   const [isSmartCropping, setIsSmartCropping] = useState(false);
   const [smartCropDone, setSmartCropDone] = useState(false);
+  const [isAutoScanning, setIsAutoScanning] = useState(false);
 
   // ── AI Flatten state ──────────────────────────────────────────────
   const [isAiFlattening, setIsAiFlattening] = useState(false);
@@ -249,6 +252,10 @@ export function useEditorState(): EditorStateReturn {
   const [aiFlattenCooldown, setAiFlattenCooldown] = useState(0);
   const [flattenMode, setFlattenMode] = useState<"cylindrical" | "perspective">("cylindrical");
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Ref for beverageCategory so the auto-OCR callback stays stable
+  const beverageCategoryRef = useRef(beverageCategory);
+  beverageCategoryRef.current = beverageCategory;
 
   // Cooldown timer for AI Flatten debounce
   useEffect(() => {
@@ -279,6 +286,63 @@ export function useEditorState(): EditorStateReturn {
   const updateSlot = useCallback((slotId: string, updates: Partial<LabelSlot>) => {
     setSlots((prev) => prev.map((s) => (s.id === slotId ? { ...s, ...updates } : s)));
   }, []);
+
+  // ── Auto-OCR on upload ─────────────────────────────────────────────
+
+  const runAutoOcrForSlot = useCallback(
+    async (slotId: string, canvas: HTMLCanvasElement) => {
+      if (!TESSERACT_ENABLED) return;
+
+      setIsAutoScanning(true);
+      setOcrStatus("Scanning label text…");
+
+      try {
+        const rawText = await runTesseractOcr(canvas);
+        const fields = parseOcrText(rawText);
+
+        const foundFields = Object.entries(fields).filter(
+          ([k, v]) => k !== "rawText" && v && String(v).trim().length > 0,
+        );
+
+        const labelPosition = slotId === "front" ? "front" : slotId === "back" ? "back" : "other";
+        const cat = beverageCategoryRef.current;
+
+        // Apply results directly to the target slot via functional update
+        setSlots((prev) =>
+          prev.map((s) => {
+            if (s.id !== slotId) return s;
+            if (foundFields.length === 0) return { ...s, extractedFields: fields };
+
+            let checklist = applyExtractedFields(s.checklist, fields);
+            const results = validateExtractedFields(
+              fields,
+              cat,
+              labelPosition as "front" | "back" | "other",
+            );
+            checklist = applyValidationResults(checklist, results);
+            return { ...s, checklist, extractedFields: fields };
+          }),
+        );
+
+        if (foundFields.length > 0) {
+          const passCount = foundFields.length;
+          setOcrStatus(
+            `Auto-scan: ${passCount} field${passCount !== 1 ? "s" : ""} detected from uploaded image`,
+          );
+        } else if (fields.rawText) {
+          setOcrStatus("Auto-scan: Text detected — run Quick Check after correction for better results");
+        } else {
+          setOcrStatus(null);
+        }
+      } catch (err) {
+        console.error("[Auto-OCR] Error:", err);
+        setOcrStatus(null);
+      } finally {
+        setIsAutoScanning(false);
+      }
+    },
+    [], // stable — uses refs and setState only
+  );
 
   // ── Image lifecycle ───────────────────────────────────────────────
 
@@ -319,10 +383,13 @@ export function useEditorState(): EditorStateReturn {
           meshPointsPerEdge: 3,
           extractedFields: null,
         });
+
+        // Fire-and-forget auto-OCR on the raw uploaded image
+        runAutoOcrForSlot(slotId, canvas);
       };
       img.src = dataUrl;
     },
-    [updateSlot],
+    [updateSlot, runAutoOcrForSlot],
   );
 
   const handleImageLoaded = useCallback(
@@ -964,6 +1031,7 @@ export function useEditorState(): EditorStateReturn {
     setFlattenMode,
     isSharpening,
     setIsSharpening,
+    isAutoScanning,
     handleQuickCheck,
     handleServerExtract,
     applyOcrResults,
